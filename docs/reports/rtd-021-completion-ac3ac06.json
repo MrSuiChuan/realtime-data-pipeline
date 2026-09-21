@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "work_item": "RTD-021",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_hooks.py",
+  "scope": [
+    "hooks/gates.py",
+    "engine/core.py",
+    "templates/config.example.json",
+    "governance/capability-matrix.json",
+    "tests/test_hooks.py"
+  ],
+  "verified_at": 1790001830035,
+  "checks": [
+    {
+      "name": "rtd-021-ac3ac06-0",
+      "passed": true,
+      "details": "确认窗口与记录读取行数改为从项目配置 limits 读取，缺省回落内置值；两条用例覆盖窗口收窄与读取行数受限。",
+      "criteria": [
+        "窗口与行数从 .rtd/config.json 的 limits 读，缺省回落内置值"
+      ]
+    },
+    {
+      "name": "rtd-021-ac3ac06-1",
+      "passed": true,
+      "details": "确认窗口与记录读取行数改为从项目配置 limits 读取，缺省回落内置值；两条用例覆盖窗口收窄与读取行数受限。",
+      "criteria": [
+        "有用例覆盖自定义窗口"
+      ]
+    }
+  ]
+}

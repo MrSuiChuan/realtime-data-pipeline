@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-024",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "commands/setup.md",
+    "skills/rtd-setup/SKILL.md",
+    "tools/validate_plugin.py",
+    "tests/test_repo_invariants.py"
+  ],
+  "verified_at": 1790001844995,
+  "checks": [
+    {
+      "name": "rtd-024-ac3ac06-0",
+      "passed": true,
+      "details": "修正 setup --report 这处不存在的引擎参数；第 4 项扩为分层纯度与引擎调用一致性，拦住不存在的子命令与参数，附正反用例。",
+      "criteria": [
+        "setup.md 改为用 env check 输出缺口，并注明历史写法错在哪"
+      ]
+    },
+    {
+      "name": "rtd-024-ac3ac06-1",
+      "passed": true,
+      "details": "修正 setup --report 这处不存在的引擎参数；第 4 项扩为分层纯度与引擎调用一致性，拦住不存在的子命令与参数，附正反用例。",
+      "criteria": [
+        "校验器第 4 项扩为\"分层纯度 + 引擎调用一致性\"，拦住不存在的子命令与参数"
+      ]
+    },
+    {
+      "name": "rtd-024-ac3ac06-2",
+      "passed": true,
+      "details": "修正 setup --report 这处不存在的引擎参数；第 4 项扩为分层纯度与引擎调用一致性，拦住不存在的子命令与参数，附正反用例。",
+      "criteria": [
+        "有用例：真实文档零问题、注入的坏文档被抓到"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-026",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/core.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790001857311,
+  "checks": [
+    {
+      "name": "rtd-026-ac3ac06-0",
+      "passed": true,
+      "details": "advance 对回跳与跳阶段要求非空理由，缺失即拒并提示写清触发原因与后续动作；理由落进 phases 记录。用例 test_non_sequential_advance_requires_reason 覆盖跳阶段与回跳两侧。",
+      "criteria": [
+        "非顺序推进且理由为空时拒绝"
+      ]
+    },
+    {
+      "name": "rtd-026-ac3ac06-1",
+      "passed": true,
+      "details": "advance 对回跳与跳阶段要求非空理由，缺失即拒并提示写清触发原因与后续动作；理由落进 phases 记录。用例 test_non_sequential_advance_requires_reason 覆盖跳阶段与回跳两侧。",
+      "criteria": [
+        "有理由时放行并落进 phases 记录"
+      ]
+    },
+    {
+      "name": "rtd-026-ac3ac06-2",
+      "passed": true,
+      "details": "advance 对回跳与跳阶段要求非空理由，缺失即拒并提示写清触发原因与后续动作；理由落进 phases 记录。用例 test_non_sequential_advance_requires_reason 覆盖跳阶段与回跳两侧。",
+      "criteria": [
+        "用例覆盖跳阶段与回跳两侧"
+      ]
+    }
+  ]
+}

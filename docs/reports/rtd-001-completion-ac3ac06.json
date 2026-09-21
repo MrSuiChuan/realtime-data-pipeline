@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-001",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tools/validate_plugin.py . && py -3 tools/build_codex_surface.py --check",
+  "scope": [
+    ".claude-plugin/plugin.json",
+    ".codex-plugin/plugin.json",
+    "tools/",
+    ".github/workflows/ci.yml"
+  ],
+  "verified_at": 1790001655521,
+  "checks": [
+    {
+      "name": "rtd-001-ac3ac06-0",
+      "passed": true,
+      "details": "双宿主清单可解析且版本单源（第 5 项）；生成物与命令源一致（13 个命令）；CI 同时跑生成器校验、八项校验与 evals 结构校验（本次新增的第 1 项配置完整性检查会拦住漏配）。",
+      "criteria": [
+        ".claude-plugin 与 .codex-plugin 清单可解析且版本单源"
+      ]
+    },
+    {
+      "name": "rtd-001-ac3ac06-1",
+      "passed": true,
+      "details": "双宿主清单可解析且版本单源（第 5 项）；生成物与命令源一致（13 个命令）；CI 同时跑生成器校验、八项校验与 evals 结构校验（本次新增的第 1 项配置完整性检查会拦住漏配）。",
+      "criteria": [
+        "tools/build_codex_surface.py --check 通过"
+      ]
+    },
+    {
+      "name": "rtd-001-ac3ac06-2",
+      "passed": true,
+      "details": "双宿主清单可解析且版本单源（第 5 项）；生成物与命令源一致（13 个命令）；CI 同时跑生成器校验、八项校验与 evals 结构校验（本次新增的第 1 项配置完整性检查会拦住漏配）。",
+      "criteria": [
+        "tools/validate_plugin.py 八项通过"
+      ]
+    }
+  ]
+}

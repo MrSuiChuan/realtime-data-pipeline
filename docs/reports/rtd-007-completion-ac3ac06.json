@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "work_item": "RTD-007",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_engine.py && py -3 tests/test_hooks.py",
+  "scope": [
+    "engine/",
+    "hooks/",
+    "tests/"
+  ],
+  "verified_at": 1790001709822,
+  "checks": [
+    {
+      "name": "rtd-007-ac3ac06-0",
+      "passed": true,
+      "details": "引擎与 hook 用例全过（引擎 12 条、hook 11 条）：门控两类来源不可互替、证据哈希可验、跨会话对账拒绝覆盖、hook 三条硬规则与新增的 MCP/引擎只读规则。",
+      "criteria": [
+        "tests/test_engine.py 10 条通过"
+      ]
+    },
+    {
+      "name": "rtd-007-ac3ac06-1",
+      "passed": true,
+      "details": "引擎与 hook 用例全过（引擎 12 条、hook 11 条）：门控两类来源不可互替、证据哈希可验、跨会话对账拒绝覆盖、hook 三条硬规则与新增的 MCP/引擎只读规则。",
+      "criteria": [
+        "tests/test_hooks.py 7 条通过"
+      ]
+    },
+    {
+      "name": "rtd-007-ac3ac06-2",
+      "passed": true,
+      "details": "引擎与 hook 用例全过（引擎 12 条、hook 11 条）：门控两类来源不可互替、证据哈希可验、跨会话对账拒绝覆盖、hook 三条硬规则与新增的 MCP/引擎只读规则。",
+      "criteria": [
+        "hook 二进制实测：三例阻断 + 一例放行"
+      ]
+    },
+    {
+      "name": "rtd-007-ac3ac06-3",
+      "passed": true,
+      "details": "引擎与 hook 用例全过（引擎 12 条、hook 11 条）：门控两类来源不可互替、证据哈希可验、跨会话对账拒绝覆盖、hook 三条硬规则与新增的 MCP/引擎只读规则。",
+      "criteria": [
+        "端到端冒烟：setup → advance → evidence add → gate set → advance → verify 通过"
+      ]
+    }
+  ]
+}

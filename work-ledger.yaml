@@ -15,7 +15,7 @@ work_items:
   paths:
   - plan.md
   - plan.raw.md
-  evidence: [{"path":"docs/validation-report.md","summary":"脱敏与计划优化的核实记录"},"docs/reports/rtd-000-completion-ed521ac.json"]
+  evidence: [{"path":"docs/validation-report.md","summary":"脱敏与计划优化的核实记录"},"docs/reports/rtd-000-completion-ed521ac.json","docs/reports/rtd-000-completion-ac3ac06.json"]
   "blocker": null
   "verification": {"evidence_level":"locally_verified"}
 
@@ -38,7 +38,7 @@ work_items:
   - tools/
   - .github/workflows/ci.yml
   "blocker": null
-  "evidence": ["docs/reports/rtd-001-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-001-completion-ed521ac.json","docs/reports/rtd-001-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-002
@@ -56,7 +56,7 @@ work_items:
   paths:
   - governance/
   "blocker": null
-  "evidence": ["docs/reports/rtd-002-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-002-completion-ed521ac.json","docs/reports/rtd-002-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-003
@@ -76,7 +76,7 @@ work_items:
   - workflows/
   - skills/
   "blocker": null
-  "evidence": ["docs/reports/rtd-003-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-003-completion-ed521ac.json","docs/reports/rtd-003-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-004
@@ -95,7 +95,7 @@ work_items:
   - executors/
   - templates/config.example.json
   "blocker": null
-  "evidence": ["docs/reports/rtd-004-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-004-completion-ed521ac.json","docs/reports/rtd-004-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-005
@@ -113,7 +113,7 @@ work_items:
   paths:
   - datasources/
   "blocker": null
-  "evidence": ["docs/reports/rtd-005-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-005-completion-ed521ac.json","docs/reports/rtd-005-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-006
@@ -130,7 +130,7 @@ work_items:
   paths:
   - knowledge/
   "blocker": null
-  "evidence": ["docs/reports/rtd-006-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-006-completion-ed521ac.json","docs/reports/rtd-006-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-007
@@ -151,7 +151,7 @@ work_items:
   - engine/
   - hooks/
   - tests/
-  evidence: [{"path":"docs/validation-report.md","summary":"引擎/hook/端到端冒烟的核实记录"},"docs/reports/rtd-007-completion-ed521ac.json"]
+  evidence: [{"path":"docs/validation-report.md","summary":"引擎/hook/端到端冒烟的核实记录"},"docs/reports/rtd-007-completion-ed521ac.json","docs/reports/rtd-007-completion-ac3ac06.json"]
   "blocker": null
   "verification": {"evidence_level":"locally_verified"}
 
@@ -171,7 +171,7 @@ work_items:
   - evals/
   - tools/validate_plugin.py
   "blocker": null
-  "evidence": ["docs/reports/rtd-008-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-008-completion-ed521ac.json","docs/reports/rtd-008-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-009
@@ -244,7 +244,7 @@ work_items:
   - tools/score_inspection.py
   - tests/test_score_inspection.py
   - tests/fixtures/inspection-snapshot.json
-  "evidence": ["docs/reports/rtd-012-completion.json","docs/reports/rtd-012-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-012-completion.json","docs/reports/rtd-012-completion-ed521ac.json","docs/reports/rtd-012-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
 
@@ -266,7 +266,7 @@ work_items:
   paths:
   - evals/
   - tools/run_evals.py
-  evidence: [{"path":"docs/validation-report.md","summary":"跑分器结构校验/导出/汇总的自测记录"},"docs/reports/rtd-013-completion.json","docs/reports/rtd-013-completion-ed521ac.json"]
+  evidence: [{"path":"docs/validation-report.md","summary":"跑分器结构校验/导出/汇总的自测记录"},"docs/reports/rtd-013-completion.json","docs/reports/rtd-013-completion-ed521ac.json","docs/reports/rtd-013-completion-ac3ac06.json"]
   "blocker": null
   "verification": {"evidence_level":"locally_verified"}
 
@@ -323,7 +323,7 @@ work_items:
   paths:
   - engine/core.py
   - tests/test_engine.py
-  "evidence": ["docs/reports/rtd-016-completion.json","docs/reports/rtd-016-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-016-completion.json","docs/reports/rtd-016-completion-ed521ac.json","docs/reports/rtd-016-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
 
@@ -343,7 +343,7 @@ work_items:
   paths:
   - engine/core.py
   - tests/test_engine.py
-  "evidence": ["docs/reports/rtd-017-completion.json","docs/reports/rtd-017-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-017-completion.json","docs/reports/rtd-017-completion-ed521ac.json","docs/reports/rtd-017-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
 
@@ -363,7 +363,7 @@ work_items:
   paths:
   - hooks/gates.py
   - tests/test_hooks.py
-  "evidence": ["docs/reports/rtd-018-completion.json","docs/reports/rtd-018-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-018-completion.json","docs/reports/rtd-018-completion-ed521ac.json","docs/reports/rtd-018-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
 
@@ -383,7 +383,7 @@ work_items:
   paths:
   - tools/validate_plugin.py
   - tests/test_evals_runner.py
-  "evidence": ["docs/reports/rtd-019-completion.json","docs/reports/rtd-019-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-019-completion.json","docs/reports/rtd-019-completion-ed521ac.json","docs/reports/rtd-019-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
 
@@ -418,7 +418,7 @@ work_items:
   next_action: 提交 work complete
   paths:
   - hooks/gates.py
-  "evidence": ["docs/reports/rtd-021-completion.json","docs/reports/rtd-021-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-021-completion.json","docs/reports/rtd-021-completion-ed521ac.json","docs/reports/rtd-021-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
 
@@ -437,7 +437,7 @@ work_items:
   paths:
   - commands/resume.md
   - skills/
-  "evidence": ["docs/reports/rtd-022-completion.json","docs/reports/rtd-022-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-022-completion.json","docs/reports/rtd-022-completion-ed521ac.json","docs/reports/rtd-022-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
 
@@ -478,11 +478,14 @@ work_items:
   - commands/setup.md
   - tools/validate_plugin.py
   - tests/test_repo_invariants.py
+  "blocker": null
+  "evidence": ["docs/reports/rtd-024-completion-ac3ac06.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-025
   title: 证据要绑对象身份，不只版本
   kind: fix
-  status: in_progress
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -491,15 +494,17 @@ work_items:
   - 登记证据时同时记录对象文件级 ID 与版本
   - 换对象或换版本，旧证据设门都被拒并说明过期
   - 两条用例分别覆盖换版本与换对象
-  next_action: 已实现；等完成流程绑定报告。
+  next_action: 提交 work complete
   paths:
   - engine/core.py
   - tests/test_engine.py
+  "evidence": ["docs/reports/rtd-025-completion-ac3ac06.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-026
   title: 回跳与跳阶段必须写理由
   kind: fix
-  status: in_progress
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P1
   required: true
@@ -508,15 +513,17 @@ work_items:
   - 非顺序推进且理由为空时拒绝
   - 有理由时放行并落进 phases 记录
   - 用例覆盖跳阶段与回跳两侧
-  next_action: 已实现；等完成流程绑定报告。
+  next_action: 提交 work complete
   paths:
   - engine/core.py
   - tests/test_engine.py
+  "evidence": ["docs/reports/rtd-026-completion-ac3ac06.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-027
   title: 运行时记录插件版本
   kind: fix
-  status: in_progress
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P2
   required: false
@@ -524,10 +531,10 @@ work_items:
   acceptance:
   - setup 时把插件清单里的版本写进运行时
   - 有用例断言版本非空
-  next_action: 已实现；等完成流程绑定报告。
+  next_action: 提交 work complete
   paths:
   - engine/rtd.py
   - tests/test_engine.py
-  "evidence": ["docs/reports/rtd-024-completion.json","docs/reports/rtd-024-completion-ed521ac.json"]
+  "evidence": ["docs/reports/rtd-024-completion.json","docs/reports/rtd-024-completion-ed521ac.json","docs/reports/rtd-027-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null

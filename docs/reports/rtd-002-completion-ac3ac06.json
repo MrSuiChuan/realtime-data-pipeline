@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "work_item": "RTD-002",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "governance/"
+  ],
+  "verified_at": 1790001664708,
+  "checks": [
+    {
+      "name": "rtd-002-ac3ac06-0",
+      "passed": true,
+      "details": "规制层七件齐备且在 REQUIRED_PATHS 内；第 4 项分层纯度确认工作流只引用规制层、执行器契约里没有业务叙事词。",
+      "criteria": [
+        "工作流只引用规制层，不复制条款（校验第 4 项分层纯度通过）"
+      ]
+    },
+    {
+      "name": "rtd-002-ac3ac06-1",
+      "passed": true,
+      "details": "规制层七件齐备且在 REQUIRED_PATHS 内；第 4 项分层纯度确认工作流只引用规制层、执行器契约里没有业务叙事词。",
+      "criteria": [
+        "引擎只读边界与门禁条款在宪法里各只有一份"
+      ]
+    }
+  ]
+}

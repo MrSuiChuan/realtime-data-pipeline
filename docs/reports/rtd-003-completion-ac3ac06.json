@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "work_item": "RTD-003",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tools/build_codex_surface.py --check && py -3 tools/validate_plugin.py .",
+  "scope": [
+    "commands/",
+    "workflows/",
+    "skills/"
+  ],
+  "verified_at": 1790001671662,
+  "checks": [
+    {
+      "name": "rtd-003-ac3ac06-0",
+      "passed": true,
+      "details": "13 个命令源与生成技能一致；11 份工作流文档齐备；第 4 项现在还会核对文档里的引擎调用是否真实存在（本轮修掉了 setup --report 这类漂移）。",
+      "criteria": [
+        "与 plan.md §8.1–8.10 的步骤逐条对应"
+      ]
+    },
+    {
+      "name": "rtd-003-ac3ac06-1",
+      "passed": true,
+      "details": "13 个命令源与生成技能一致；11 份工作流文档齐备；第 4 项现在还会核对文档里的引擎调用是否真实存在（本轮修掉了 setup --report 这类漂移）。",
+      "criteria": [
+        "skills/ 为生成物且 --check 通过"
+      ]
+    }
+  ]
+}

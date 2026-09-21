@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-019",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_repo_invariants.py",
+  "scope": [
+    "tools/validate_plugin.py",
+    "tests/test_repo_invariants.py"
+  ],
+  "verified_at": 1790001823435,
+  "checks": [
+    {
+      "name": "rtd-019-ac3ac06-0",
+      "passed": true,
+      "details": "第 1 项扩为文件树与配置完整性：CI 必须含 validate/run_evals/生成器三个调用；gitignore 必须挡住 plan.raw.md 与 .rtd/。",
+      "criteria": [
+        "CI 缺 validate/run_evals 步骤时报错"
+      ]
+    },
+    {
+      "name": "rtd-019-ac3ac06-1",
+      "passed": true,
+      "details": "第 1 项扩为文件树与配置完整性：CI 必须含 validate/run_evals/生成器三个调用；gitignore 必须挡住 plan.raw.md 与 .rtd/。",
+      "criteria": [
+        ".gitignore 缺 plan.raw.md 或 .rtd/ 时报错"
+      ]
+    },
+    {
+      "name": "rtd-019-ac3ac06-2",
+      "passed": true,
+      "details": "第 1 项扩为文件树与配置完整性：CI 必须含 validate/run_evals/生成器三个调用；gitignore 必须挡住 plan.raw.md 与 .rtd/。",
+      "criteria": [
+        "有用例覆盖两种失败"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-016",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/core.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790001770068,
+  "checks": [
+    {
+      "name": "rtd-016-ac3ac06-0",
+      "passed": true,
+      "details": "add_evidence 现在记录注册时的对象版本；此前 _evidence_stale 读的字段从未写入、判断恒假。用例覆盖同版本可设门与对象换版本后被拒。",
+      "criteria": [
+        "add_evidence 记录注册时的对象版本"
+      ]
+    },
+    {
+      "name": "rtd-016-ac3ac06-1",
+      "passed": true,
+      "details": "add_evidence 现在记录注册时的对象版本；此前 _evidence_stale 读的字段从未写入、判断恒假。用例覆盖同版本可设门与对象换版本后被拒。",
+      "criteria": [
+        "对象版本变化后，旧的编译/发布证据设门被拒并给出明确原因"
+      ]
+    },
+    {
+      "name": "rtd-016-ac3ac06-2",
+      "passed": true,
+      "details": "add_evidence 现在记录注册时的对象版本；此前 _evidence_stale 读的字段从未写入、判断恒假。用例覆盖同版本可设门与对象换版本后被拒。",
+      "criteria": [
+        "有用例覆盖：同版本可设门，版本变了被拒"
+      ]
+    }
+  ]
+}

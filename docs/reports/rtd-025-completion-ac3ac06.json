@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-025",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/core.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790001851764,
+  "checks": [
+    {
+      "name": "rtd-025-ac3ac06-0",
+      "passed": true,
+      "details": "登记证据时记录对象文件级 ID 与版本；换对象或换版本后旧证据设门被拒。用例 test_evidence_expires_when_object_identity_changes 覆盖同版本换对象的场景，test_evidence_expires_when_object_version_changes 覆盖同对象换版本。",
+      "criteria": [
+        "登记证据时同时记录对象文件级 ID 与版本"
+      ]
+    },
+    {
+      "name": "rtd-025-ac3ac06-1",
+      "passed": true,
+      "details": "登记证据时记录对象文件级 ID 与版本；换对象或换版本后旧证据设门被拒。用例 test_evidence_expires_when_object_identity_changes 覆盖同版本换对象的场景，test_evidence_expires_when_object_version_changes 覆盖同对象换版本。",
+      "criteria": [
+        "换对象或换版本，旧证据设门都被拒并说明过期"
+      ]
+    },
+    {
+      "name": "rtd-025-ac3ac06-2",
+      "passed": true,
+      "details": "登记证据时记录对象文件级 ID 与版本；换对象或换版本后旧证据设门被拒。用例 test_evidence_expires_when_object_identity_changes 覆盖同版本换对象的场景，test_evidence_expires_when_object_version_changes 覆盖同对象换版本。",
+      "criteria": [
+        "两条用例分别覆盖换版本与换对象"
+      ]
+    }
+  ]
+}

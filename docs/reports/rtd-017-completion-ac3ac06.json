@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-017",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/core.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790001798728,
+  "checks": [
+    {
+      "name": "rtd-017-ac3ac06-0",
+      "passed": true,
+      "details": "高风险执行记录（启停/发布/回刷/下线类）结束时必须留追踪 ID，缺失即拒；只读类不强制。",
+      "criteria": [
+        "启停/发布/回刷类 run 结束时 trace 必填，缺失即拒"
+      ]
+    },
+    {
+      "name": "rtd-017-ac3ac06-1",
+      "passed": true,
+      "details": "高风险执行记录（启停/发布/回刷/下线类）结束时必须留追踪 ID，缺失即拒；只读类不强制。",
+      "criteria": [
+        "只读类 run（status/discover/inspect）不强制"
+      ]
+    },
+    {
+      "name": "rtd-017-ac3ac06-2",
+      "passed": true,
+      "details": "高风险执行记录（启停/发布/回刷/下线类）结束时必须留追踪 ID，缺失即拒；只读类不强制。",
+      "criteria": [
+        "有用例覆盖两类"
+      ]
+    }
+  ]
+}

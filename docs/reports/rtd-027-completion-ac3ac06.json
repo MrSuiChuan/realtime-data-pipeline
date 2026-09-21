@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "work_item": "RTD-027",
+  "source_sha": "ac3ac065cf0af9a28d994fa0352a7b381f38a4bf",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/rtd.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790001863327,
+  "checks": [
+    {
+      "name": "rtd-027-ac3ac06-0",
+      "passed": true,
+      "details": "setup 时读取插件清单版本写入运行时的 engine 段，与引擎哈希一起构成「这份状态是谁写的」的追溯信息。用例 test_setup_records_plugin_version 断言哈希与版本都非空。",
+      "criteria": [
+        "setup 时把插件清单里的版本写进运行时"
+      ]
+    },
+    {
+      "name": "rtd-027-ac3ac06-1",
+      "passed": true,
+      "details": "setup 时读取插件清单版本写入运行时的 engine 段，与引擎哈希一起构成「这份状态是谁写的」的追溯信息。用例 test_setup_records_plugin_version 断言哈希与版本都非空。",
+      "criteria": [
+        "有用例断言版本非空"
+      ]
+    }
+  ]
+}
