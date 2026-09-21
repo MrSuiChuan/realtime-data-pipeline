@@ -258,6 +258,58 @@ def test_placeholder_config_is_not_ready():
     assert any("executors.cli 未配置" == gap for gap in payload["gaps"])
 
 
+def test_evidence_expires_when_object_version_changes():
+    """RTD-016：对象换版本后，旧证据设门必须被拒（原先这条判断是死代码）。"""
+    project = _project()
+    _run("setup", "--project", str(project))
+    _run("object", "set", "--project", str(project), "--file-id", "F-1", "--version", "v1")
+    raw = _evidence_file(project, {"status": "SUCCESS", "observed_at": "2026-09-21T22:00:00+08:00"}, "c-v1.json")
+    code, out = _run(
+        "evidence", "add", "--project", str(project),
+        "--kind", "compile_receipt", "--from", str(raw), "--tool", "cli", "--command", "compile --json", "--json",
+    )
+    assert code == 0, out
+    evidence_id = json.loads(out)["id"]
+    assert json.loads(out)["object_version"] == "v1"
+
+    # 同版本：可以设门
+    code, out = _run("gate", "set", "--project", str(project), "--name", "compile_ok", "--evidence", evidence_id)
+    assert code == 0, out
+
+    # 对象换版本后，同一份证据拿去设另一个门 → 拒
+    _run("object", "set", "--project", str(project), "--version", "v2")
+    state = core.Runtime(project).load_state()
+    state["gates"].pop("compile_ok", None)
+    core.Runtime(project).save_state(state)
+    code, out = _run("gate", "set", "--project", str(project), "--name", "compile_ok", "--evidence", evidence_id)
+    assert code == 2, out
+    assert "过期" in out
+
+
+def test_high_risk_run_requires_trace_id():
+    """RTD-017：启停/发布类执行记录结束时必须留追踪 ID。"""
+    project = _project()
+    _run("setup", "--project", str(project))
+
+    code, out = _run("run", "start", "--project", str(project), "--kind", "lifecycle-start", "--summary", "启动", "--json")
+    assert code == 0, out
+    run_id = json.loads(out)["run_id"]
+    code, out = _run("run", "finish", "--project", str(project), "--run", run_id, "--status", "已受理")
+    assert code == 2, out
+    assert "追踪 ID" in out
+    code, out = _run(
+        "run", "finish", "--project", str(project), "--run", run_id,
+        "--status", "已受理", "--trace", "trace-123",
+    )
+    assert code == 0, out
+
+    # 只读类不强制
+    code, out = _run("run", "start", "--project", str(project), "--kind", "inspect", "--summary", "巡检", "--json")
+    read_run = json.loads(out)["run_id"]
+    code, out = _run("run", "finish", "--project", str(project), "--run", read_run, "--status", "已验证")
+    assert code == 0, out
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

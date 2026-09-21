@@ -89,6 +89,37 @@ def test_gated_tool_names():
     assert gates.gated("web_search") is False
 
 
+def test_engine_side_mcp_write_is_blocked():
+    """RTD-018：引擎侧 MCP 出现启停动词一律拒绝，不看有没有确认。"""
+    root = _project()
+    (root / ".rtd" / "config.json").write_text(
+        json.dumps({"executors": {"mcp_engine": "engine-mcp", "mcp_ops": "ops-mcp"}}), encoding="utf-8"
+    )
+    decision = gates.decide("mcp__engine-mcp__restartJob", "", "", "", root)
+    assert decision is not None and decision.gate == "engine_readonly"
+
+    # 只读查询放行
+    assert gates.decide("mcp__engine-mcp__queryExceptions", "", "", "", root) is None
+
+
+def test_platform_mcp_write_needs_confirmation():
+    root = _project()
+    (root / ".rtd" / "config.json").write_text(
+        json.dumps({"executors": {"mcp_ops": "ops-mcp"}}), encoding="utf-8"
+    )
+    assert gates.matches_executor("mcp__ops-mcp__deployPlan", root) is True
+
+    decision = gates.decide("mcp__ops-mcp__deployPlan", "", "", "", root)
+    assert decision is not None and decision.gate == "mcp_high_risk"
+
+    ok_root = _project(with_confirm=True)
+    (ok_root / ".rtd" / "config.json").write_text(
+        json.dumps({"executors": {"mcp_ops": "ops-mcp"}}), encoding="utf-8"
+    )
+    assert gates.decide("mcp__ops-mcp__deployPlan", "", "", "", ok_root) is None
+    assert gates.decide("mcp__ops-mcp__listTasks", "", "", "", ok_root) is None
+
+
 def test_extract_strings_handles_both_host_shapes():
     claude_shape = {"tool_name": "Bash", "tool_input": {"command": "ls -la"}}
     assert gates.extract_strings(claude_shape)[0] == "ls -la"

@@ -45,6 +45,23 @@ HIGH_RISK_WORDS = (
     "--backfill",
 )
 
+# 引擎侧工具名里出现这些动词 = 在尝试改作业状态（RTD-018）
+ENGINE_WRITE_VERBS = (
+    "startjob",
+    "restartjob",
+    "stopjob",
+    "hotstart",
+    "hot_start",
+    "canceljob",
+    "submit",
+    "deploy",
+    "publish",
+    "kill",
+)
+
+# 平台系 MCP 工具名里出现这些动词 = 改线上状态，同样要当次确认
+MCP_WRITE_VERBS = ENGINE_WRITE_VERBS + ("offline", "backfill", "restart", "start", "stop")
+
 
 @dataclass
 class Decision:
@@ -63,31 +80,98 @@ def decide(
 ) -> Optional[Decision]:
     """返回 None = 放行；返回 Decision = 拦截。"""
     blob = " ".join(part for part in (command, file_path, content) if part)
-    if not blob.strip():
-        return None
+    tool = (tool_name or "").lower()
 
-    decision = _evidence_guard(blob)
-    if decision:
-        return decision
+    # 引擎侧 MCP 只读边界：不看命令串，只看工具名（RTD-018）。
+    engine_name = _executor_value(root, "mcp_engine")
+    if engine_name and engine_name.lower() in tool and any(verb in tool for verb in ENGINE_WRITE_VERBS):
+        return Decision(
+            "engine_readonly",
+            f"引擎侧工具（{engine_name}）永久只读：{tool_name} 是作业变更动作。"
+            "启停/发布请走平台侧执行器，并按当次确认流程；平台侧不可用时如实报告阻塞。",
+        )
 
-    lowered = blob.lower()
-    if "--yes" in lowered:
-        if not _recent_confirm(root, now):
+    # 下面这几条靠命令串判断；没有命令串（例如 MCP 调用）就跳过，别提前 return——
+    # MCP 规则只看工具名（这个分支漏掉过一次，见 RTD-018）。
+    if blob.strip():
+        decision = _evidence_guard(blob)
+        if decision:
+            return decision
+
+        lowered = blob.lower()
+        if "--yes" in lowered and not _recent_confirm(root, now):
             return Decision(
                 "yes_flag",
                 "命令里带了 --yes，但 30 分钟内没有当次确认记录。"
                 "先让用户确认，再用 gate set --user-confirm 记录原话；不要替用户加 --yes。",
             )
 
-    cli = _cli_name(root)
-    if cli and cli.lower() in lowered and any(word in lowered for word in HIGH_RISK_WORDS):
-        if not _recent_confirm(root, now):
-            return Decision(
-                "high_risk",
-                f"这是改线上状态的动作（{cli} 启停/发布类）。"
-                "要求：展示对象与影响 → 用户当次确认 → gate set --user-confirm 记录原话，然后才能执行。",
-            )
+        cli = _cli_name(root)
+        if cli and cli.lower() in lowered and any(word in lowered for word in HIGH_RISK_WORDS):
+            if not _recent_confirm(root, now):
+                return Decision(
+                    "high_risk",
+                    f"这是改线上状态的动作（{cli} 启停/发布类）。"
+                    "要求：展示对象与影响 → 用户当次确认 → gate set --user-confirm 记录原话，然后才能执行。",
+                )
+
+    # 平台系 MCP：工具名带写动词且没有当次确认（RTD-018）
+    for name in ("mcp_ops", "mcp_dev", "mcp_asset"):
+        value = _executor_value(root, name)
+        if value and value.lower() in tool and any(verb in tool for verb in MCP_WRITE_VERBS):
+            if not _recent_confirm(root, now):
+                return Decision(
+                    "mcp_high_risk",
+                    f"这次调用（{tool_name}）是要改线上状态的动作，但 30 分钟内没有当次确认记录。"
+                    "先确认再调，或用 gate set --user-confirm 记录原话。",
+                )
+            break
     return None
+
+
+def matches_executor(tool_name: str, root: Path) -> bool:
+    """工具名是否命中配置里的执行器——MCP 工具名不含 rtd/realtime，得靠配置识别（RTD-018）。"""
+    tool = (tool_name or "").lower()
+    if not tool:
+        return False
+    return any(value.lower() in tool for value in _executor_values(root) if value)
+
+
+def _executor_values(root: Path) -> list[str]:
+    config = _load_config(root)
+    executors = config.get("executors") if isinstance(config.get("executors"), dict) else {}
+    values: list[str] = []
+    for key, value in executors.items():
+        if isinstance(value, dict):
+            candidate = value.get("cmd") or value.get("name")
+            if isinstance(candidate, str) and candidate.strip() and not candidate.strip().startswith("<"):
+                values.append(candidate.strip())
+        elif isinstance(value, str) and value.strip() and not value.strip().startswith("<"):
+            values.append(value.strip())
+    return values
+
+
+def _executor_value(root: Path, key: str) -> str:
+    config = _load_config(root)
+    executors = config.get("executors") if isinstance(config.get("executors"), dict) else {}
+    value = executors.get(key)
+    if isinstance(value, dict):
+        value = value.get("cmd") or value.get("name")
+    text = str(value or "").strip()
+    if not text or text.startswith("<"):
+        return ""
+    return text
+
+
+def _load_config(root: Path) -> Dict[str, Any]:
+    path = root / ".rtd" / "config.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _evidence_guard(blob: str) -> Optional[Decision]:
@@ -104,21 +188,7 @@ def _evidence_guard(blob: str) -> Optional[Decision]:
 
 def _cli_name(root: Path) -> str:
     """执行器命令名从项目配置读；读不到就返回空串（这条规则静默跳过，不猜）。"""
-    for path in (root / ".rtd" / "config.json",):
-        if not path.is_file():
-            continue
-        try:
-            config = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        cli = config.get("executors", {}).get("cli")
-        if isinstance(cli, dict):
-            name = str(cli.get("cmd") or "").strip()
-            if name:
-                return name
-        elif isinstance(cli, str) and cli.strip():
-            return cli.strip()
-    return ""
+    return _executor_value(root, "cli")
 
 
 def _recent_confirm(root: Path, now: Optional[datetime]) -> bool:

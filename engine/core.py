@@ -105,6 +105,21 @@ RUN_STATUSES = (
     "已验证",
 )
 
+# 改线上状态的动作：执行记录结束时必须留追踪 ID（宪法第 3、9 条）
+HIGH_RISK_RUN_TOKENS = (
+    "start",
+    "restart",
+    "hot-update",
+    "hot_update",
+    "stop",
+    "offline",
+    "cancel",
+    "publish",
+    "backfill",
+    "rollback",
+    "deploy",
+)
+
 DEFAULT_LIMITS = {
     "scan_budget_s": 120,
     "tool_calls": 60,
@@ -375,6 +390,13 @@ class Runtime:
         stored = self.evidence_dir / f"{evidence_id}.json"
         stored.write_bytes(data)
 
+        # 记录注册时的对象版本：对象换版本后，这条证据要能被判为过期（RTD-016）。
+        # 没有运行时或没登记对象版本时留空——空值不参与过期判断，不误伤。
+        try:
+            object_version = str(self.load_state().get("object", {}).get("version") or "")
+        except RtError:
+            object_version = ""
+
         item = {
             "id": evidence_id,
             "kind": kind,
@@ -384,6 +406,7 @@ class Runtime:
             "tool": tool,
             "command": command,
             "observed_at": payload.get("observed_at"),
+            "object_version": object_version or None,
             "added_at": now_iso(),
             "validation": {"ok": ok, "reason": reason},
         }
@@ -550,6 +573,21 @@ class Runtime:
             raise RtError("run_missing", f"没有这次执行记录：{run_id}")
         if status not in RUN_STATUSES:
             raise RtError("run_status", f"状态词不在枚举里：{status}", "可用：" + " / ".join(RUN_STATUSES))
+
+        kind = ""
+        request_file = run_dir / "request.json"
+        if request_file.is_file():
+            try:
+                kind = str(json.loads(request_file.read_text(encoding="utf-8")).get("kind") or "")
+            except json.JSONDecodeError:
+                kind = ""
+        if _is_high_risk_run(kind) and not (trace_id or "").strip():
+            raise RtError(
+                "run_trace",
+                f"这次执行是高风险动作（{kind}），结束时要留下追踪 ID",
+                "拿不到追踪 ID 说明这次调用没被平台受理——如实记「已受理/失败」，不要留空",
+            )
+
         result = {
             "run_id": run_id,
             "status": status,
@@ -695,3 +733,8 @@ def _real_value(value: Any) -> bool:
     if not text:
         return False
     return not (text.startswith("<") and text.endswith(">"))
+
+
+def _is_high_risk_run(kind: str) -> bool:
+    lowered = (kind or "").lower()
+    return any(token in lowered for token in HIGH_RISK_RUN_TOKENS)

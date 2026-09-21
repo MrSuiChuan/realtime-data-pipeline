@@ -37,15 +37,16 @@ def main() -> None:
     trace_payload("PreToolUse", payload)
     tool_name = str(payload.get("tool_name") or payload.get("tool") or "")
 
-    from gates import decide, extract_strings, gated  # 惰性导入
-
-    if not gated(tool_name):
-        emit({})
-        return
-
     try:
+        from gates import decide, extract_strings, gated, matches_executor  # 惰性导入
+
+        root = project_root(payload)
+        if not gated(tool_name) and not matches_executor(tool_name, root):
+            emit({})
+            return
+
         command, file_path, content = extract_strings(payload)
-        decision = decide(tool_name, command, file_path, content, project_root(payload))
+        decision = decide(tool_name, command, file_path, content, root)
     except Exception as exc:  # 自己出 bug 不能把用户锁死
         fail_open(f"{type(exc).__name__}: {exc}")
         return

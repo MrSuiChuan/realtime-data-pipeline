@@ -132,7 +132,23 @@ def rel(path: Path) -> str:
 
 
 def check_structure() -> list[str]:
-    return [f"缺文件：{p}" for p in REQUIRED_PATHS if not (ROOT / p).exists()]
+    """第 1 项：文件树 + 两项配置完整性（RTD-019）。
+
+    这两条原先靠人记：CI 是不是真的跑了脱敏与 evals 校验、未脱敏原稿有没有被挡住。
+    靠人记的防护等于没有防护，所以放进校验器。
+    """
+    errors = [f"缺文件：{p}" for p in REQUIRED_PATHS if not (ROOT / p).exists()]
+
+    gitignore = read_text(ROOT / ".gitignore")
+    for pattern in (".rtd/", "plan.raw.md"):
+        if pattern not in gitignore:
+            errors.append(f".gitignore 缺排除项：{pattern}（真实名称会随提交外泄）")
+
+    ci = read_text(ROOT / ".github" / "workflows" / "ci.yml")
+    for script in ("tools/validate_plugin.py", "tools/run_evals.py", "tools/build_codex_surface.py"):
+        if script not in ci:
+            errors.append(f"CI 没有跑 {script}")
+    return errors
 
 
 def check_links() -> list[str]:

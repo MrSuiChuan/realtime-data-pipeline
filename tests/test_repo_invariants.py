@@ -53,6 +53,37 @@ def test_config_example_is_tracked_outside_runtime_dir():
     assert ".rtd/" in ignored
 
 
+def test_validator_flags_missing_config_guards(tmp_path=None):
+    """RTD-019：校验器必须自己发现"gitignore 漏挡"和"CI 漏跑校验"。"""
+    import tempfile
+    from pathlib import Path as _Path
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    import validate_plugin
+
+    original = validate_plugin.ROOT
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = _Path(tmp)
+            for rel in validate_plugin.REQUIRED_PATHS:
+                target = fake / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("x", encoding="utf-8")
+            # 故意写一份缺排除项、缺 CI 步骤的仓库
+            (fake / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
+            ci = fake / ".github" / "workflows" / "ci.yml"
+            ci.parent.mkdir(parents=True, exist_ok=True)
+            ci.write_text("steps: []\n", encoding="utf-8")
+            validate_plugin.ROOT = fake
+            problems = validate_plugin.check_structure()
+        assert any("plan.raw.md" in p for p in problems)
+        assert any(".rtd/" in p for p in problems)
+        assert any("validate_plugin.py" in p for p in problems)
+        assert any("run_evals.py" in p for p in problems)
+    finally:
+        validate_plugin.ROOT = original
+
+
 if __name__ == "__main__":
     # 本地没装 pytest 时直接跑：py -3 tests/test_repo_invariants.py
     failures = 0

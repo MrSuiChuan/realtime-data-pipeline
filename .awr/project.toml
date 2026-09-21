@@ -23,7 +23,7 @@ adapter = "markdown-heading-v1"
 [[sources]]
 domain = "ledger"
 role = "primary"
-path = ".awr/intake/work-ledger.yaml"
+path = "work-ledger.yaml"
 adapter = "yaml-ledger-v1"
 
 [sources.options]

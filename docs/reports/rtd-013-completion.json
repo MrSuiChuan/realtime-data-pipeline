@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-013",
+  "source_sha": "51f48bbaad35beb0c08281ca34377a7d49388f65",
+  "command": "py -3 tools/run_evals.py --check && py -3 tests/test_evals_runner.py",
+  "scope": [
+    "tools/run_evals.py",
+    "tests/test_evals_runner.py",
+    "evals/",
+    ".github/workflows/ci.yml"
+  ],
+  "verified_at": 1789998833814,
+  "checks": [
+    {
+      "name": "evals-structure-and-ci",
+      "passed": true,
+      "details": "py -3 tools/run_evals.py --check 输出「evals 结构校验通过：5 套，21 条用例」；该命令已写进 .github/workflows/ci.yml 的 'evals 结构校验' 步骤。",
+      "criteria": [
+        "--check 通过并已接入 CI（5 套 21 条用例）"
+      ]
+    },
+    {
+      "name": "export-score-sheet",
+      "passed": true,
+      "details": "py -3 tools/run_evals.py --export <file> 写出评分表；tests/test_evals_runner.py::test_export_contains_every_case 断言每条用例都有独立小节。",
+      "criteria": [
+        "--export 生成含全部用例的评分表"
+      ]
+    },
+    {
+      "name": "score-guards",
+      "passed": true,
+      "details": "tests/test_evals_runner.py::test_score_requires_note_for_failures_and_full_coverage 断言：缺评分报「缺评分」，判 false 未写 note 报 note 缺失。",
+      "criteria": [
+        "--score 对缺评分与\"判失败却没写理由\"两种情况报错"
+      ]
+    }
+  ]
+}
