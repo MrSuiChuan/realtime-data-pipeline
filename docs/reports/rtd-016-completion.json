@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-016",
+  "source_sha": "1ed1d51bb561dcbf53b4bb35a0f4c00ff1fcf853",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/core.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790000481672,
+  "checks": [
+    {
+      "name": "rtd-016-0",
+      "passed": true,
+      "details": "add_evidence 现在记录注册时的 object.version；此前 _evidence_stale 读的字段从没被写过，判断恒为假。用例 test_evidence_expires_when_object_version_changes：同版本设门通过，对象换版本后同一份证据设门被拒并提示过期。",
+      "criteria": [
+        "add_evidence 记录注册时的对象版本"
+      ]
+    },
+    {
+      "name": "rtd-016-1",
+      "passed": true,
+      "details": "add_evidence 现在记录注册时的 object.version；此前 _evidence_stale 读的字段从没被写过，判断恒为假。用例 test_evidence_expires_when_object_version_changes：同版本设门通过，对象换版本后同一份证据设门被拒并提示过期。",
+      "criteria": [
+        "对象版本变化后，旧的编译/发布证据设门被拒并给出明确原因"
+      ]
+    },
+    {
+      "name": "rtd-016-2",
+      "passed": true,
+      "details": "add_evidence 现在记录注册时的 object.version；此前 _evidence_stale 读的字段从没被写过，判断恒为假。用例 test_evidence_expires_when_object_version_changes：同版本设门通过，对象换版本后同一份证据设门被拒并提示过期。",
+      "criteria": [
+        "有用例覆盖：同版本可设门，版本变了被拒"
+      ]
+    }
+  ]
+}

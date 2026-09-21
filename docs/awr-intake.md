@@ -81,3 +81,42 @@ gaps: completion_unverified ×10, dependency_not_completed ×4
 3. 之后所有状态流转（progress / block / complete）都走 AWR 通道，`verified_completed` 才会动。
 
 **另一条纪律**：新工作项**不要手写 `completed`**。留 `ready`/`in_progress`，用 `awr work complete` 绑定验收报告后再置完成——否则同样锁死。
+
+## 2026-09-21 深夜：账本迁出 + 第二轮台账（RTD-016..022）
+
+### 迁移
+
+账本从 `.awr/intake/work-ledger.yaml` 迁到仓库根 `work-ledger.yaml`：
+
+```bash
+awr source relocate --project . --source <source-id> --to work-ledger.yaml --json   # 先拿 preview.fingerprint
+awr source relocate --project . --source <source-id> --to work-ledger.yaml --expected-preview <fp> --accept
+```
+
+- `.awr/intake/GOALS.md` **迁不动**：AWR 明确回 `Unsupported: adapter keys depend on the old locator`。goal 是 Markdown 且对 AWR 只读，留在原地不影响写通道，因此保留；
+- 旧副本 `.awr/intake/work-ledger.yaml` 已删除——两份账本并存会让人改错文件；
+- `.awr/intake/project.toml` 保留（init 时的清单副本）。
+
+### 又一个真限制：源文本里不能出现 `名字=值`
+
+账本第一次改完 reindex 直接失败：
+
+```
+RuleViolation: sensitive content is not accepted; category=environment_dump
+```
+
+原因是我在 RTD-021 的摘要里写了 `CONFIRM_WINDOW_MINUTES=30` —— AWR 的敏感内容扫描把"大写名=值"当成环境变量转储。改成"确认窗口（30 分钟）"即可。
+
+**规则**：写进权威源的文本里不要出现 `KEY=value` 形态（哪怕是常量名），否则整个源索引失败、项目状态退回 stale。
+
+### 完成通道打通
+
+RTD-016 / 017 / 018 / 019 / 022 已按完整流程置完成：验收报告落在 `docs/reports/<id>-completion.json`，证据绑定到提交 SHA，`awr work complete` 通过 propose→apply 写入账本。
+
+查询口径：**完成校验是按 SHA 核的**，要看某个提交的验证情况必须显式带上：
+
+```bash
+awr intake inspect --project . --source-sha <commit> --json
+```
+
+当前（`1ed1d51`）：`completed 15 / verified_completed 5 / planned 6 / ready 2`；缺口 `completion_unverified 10 + dependency_not_completed 5`。

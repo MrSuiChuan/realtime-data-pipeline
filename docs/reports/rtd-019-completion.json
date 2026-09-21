@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-019",
+  "source_sha": "1ed1d51bb561dcbf53b4bb35a0f4c00ff1fcf853",
+  "command": "py -3 tests/test_repo_invariants.py",
+  "scope": [
+    "tools/validate_plugin.py",
+    "tests/test_repo_invariants.py"
+  ],
+  "verified_at": 1790000494344,
+  "checks": [
+    {
+      "name": "rtd-019-0",
+      "passed": true,
+      "details": "validate_plugin 第 1 项扩为文件树与配置完整性：CI 必须包含 validate_plugin.py、run_evals.py、build_codex_surface.py；.gitignore 必须含 plan.raw.md 与 .rtd/。用例 test_validator_flags_missing_config_guards 断言四类错误都被报出。",
+      "criteria": [
+        "CI 缺 validate/run_evals 步骤时报错"
+      ]
+    },
+    {
+      "name": "rtd-019-1",
+      "passed": true,
+      "details": "validate_plugin 第 1 项扩为文件树与配置完整性：CI 必须包含 validate_plugin.py、run_evals.py、build_codex_surface.py；.gitignore 必须含 plan.raw.md 与 .rtd/。用例 test_validator_flags_missing_config_guards 断言四类错误都被报出。",
+      "criteria": [
+        ".gitignore 缺 plan.raw.md 或 .rtd/ 时报错"
+      ]
+    },
+    {
+      "name": "rtd-019-2",
+      "passed": true,
+      "details": "validate_plugin 第 1 项扩为文件树与配置完整性：CI 必须包含 validate_plugin.py、run_evals.py、build_codex_surface.py；.gitignore 必须含 plan.raw.md 与 .rtd/。用例 test_validator_flags_missing_config_guards 断言四类错误都被报出。",
+      "criteria": [
+        "有用例覆盖两种失败"
+      ]
+    }
+  ]
+}

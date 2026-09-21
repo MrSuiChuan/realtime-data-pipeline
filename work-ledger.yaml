@@ -282,7 +282,7 @@ work_items:
 - id: RTD-016
   title: 修复证据过期检测是死代码
   kind: fix
-  status: ready
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -291,15 +291,17 @@ work_items:
   - add_evidence 记录注册时的对象版本
   - 对象版本变化后，旧的编译/发布证据设门被拒并给出明确原因
   - 有用例覆盖：同版本可设门，版本变了被拒
-  next_action: 在 add_evidence 里写入当时的 object.version，并补测试。
+  next_action: 提交 work complete
   paths:
   - engine/core.py
   - tests/test_engine.py
+  "evidence": ["docs/reports/rtd-016-completion.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-017
   title: 高风险执行记录必须留追踪 ID
   kind: fix
-  status: ready
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -308,15 +310,17 @@ work_items:
   - 启停/发布/回刷类 run 结束时 trace 必填，缺失即拒
   - 只读类 run（status/discover/inspect）不强制
   - 有用例覆盖两类
-  next_action: 在 core.py 定义高风险 kind 白名单，run_finish 据此校验。
+  next_action: 提交 work complete
   paths:
   - engine/core.py
   - tests/test_engine.py
+  "evidence": ["docs/reports/rtd-017-completion.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-018
   title: hook 门控覆盖 MCP 工具与引擎只读边界
   kind: fix
-  status: ready
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P1
   required: true
@@ -325,15 +329,17 @@ work_items:
   - 工具名命中配置里的 mcp_* 时进入门控
   - 引擎侧 MCP 出现启停类动词（如 restartJob/stopJob）一律拒绝
   - 有用例覆盖：引擎侧写操作被拒、普通 MCP 查询放行
-  next_action: 在 gates.py 增加"按配置执行器名识别 + 引擎侧写动词拒绝"两条规则。
+  next_action: 提交 work complete
   paths:
   - hooks/gates.py
   - tests/test_hooks.py
+  "evidence": ["docs/reports/rtd-018-completion.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-019
   title: 校验器补两项机器防护
   kind: fix
-  status: ready
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P1
   required: true
@@ -342,10 +348,12 @@ work_items:
   - CI 缺 validate/run_evals 步骤时报错
   - .gitignore 缺 plan.raw.md 或 .rtd/ 时报错
   - 有用例覆盖两种失败
-  next_action: 扩展 tools/validate_plugin.py 第 1 项为"文件树与配置完整性"。
+  next_action: 提交 work complete
   paths:
   - tools/validate_plugin.py
   - tests/test_evals_runner.py
+  "evidence": ["docs/reports/rtd-019-completion.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-020
   title: Claude 侧清单字段与 hook 生效需实测
@@ -371,7 +379,7 @@ work_items:
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P2
   required: false
-  summary: CONFIRM_WINDOW_MINUTES=30 与只读最后 50 行 gates.jsonl 都硬编码在 hooks/gates.py，与"所有数字只在配置里"的纪律不一致。
+  summary: 确认窗口（30 分钟）与只读行数（最后 50 行）都硬编码在 hooks/gates.py 里，与"所有数字只在配置里"的纪律不一致。
   acceptance:
   - 窗口与行数从 .rtd/config.json 的 limits 读，缺省回落内置值
   - 有用例覆盖自定义窗口
@@ -382,7 +390,7 @@ work_items:
 - id: RTD-022
   title: 补 resume 技能入口
   kind: fix
-  status: ready
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P2
   required: true
@@ -390,7 +398,9 @@ work_items:
   acceptance:
   - 新增 commands/resume.md 并生成 rtd-resume 技能
   - 生成物校验通过
-  next_action: 写命令源后重跑 tools/build_codex_surface.py。
+  next_action: 提交 work complete
   paths:
   - commands/resume.md
   - skills/
+  "evidence": ["docs/reports/rtd-022-completion.json"]
+  "verification": {"evidence_level":"locally_verified"}

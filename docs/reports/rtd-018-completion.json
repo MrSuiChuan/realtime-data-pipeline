@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-018",
+  "source_sha": "1ed1d51bb561dcbf53b4bb35a0f4c00ff1fcf853",
+  "command": "py -3 tests/test_hooks.py",
+  "scope": [
+    "hooks/gates.py",
+    "hooks/pretooluse.py",
+    "tests/test_hooks.py"
+  ],
+  "verified_at": 1790000488534,
+  "checks": [
+    {
+      "name": "rtd-018-0",
+      "passed": true,
+      "details": "gates.py 增加按配置执行器名识别工具与两条规则：引擎侧 MCP 出现写动词一律拒绝；平台系 MCP 出现写动词且 30 分钟内无当次确认则拒绝。用例 test_engine_side_mcp_write_is_blocked 与 test_platform_mcp_write_needs_confirmation 通过。",
+      "criteria": [
+        "工具名命中配置里的 mcp_* 时进入门控"
+      ]
+    },
+    {
+      "name": "rtd-018-1",
+      "passed": true,
+      "details": "gates.py 增加按配置执行器名识别工具与两条规则：引擎侧 MCP 出现写动词一律拒绝；平台系 MCP 出现写动词且 30 分钟内无当次确认则拒绝。用例 test_engine_side_mcp_write_is_blocked 与 test_platform_mcp_write_needs_confirmation 通过。",
+      "criteria": [
+        "引擎侧 MCP 出现启停类动词（如 restartJob/stopJob）一律拒绝"
+      ]
+    },
+    {
+      "name": "rtd-018-2",
+      "passed": true,
+      "details": "gates.py 增加按配置执行器名识别工具与两条规则：引擎侧 MCP 出现写动词一律拒绝；平台系 MCP 出现写动词且 30 分钟内无当次确认则拒绝。用例 test_engine_side_mcp_write_is_blocked 与 test_platform_mcp_write_needs_confirmation 通过。",
+      "criteria": [
+        "有用例覆盖：引擎侧写操作被拒、普通 MCP 查询放行"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-017",
+  "source_sha": "1ed1d51bb561dcbf53b4bb35a0f4c00ff1fcf853",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/core.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790000484332,
+  "checks": [
+    {
+      "name": "rtd-017-0",
+      "passed": true,
+      "details": "core.py 新增高风险 kind 白名单与判定函数；run_finish 对启停/发布/回刷类执行记录要求非空追踪 ID。用例 test_high_risk_run_requires_trace_id：lifecycle-start 无 trace 被拒、补 trace 通过，inspect 类不强制。",
+      "criteria": [
+        "启停/发布/回刷类 run 结束时 trace 必填，缺失即拒"
+      ]
+    },
+    {
+      "name": "rtd-017-1",
+      "passed": true,
+      "details": "core.py 新增高风险 kind 白名单与判定函数；run_finish 对启停/发布/回刷类执行记录要求非空追踪 ID。用例 test_high_risk_run_requires_trace_id：lifecycle-start 无 trace 被拒、补 trace 通过，inspect 类不强制。",
+      "criteria": [
+        "只读类 run（status/discover/inspect）不强制"
+      ]
+    },
+    {
+      "name": "rtd-017-2",
+      "passed": true,
+      "details": "core.py 新增高风险 kind 白名单与判定函数；run_finish 对启停/发布/回刷类执行记录要求非空追踪 ID。用例 test_high_risk_run_requires_trace_id：lifecycle-start 无 trace 被拒、补 trace 通过，inspect 类不强制。",
+      "criteria": [
+        "有用例覆盖两类"
+      ]
+    }
+  ]
+}

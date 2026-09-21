@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "work_item": "RTD-022",
+  "source_sha": "1ed1d51bb561dcbf53b4bb35a0f4c00ff1fcf853",
+  "command": "py -3 tools/build_codex_surface.py --check",
+  "scope": [
+    "commands/resume.md",
+    "skills/rtd-resume/SKILL.md"
+  ],
+  "verified_at": 1790000500114,
+  "checks": [
+    {
+      "name": "rtd-022-0",
+      "passed": true,
+      "details": "新增 commands/resume.md 并生成 rtd-resume 技能；生成器 --check 输出「生成物与命令源一致（13 个命令）」。",
+      "criteria": [
+        "新增 commands/resume.md 并生成 rtd-resume 技能"
+      ]
+    },
+    {
+      "name": "rtd-022-1",
+      "passed": true,
+      "details": "新增 commands/resume.md 并生成 rtd-resume 技能；生成器 --check 输出「生成物与命令源一致（13 个命令）」。",
+      "criteria": [
+        "生成物校验通过"
+      ]
+    }
+  ]
+}
