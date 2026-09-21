@@ -1,0 +1,42 @@
+{
+  "suite": "router",
+  "purpose": "同一意图的不同说法要进同一个 runbook；出站意图不能留在本插件里做",
+  "cases": [
+    {
+      "prompt": "帮我看看这条实时任务现在什么状态",
+      "expected_output": "按状态快查格式回报：对象 + 状态 + 观测时间 + 证据来源，一句话结束",
+      "expectations": [
+        "走 runbook-discovery，不升级为巡检或诊断",
+        "没有给出对象时先追问，不做全项目搜索",
+        "不出现「健康」结论"
+      ]
+    },
+    {
+      "prompt": "这条任务老是重启，帮我查查",
+      "expected_output": "进 runbook-diagnosis，先要异常窗口，再按最小诊断循环取证",
+      "expectations": [
+        "明确说明只覆盖当前运行作业，历史作业另算",
+        "不提出直接重启或改配置",
+        "结论分级，证据不足时标未决"
+      ]
+    },
+    {
+      "prompt": "帮我把这个离线表补一下数据",
+      "expected_output": "识别为离线域意图，转出并说明已转出",
+      "expectations": [
+        "指向 data-development-plugin 的入口",
+        "不在本插件内开离线回刷流程",
+        "告知用户已转出"
+      ]
+    },
+    {
+      "prompt": "把这个任务停掉，然后重新起一遍",
+      "expected_output": "进 runbook-lifecycle，先展示六要素并要当次确认",
+      "expectations": [
+        "确认不传递：停止与启动各自确认",
+        "不自动追加 --yes",
+        "不把「重启」当成一个不需要解释的动作"
+      ]
+    }
+  ]
+}

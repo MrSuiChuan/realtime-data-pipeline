@@ -1,0 +1,278 @@
+work_items:
+- id: RTD-000
+  title: 设计源优化与脱敏（Q0）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 先做对抗式优化（O1–O10），再机械脱敏。plan.md 为脱敏版，plan.raw.md 保留未脱敏原文与替换对照表且不进仓库。
+  acceptance:
+  - plan.md 含第零部分优化记录与第七部分（运行时/宿主/执行器三章）
+  - 28 个待清词在 plan.md 中命中数为 0
+  - 失效引用（§8.3/§8.4/§9.1）已改到实际章节号
+  next_action: 无（已完成）；后续设计变更同步更新 plan.md 与 §0 变更记录。
+  paths:
+  - plan.md
+  - plan.raw.md
+  evidence:
+  - path: docs/validation-report.md
+    summary: 脱敏与计划优化的核实记录
+
+- id: RTD-001
+  title: 仓库骨架、双宿主清单与 CI（Q1）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 双插件清单、README/CONTRIBUTING/SECURITY/LICENSE/CHANGELOG、CI（Windows+Linux）、脱敏词表、生成器与八项校验器。
+  acceptance:
+  - .claude-plugin 与 .codex-plugin 清单可解析且版本单源
+  - tools/build_codex_surface.py --check 通过
+  - tools/validate_plugin.py 八项通过
+  next_action: 无（已完成）；新增文件后重跑生成器与校验器。
+  paths:
+  - .claude-plugin/plugin.json
+  - .codex-plugin/plugin.json
+  - tools/
+  - .github/workflows/ci.yml
+
+- id: RTD-002
+  title: 规制层七件（Q2）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 安全宪法（9 门禁 + 引擎只读边界 + unknown 八条）、执行器仲裁、身份与时间、输出契约、反例库 40 条、执行器接入、能力矩阵。
+  acceptance:
+  - 工作流只引用规制层，不复制条款（校验第 4 项分层纯度通过）
+  - 引擎只读边界与门禁条款在宪法里各只有一份
+  next_action: 无（已完成）；规则变更只改 governance/。
+  paths:
+  - governance/
+
+- id: RTD-003
+  title: 工作流层（Q3）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 12 个命令入口 + 11 份工作流文档（定位/研发/迁移/元表/启停/巡检/诊断/调参/环境/版本矩阵/衔接总图），数字与命令名一律走配置。
+  acceptance:
+  - 与 plan.md §8.1–8.10 的步骤逐条对应
+  - skills/ 为生成物且 --check 通过
+  next_action: 无（已完成）；流程变更改 commands/ 后重跑生成器。
+  paths:
+  - commands/
+  - workflows/
+  - skills/
+
+- id: RTD-004
+  title: 执行器契约与配置层（Q4）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: 5 份执行器契约 + templates/config.example.json；真实命令名与服务名只在项目级 .rtd/config.json。
+  acceptance:
+  - 契约文档里没有业务叙事词（校验第 4 项）
+  - 占位符配置被判定为"未配置"（引擎用例 test_placeholder_config_is_not_ready）
+  next_action: 无（已完成）；真实字段名待联调回填（见 RTD-009）。
+  paths:
+  - executors/
+  - templates/config.example.json
+
+- id: RTD-005
+  title: 数据源层（Q5）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: 元表生命周期（六步 + 五条关键约束）+ 九类类型槽位（有意合并为一份，避免设计稿点名的 20 份重复维护缺陷）。
+  acceptance:
+  - 五条关键约束原样保留
+  - 与设计稿"生命周期 + 九份类型文件"的差异有显式说明与理由
+  next_action: 无（已完成）；字段契约回填见 RTD-010。
+  paths:
+  - datasources/
+
+- id: RTD-006
+  title: 知识层与出站路由（Q6）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: FAQ 排查参考、出站路由映射（落到本机真实可触发的插件名）、链接解析规则。
+  acceptance:
+  - 校验第 8 项通过：路由目标必须是本机已安装的技能包
+  next_action: 无（已完成）；新增出站目标时同步 routing-outbound.md。
+  paths:
+  - knowledge/
+
+- id: RTD-007
+  title: 引擎与 hook（Q7）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: engine/rtd.py + core.py（阶段状态机、门控键、证据账本、执行记录、跨会话对账、运行时自检）与 hooks（三条硬门 + SessionStart 提醒）。
+  acceptance:
+  - tests/test_engine.py 10 条通过
+  - tests/test_hooks.py 7 条通过
+  - hook 二进制实测：三例阻断 + 一例放行
+  - 端到端冒烟：setup → advance → evidence add → gate set → advance → verify 通过
+  next_action: 无（已完成）；新增门控键时同步 GATES 登记表与宪法对应表。
+  paths:
+  - engine/
+  - hooks/
+  - tests/
+  evidence:
+  - path: docs/validation-report.md
+    summary: 引擎/hook/端到端冒烟的核实记录
+
+- id: RTD-008
+  title: evals 与八项静态校验（Q8）
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: evals 五组（router/dev/ops/safety/contract）+ 八项校验器（含脱敏扫描与出站路由存在性）。
+  acceptance:
+  - 五组 evals 为合法 JSON 且有具体诱导性用例
+  - 校验器八项全绿
+  next_action: 无（已完成）；自动跑分器见 RTD-013。
+  paths:
+  - evals/
+  - tools/validate_plugin.py
+
+- id: RTD-009
+  title: 回填工具 schema 快照与真实字段契约
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: 拿到真实平台回执后，把 executors/contracts-*.md 的字段映射与 executors/schemas/ 的快照回填。
+  acceptance:
+  - 每份契约的字段映射不再有"待回填"占位
+  - schemas/ 至少覆盖运维域与引擎域的工具
+  - 回填动作记入 docs/validation-report.md（谁/何时/用什么方法）
+  next_action: 先完成 RTD-011 的联调，用真实回执回填；不得凭记忆填写。
+  depends_on:
+  - RTD-011
+  paths:
+  - executors/
+
+- id: RTD-010
+  title: 回填九类数据源的字段契约
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P2
+  required: true
+  summary: datasources/metatable-types.md 的九个类型槽位按真实平台字段契约补齐（必填/互斥/不可推导）。
+  acceptance:
+  - 每个已支持类型都有可核实的字段契约与核实时间
+  - 拿不到的类型保持"待回填"，不用推测内容填充
+  next_action: 联调时从平台界面或 CLI 帮助正文逐类核对。
+  depends_on:
+  - RTD-011
+  paths:
+  - datasources/metatable-types.md
+
+- id: RTD-011
+  title: 真实执行器联调
+  kind: delivery
+  status: ready
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 在能访问平台的环境里填 .rtd/config.json，跑 env check，再用一个小任务走完 discover → design → build → debug 的链路。
+  acceptance:
+  - env check 报出每个执行器的三态（配置存在/认证完成/当前会话可调用）
+  - 至少一条真实编译回执能通过 evidence add 与 gate set
+  - 失败与阻塞如实记录，不用"网络问题"这类转述替代错误原文
+  next_action: 准备一个可访问平台的机器与账号，填配置后跑 rtd-setup → rtd-env → rtd-dev。
+  paths:
+  - templates/config.example.json
+  - executors/
+
+- id: RTD-012
+  title: 巡检评分脚本与阈值校准
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P2
+  required: false
+  summary: 实现离线评分脚本（消费快照、不碰网络、输出新目录不覆盖历史），并用真实正常/故障窗口校准阈值。
+  acceptance:
+  - 缺证据时不扣满也不判正常，暂评分单独标注
+  - 阈值来源与校准窗口写进验证记录
+  next_action: 先定输入快照契约与输出报告契约，再写脚本。
+  paths:
+  - workflows/runbook-inspection.md
+
+- id: RTD-013
+  title: evals 自动跑分器
+  kind: delivery
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P2
+  required: false
+  summary: 实现 tools/run_evals.py：结构校验（CI 级）、导出人工/Agent 评分表、汇总得分并强制失败用例写理由。刻意不调用模型——语义判分留给人与 Agent，机器只保证用例完整、每条都被评过、失败必须留痕。
+  acceptance:
+  - --check 通过并已接入 CI（5 套 21 条用例）
+  - --export 生成含全部用例的评分表
+  - --score 对缺评分与"判失败却没写理由"两种情况报错
+  next_action: 已实现。后续若要接入模型自动判分，需先定义每条的机器判据（现在刻意留给人）。
+  depends_on:
+  - RTD-008
+  paths:
+  - evals/
+  - tools/run_evals.py
+  evidence:
+  - path: docs/validation-report.md
+    summary: 跑分器结构校验/导出/汇总的自测记录
+
+- id: RTD-014
+  title: 裁决 hooks 字段在 Codex 侧是否生效
+  kind: delivery
+  status: ready
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: plugin-creator 的校验器不接受 plugin.json 的 hooks 字段，但其 spec 文档列为合法；已装的同类插件在 ingest 后保留了该字段。需要实测 Codex 是否真的触发 hook。
+  acceptance:
+  - 装进 Codex 后，构造一次"直写 .rtd/_evidence/"的调用，观察是否被拦
+  - 结论写进 docs/validation-report.md 与 SECURITY.md（若无效则如实降级为提示词层）
+  next_action: 把插件装进 Codex 并触发一次门控，记录宿主原始输出。
+  paths:
+  - hooks/
+  - docs/validation-report.md
+
+- id: RTD-015
+  title: 定版与发布准备
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P2
+  required: true
+  summary: 版本号定版、marketplace 条目、CHANGELOG 收口、发布包排除项（plan.raw.md 与 .rtd/ 不得进包）。
+  acceptance:
+  - 打包产物里不含 plan.raw.md、.rtd/、任何真实平台名
+  - 版本单源校验通过
+  next_action: 等 RTD-011 与 RTD-014 有结论后再定版。
+  depends_on:
+  - RTD-011
+  - RTD-014
+  paths:
+  - README.md
+  - CHANGELOG.md

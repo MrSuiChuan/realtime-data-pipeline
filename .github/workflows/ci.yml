@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: 生成 Codex 入口技能（并校验生成物与提交一致）
+        shell: bash
+        run: python tools/build_codex_surface.py --check
+      - name: 静态校验（八项，含脱敏扫描）
+        shell: bash
+        run: python tools/validate_plugin.py .
+      - name: evals 结构校验
+        shell: bash
+        run: python tools/run_evals.py --check
+      - name: 单测
+        shell: bash
+        run: python -m pytest tests -q

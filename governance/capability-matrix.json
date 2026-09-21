@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "note": "执行器能力与已知缺口的外部化数据。真实命令名与服务名不在此处，写在项目级 .rtd/config.json。任何正文都不得内联命令行或版本号——要改能力认知，改本文件。",
+  "verified_on": null,
+  "verified_by": null,
+  "executors": {
+    "cli": {
+      "configured_name_ref": "executors.cli.cmd",
+      "probe_method": "读帮助正文并 grep 命令名与 flag；不比较版本字符串，也不以退出码判断命令是否存在",
+      "known_gaps": [],
+      "field_maps": []
+    },
+    "mcp_dev": {
+      "configured_name_ref": "executors.mcp_dev",
+      "schema_snapshot_dir": "executors/schemas/",
+      "notable_limits": [
+        "配置编辑类工具通常只能处理本执行器创建的对象"
+      ]
+    },
+    "mcp_ops": {
+      "configured_name_ref": "executors.mcp_ops",
+      "schema_snapshot_dir": "executors/schemas/",
+      "notable_limits": [
+        "批量查询有数量上限，超限需分批",
+        "首屏为空不代表对象不存在",
+        "带待发布版本时顶层字段表示当前运行版本"
+      ]
+    },
+    "mcp_asset": {
+      "configured_name_ref": "executors.mcp_asset",
+      "notable_limits": [
+        "资产索引对实时元表覆盖不完整：搜不到不等于不存在"
+      ]
+    },
+    "mcp_engine": {
+      "configured_name_ref": "executors.mcp_engine",
+      "read_only": true,
+      "notable_limits": [
+        "只读，永久；不得用于任何作业变更",
+        "火焰图采样需先定位目标并评估开销"
+      ]
+    }
+  },
+  "limits": {
+    "configured_ref": "limits",
+    "keys": [
+      "scan_budget_s",
+      "tool_calls",
+      "inflight",
+      "external_nodes",
+      "poll_interval_s",
+      "poll_timeout_s",
+      "read_chunk_lines"
+    ],
+    "note": "工作流只写“按配置 limits 执行”，不内联数字。默认值示例见 templates/config.example.json。"
+  },
+  "maintenance": "每次平台或 CLI 大版本演进后，由维护者重新核实本文件并记录谁、何时、用什么方法核实（写进 docs/validation-report.md）。集中化不消灭维护义务，只集中它。"
+}

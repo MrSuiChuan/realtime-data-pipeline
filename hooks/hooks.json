@@ -1,0 +1,27 @@
+{
+  "description": "Claude Code 侧 hook 配置（与 claude-codex-hooks.json 内容一致；启动器由 tools/adapt_hooks.py 适配平台）。",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/sessionstart.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

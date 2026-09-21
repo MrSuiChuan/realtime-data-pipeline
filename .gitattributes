@@ -1,0 +1,11 @@
+# 统一按 LF 检出，让"仓库里的字节"在各平台可预期。
+* text=auto eol=lf
+
+# 二进制资产不参与行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.ico binary
+*.zip binary

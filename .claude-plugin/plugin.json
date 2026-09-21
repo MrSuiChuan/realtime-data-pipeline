@@ -1,0 +1,19 @@
+{
+  "name": "realtime-data-plugin",
+  "version": "0.1.0",
+  "description": "实时数据开发流水线：把实时任务从需求到上线的工艺翻译成阶段状态机 + 硬门控（阶段出口只认机器证据），执行器（平台 CLI / 各域 MCP）与限额全部走项目级配置，包内不含任何平台专有名。",
+  "author": {
+    "name": "AI实战技能圈"
+  },
+  "license": "MIT",
+  "keywords": [
+    "realtime",
+    "streaming",
+    "data-development",
+    "pipeline",
+    "state-machine",
+    "gates"
+  ],
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json"
+}

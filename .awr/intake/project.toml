@@ -1,0 +1,37 @@
+[project]
+name = "realtime-data-plugin"
+authority_mode = "source_first"
+authorized_roots = []
+context_profile = "minimal"
+
+[[sources]]
+domain = "plan"
+role = "primary"
+path = "PLAN.md"
+adapter = "markdown-heading-v1"
+
+[sources.options]
+
+[[sources]]
+domain = "goal"
+role = "primary"
+path = ".awr/intake/GOALS.md"
+adapter = "markdown-heading-v1"
+
+[sources.options]
+
+[[sources]]
+domain = "ledger"
+role = "primary"
+path = ".awr/intake/work-ledger.yaml"
+adapter = "yaml-ledger-v1"
+
+[sources.options]
+
+[[sources]]
+domain = "plan"
+role = "supporting"
+path = "README.md"
+adapter = "markdown-heading-v1"
+
+[sources.options]

@@ -1,0 +1,37 @@
+{
+  "name": "realtime-data-plugin",
+  "version": "0.1.0+codex.20260921220000",
+  "description": "实时数据开发流水线：把实时任务从需求到上线的工艺翻译成阶段状态机 + 硬门控（阶段出口只认机器证据），执行器（平台 CLI / 各域 MCP）与限额全部走项目级配置，包内不含任何平台专有名。",
+  "author": {
+    "name": "AI实战技能圈"
+  },
+  "license": "MIT",
+  "keywords": [
+    "realtime",
+    "streaming",
+    "data-development",
+    "pipeline",
+    "state-machine",
+    "gates"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Realtime Data Pipeline",
+    "shortDescription": "实时数据开发流水线 + 阶段硬门控",
+    "longDescription": "把实时任务研发工艺翻成状态机加硬门控：引用元表是否已发布、编译是否真过、发布校验是否通过、启停是否有当次确认，全部以机器证据为准。执行器（平台 CLI、研发/运维/资产/引擎各域 MCP）与限额从项目级配置读取，仓库内只有占位示例，可直接对外分享。Claude Code 用斜杠命令，Codex 用 rtd-* 技能。",
+    "developerName": "AI实战技能圈",
+    "category": "Productivity",
+    "capabilities": [
+      "Instructions",
+      "Lifecycle hooks",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "初始化实时数开插件并接入我的平台",
+      "把这段实时 SQL 建任务、编译、调试、发布",
+      "巡检这个实时任务的上下游，出一份带证据的报告"
+    ],
+    "brandColor": "#0F766E"
+  },
+  "hooks": "./hooks/claude-codex-hooks.json"
+}

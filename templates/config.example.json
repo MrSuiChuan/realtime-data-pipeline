@@ -1,0 +1,27 @@
+{
+  "_README": "把本文件复制成项目里的 <项目>/.rtd/config.json 并填入真实值。该文件权限 0600，不进任何仓库；配置值不回显、不写进证据与报告。",
+  "executors": {
+    "cli": {
+      "cmd": "<平台 CLI 可执行名>",
+      "install_hint": "<安装方式>",
+      "workspace_flag": "<工作区参数>"
+    },
+    "mcp_dev": "<研发域 MCP 服务名>",
+    "mcp_ops": "<运维域 MCP 服务名>",
+    "mcp_asset": "<资产/项目 MCP 服务名>",
+    "mcp_engine": "<引擎只读 MCP 服务名>",
+    "storage": {
+      "log_cli": "<日志平台 CLI>",
+      "light_db_cli": "<轻量库 CLI>"
+    }
+  },
+  "limits": {
+    "scan_budget_s": 120,
+    "tool_calls": 60,
+    "inflight": 3,
+    "external_nodes": 30,
+    "poll_interval_s": 10,
+    "poll_timeout_s": 300,
+    "read_chunk_lines": 2000
+  }
+}
