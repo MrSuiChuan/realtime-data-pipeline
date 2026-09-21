@@ -208,17 +208,21 @@ work_items:
 - id: RTD-012
   title: 巡检评分脚本与阈值校准
   kind: delivery
-  status: planned
+  status: in_progress
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P2
   required: false
-  summary: 实现离线评分脚本（消费快照、不碰网络、输出新目录不覆盖历史），并用真实正常/故障窗口校准阈值。
+  summary: 落地 tools/score_inspection.py：吃快照出 report.md 与 score.json，不碰网络、不覆盖历史目录；覆盖不足时给"已观测风险暂评分"并夹住上限。阈值校准拆到 RTD-023（没有真实窗口数据无法校准）。
   acceptance:
   - 缺证据时不扣满也不判正常，暂评分单独标注
-  - 阈值来源与校准窗口写进验证记录
-  next_action: 先定输入快照契约与输出报告契约，再写脚本。
+  - 四类坏输入被拒：快照超限与重复键与版本不对、输出目录已存在、输出写在插件仓库内部
+  - 快照契约与评分口径写在脚本头部，工作流引用而不重述
+  next_action: 已实现并通过 6 条用例；阈值校准见 RTD-023。
   paths:
   - workflows/runbook-inspection.md
+  - tools/score_inspection.py
+  - tests/test_score_inspection.py
+  - tests/fixtures/inspection-snapshot.json
 
 - id: RTD-013
   title: evals 自动跑分器
@@ -404,3 +408,41 @@ work_items:
   - skills/
   "evidence": ["docs/reports/rtd-022-completion.json"]
   "verification": {"evidence_level":"locally_verified"}
+
+- id: RTD-023
+  title: 用真实窗口校准巡检评分阈值
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P2
+  required: false
+  summary: score_inspection 的扣分档与夹断上限是技术启发式，从未用真实正常/故障窗口校准；未校准前不能当 SLA 或健康模型使用。
+  acceptance:
+  - 各取一个真实正常窗口与一个真实故障窗口做对照，记录分数分布
+  - 校准结论写进 docs/validation-report.md（谁、何时、用什么数据）
+  - 校准后仍保留"非官方模型"声明
+  next_action: 等 RTD-011 联调拿到真实快照后开始。
+  depends_on:
+  - RTD-011
+  - RTD-012
+  paths:
+  - tools/score_inspection.py
+  - docs/validation-report.md
+
+- id: RTD-024
+  title: 文档与引擎接口对账
+  kind: fix
+  status: in_progress
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: commands/setup.md 教人跑 rtd.py setup --report，而引擎没有这个参数——照文档做会直接吃 argparse 报错；这类漂移原先没有任何检查。
+  acceptance:
+  - setup.md 改为用 env check 输出缺口，并注明历史写法错在哪
+  - 校验器第 4 项扩为"分层纯度 + 引擎调用一致性"，拦住不存在的子命令与参数
+  - 有用例：真实文档零问题、注入的坏文档被抓到
+  next_action: 已实现；等完成流程绑定报告。
+  paths:
+  - commands/setup.md
+  - tools/validate_plugin.py
+  - tests/test_repo_invariants.py

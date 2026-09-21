@@ -22,6 +22,8 @@
     "external_nodes": 30,
     "poll_interval_s": 10,
     "poll_timeout_s": 300,
-    "read_chunk_lines": 2000
+    "read_chunk_lines": 2000,
+    "confirm_window_minutes": 30,
+    "record_read_lines": 50
   }
 }

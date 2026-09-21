@@ -57,6 +57,7 @@
 | Q6 | 知识层 3 件 + 出站路由映射 | ✅ |
 | Q7 | 引擎 `engine/rtd.py` + hooks 硬门控 | ✅ |
 | Q8 | evals 五组 + 八项静态校验 | ✅（定版与真实平台联调待做） |
+| Q9 | 巡检评分脚本（离线出报告，不碰网络、不覆盖历史） | ✅（阈值待真实窗口校准） |
 
 本地自检（当前全绿）：
 
@@ -66,6 +67,7 @@ py -3 tools/adapt_hooks.py --check            # hook 启动器与平台一致
 py -3 tools/validate_plugin.py .             # 八项静态校验（含脱敏扫描）
 py -3 tests/test_engine.py                   # 引擎：门控/证据/阶段/续跑
 py -3 tests/test_hooks.py                    # hook：三条硬规则的正负例
+py -3 tests/test_score_inspection.py         # 巡检评分：出报告 + 拦住四类坏输入
 py -3 tests/test_repo_invariants.py          # 仓库不变量
 ```
 

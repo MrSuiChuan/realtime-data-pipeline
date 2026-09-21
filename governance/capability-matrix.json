@@ -50,7 +50,9 @@
       "external_nodes",
       "poll_interval_s",
       "poll_timeout_s",
-      "read_chunk_lines"
+      "read_chunk_lines",
+      "confirm_window_minutes",
+      "record_read_lines"
     ],
     "note": "工作流只写“按配置 limits 执行”，不内联数字。默认值示例见 templates/config.example.json。"
   },

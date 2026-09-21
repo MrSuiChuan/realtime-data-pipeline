@@ -83,15 +83,21 @@ REQUIRED_PATHS = [
     "tools/desensitize_terms.txt",
     "tools/adapt_hooks.py",
     "tools/build_codex_surface.py",
+    "tools/run_evals.py",
+    "tools/score_inspection.py",
+    "tests/fixtures/inspection-snapshot.json",
+    "tests/test_score_inspection.py",
 ]
 
 # 第 4 项：执行器契约里不许出现业务叙事词；工作流里不许内联命令串
 BUSINESS_WORDS = ["场景一", "场景二", "迁移参数确认", "SLA 决策"]
 # 引擎自己的调用（py -3 .rtd/engine/rtd.py …）不算"内联平台命令"——工作流本来就要调引擎。
+# 引擎调用（.rtd/engine/rtd.py）与包内工具（tools/*.py）不算"内联平台命令"：
+# 工作流本来就要调这两类；禁的是把平台自己的命令串抄进工作流。
 COMMAND_PATTERNS = [
     r"`[a-z][a-z0-9_-]*\s+(install|start|stop|deploy|submit|publish)\b",
-    r"\bpy -3\s+(?!\.rtd/engine/rtd\.py)",
-    r"\bpython3\s+(?!\.rtd/engine/rtd\.py)",
+    r"\bpy -3\s+(?!\.rtd/engine/rtd\.py|tools/)",
+    r"\bpython3\s+(?!\.rtd/engine/rtd\.py|tools/)",
 ]
 
 SKILL_ROOTS = [
@@ -188,6 +194,13 @@ def check_capability_matrix() -> list[str]:
 
 
 def check_layer_purity() -> list[str]:
+    """第 4 项：分层纯度 + 引擎调用一致性。
+
+    * executors/ 只写契约，不写业务叙事；
+    * workflows/ 不内联平台命令串（引擎调用除外）；
+    * commands/ 与 workflows/ 里出现的 `.rtd/engine/rtd.py <子命令> --flag` 必须真实存在——
+      文档写了引擎不认的参数，跟着做的人会直接吃报错（踩过一次）。
+    """
     errors: list[str] = []
     for path in (ROOT / "executors").glob("*.md") if (ROOT / "executors").is_dir() else []:
         text = read_text(path)
@@ -200,7 +213,75 @@ def check_layer_purity() -> list[str]:
             hit = re.search(pattern, text)
             if hit:
                 errors.append(f"{rel(path)} 内联了命令串「{hit.group(0)}」（应引用 executors/）")
+    errors.extend(check_engine_invocations())
     return errors
+
+
+def check_engine_invocations(extra_folder: Path | None = None) -> list[str]:
+    """文档里的引擎调用必须能被引擎自己的解析器接受。
+
+    `extra_folder` 供测试注入一个临时目录，便于验证"写了引擎不认的参数会被抓"。
+    """
+    errors: list[str] = []
+    parser = _engine_parser()
+    if parser is None:
+        return errors
+    known_subcommands = _subcommands(parser)
+    pattern = re.compile(r"rtd\.py\s+([a-z-]+)((?:\s+--?[A-Za-z0-9_-]+)*)")
+    bases = [ROOT / "commands", ROOT / "workflows"]
+    if extra_folder is not None:
+        bases.append(extra_folder)
+    for base in bases:
+        for path in sorted(base.glob("*.md")) if base.is_dir() else []:
+            for subcommand, flags in pattern.findall(read_text(path)):
+                if subcommand not in known_subcommands:
+                    errors.append(f"{rel(path)} 调用不存在的子命令：rtd.py {subcommand}")
+                    continue
+                allowed = _option_strings(parser, subcommand)
+                for flag in flags.split():
+                    if flag.startswith("--") and flag not in allowed:
+                        errors.append(f"{rel(path)} 用了引擎不认的参数：rtd.py {subcommand} {flag}")
+    return errors
+
+
+def _engine_parser():
+    engine_dir = ROOT / "engine"
+    if not (engine_dir / "rtd.py").is_file():
+        return None
+    sys.path.insert(0, str(engine_dir))
+    try:
+        import rtd  # type: ignore
+
+        return rtd.build_parser()
+    except Exception:
+        return None
+
+
+def _subcommands(parser) -> set[str]:
+    names: set[str] = set()
+    for action in parser._actions:
+        if hasattr(action, "choices") and isinstance(action.choices, dict):
+            names.update(str(key) for key in action.choices)
+    return names
+
+
+def _option_strings(parser, subcommand: str) -> set[str]:
+    """递归收集该子命令（含其嵌套子命令）能接受的 option 字符串。"""
+    allowed = set()
+    for action in parser._actions:
+        if not (hasattr(action, "choices") and isinstance(action.choices, dict)):
+            continue
+        subparser = action.choices.get(subcommand)
+        if subparser is None:
+            continue
+        stack = [subparser]
+        while stack:
+            current = stack.pop()
+            for act in current._actions:
+                allowed.update(act.option_strings)
+                if hasattr(act, "choices") and isinstance(act.choices, dict):
+                    stack.extend(act.choices.values())
+    return allowed
 
 
 def check_version_single_source() -> list[str]:

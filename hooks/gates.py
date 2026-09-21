@@ -18,7 +18,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
-CONFIRM_WINDOW_MINUTES = 30
+# 缺省值；真正的取值从项目配置 .rtd/config.json 的 limits 读（RTD-021）
+DEFAULT_CONFIRM_WINDOW_MINUTES = 30
+DEFAULT_RECORD_READ_LINES = 50
 
 EVIDENCE_MARKERS = (".rtd/_evidence", ".rtd\\_evidence", "/_state.json", "\\_state.json", ".rtd/_state")
 
@@ -196,8 +198,8 @@ def _recent_confirm(root: Path, now: Optional[datetime]) -> bool:
     if not records.is_file():
         return False
     now = now or datetime.now().astimezone()
-    window = timedelta(minutes=CONFIRM_WINDOW_MINUTES)
-    for line in _tail(records, 50):
+    window = timedelta(minutes=_limit_int(root, "confirm_window_minutes", DEFAULT_CONFIRM_WINDOW_MINUTES))
+    for line in _tail(records, _limit_int(root, "record_read_lines", DEFAULT_RECORD_READ_LINES)):
         try:
             item = json.loads(line)
         except json.JSONDecodeError:
@@ -208,6 +210,16 @@ def _recent_confirm(root: Path, now: Optional[datetime]) -> bool:
         if stamp and now - stamp <= window:
             return True
     return False
+
+
+def _limit_int(root: Path, key: str, default: int) -> int:
+    """数字类阈值一律走配置；缺省回落内置值（RTD-021）。"""
+    limits = _load_config(root).get("limits")
+    if isinstance(limits, dict):
+        value = limits.get(key)
+        if isinstance(value, int) and value > 0:
+            return value
+    return default
 
 
 def _parse(value: Any) -> Optional[datetime]:

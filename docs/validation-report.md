@@ -70,6 +70,15 @@
 | 跑分器自测 | `tests/test_evals_runner.py`（5 条） | 通过：结构问题能抓到；`--score` 对缺评分与"判失败没写理由"报错 |
 | 评分表导出 | `--export` | 通过：每条用例都有独立小节与判定点清单 |
 
+**第二轮修复后的补充（同日更晚）**
+
+| 项 | 方法 | 结果 |
+| --- | --- | --- |
+| 巡检评分脚本 | `tests/test_score_inspection.py`（6 条） | 通过：能出 report.md + score.json；输出目录已存在、写在插件仓库内、快照有重复键、快照版本不对，四类都被拒 |
+| 评分口径 | 读 `tools/score_inspection.py` 头部契约与 `score_of` | 覆盖不足时分数被夹到 74 上限并标"已观测风险暂评分"；信号缺失记 unknown 不扣分不判正常 |
+| 文档与引擎对账 | `validate_plugin` 第 4 项 + `tests/test_repo_invariants.py::test_engine_invocations_in_docs_match_the_engine` | 通过：修正 `commands/setup.md` 里不存在的 `setup --report`；新增检查会拦住"文档写了引擎不认的子命令/参数" |
+| 阈值校准 | —— | **未做**：脚本里的分档是待校准的技术启发式，需真实正常/故障窗口才能定（见台账 RTD-023） |
+
 **能力边界（写在引擎里，也写在这里）**
 
 引擎能验证证据的**存在、哈希、必填字段、时间与类型匹配**；它**不能**证明那份原始输出真的来自平台。伪造 `tool`/`command`/`observed_at` 是人要负责的边界，不是引擎能兜住的。

@@ -81,6 +81,46 @@ def test_stale_confirmation_does_not_count():
     assert decision is not None and decision.gate == "high_risk"
 
 
+def test_confirm_window_and_read_lines_come_from_config():
+    """RTD-021：窗口与读取行数必须能从 .rtd/config.json 覆盖，不再硬编码。"""
+    root = _project()
+    stamp = (datetime.now().astimezone() - timedelta(minutes=5)).isoformat(timespec="seconds")
+    (root / ".rtd" / "_records" / "gates.jsonl").write_text(
+        json.dumps({"at": stamp, "source": "user_confirm", "gate": "start_confirmed"}) + "\n",
+        encoding="utf-8",
+    )
+    # 默认 30 分钟窗口：5 分钟前的确认有效
+    assert gates.decide("bash", "myplatformcli deploy --start", "", "", root) is None
+
+    # 窗口收到 1 分钟：同一条确认立刻失效
+    (root / ".rtd" / "config.json").write_text(
+        json.dumps({"executors": {"cli": {"cmd": "myplatformcli"}}, "limits": {"confirm_window_minutes": 1}}),
+        encoding="utf-8",
+    )
+    decision = gates.decide("bash", "myplatformcli deploy --start", "", "", root)
+    assert decision is not None and decision.gate == "high_risk"
+
+
+def test_record_read_lines_limits_how_far_back_confirmations_are_seen():
+    root = _project()
+    now_stamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    lines = [json.dumps({"at": now_stamp, "source": "user_confirm", "gate": "start_confirmed"})]
+    lines += [json.dumps({"at": now_stamp, "source": "platform_readback"}) for _ in range(10)]
+    (root / ".rtd" / "_records" / "gates.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # 只看最后 5 行时，那条确认读不到
+    (root / ".rtd" / "config.json").write_text(
+        json.dumps({"executors": {"cli": {"cmd": "myplatformcli"}}, "limits": {"record_read_lines": 5}}),
+        encoding="utf-8",
+    )
+    assert gates.decide("bash", "myplatformcli deploy --start", "", "", root) is not None
+    # 放开读取行数就恢复
+    (root / ".rtd" / "config.json").write_text(
+        json.dumps({"executors": {"cli": {"cmd": "myplatformcli"}}, "limits": {"record_read_lines": 50}}),
+        encoding="utf-8",
+    )
+    assert gates.decide("bash", "myplatformcli deploy --start", "", "", root) is None
+
+
 def test_gated_tool_names():
     assert gates.gated("apply_patch") is True
     assert gates.gated("exec_command") is True

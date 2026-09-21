@@ -14,6 +14,7 @@
 - 引擎 `engine/rtd.py`：阶段状态机、门控键、证据账本、执行记录、跨会话对账、运行时自检；
 - hooks：PreToolUse 三条硬门（证据保护 / `--yes` 自行追加 / 高风险动词）+ SessionStart 阶段提醒；
 - evals 五组（router / dev / ops / safety / contract）；
+- 巡检评分脚本 `tools/score_inspection.py`：吃快照出报告（只出报告、不碰网络、不覆盖历史目录），覆盖不足时给"已观测风险暂评分"并夹住上限；
 - 八项静态校验 `tools/validate_plugin.py`（含脱敏扫描与出站路由存在性）与生成器 `tools/build_codex_surface.py`；
 - 仓库规范与 CI（Windows + Linux、Python 3.11/3.12）；
 - 脱敏词表 `tools/desensitize_terms.txt` 与 CI 的脱敏扫描；

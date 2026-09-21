@@ -53,6 +53,27 @@ def test_config_example_is_tracked_outside_runtime_dir():
     assert ".rtd/" in ignored
 
 
+def test_engine_invocations_in_docs_match_the_engine():
+    """文档里写的引擎调用必须真实存在——写错过一次（setup --report）。"""
+    import tempfile
+    from pathlib import Path as _Path
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    import validate_plugin
+
+    assert validate_plugin.check_engine_invocations() == []
+
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = _Path(tmp)
+        (folder / "bad.md").write_text(
+            "```\npy -3 .rtd/engine/rtd.py setup --report\npy -3 .rtd/engine/rtd.py frobnicate --x\n```\n",
+            encoding="utf-8",
+        )
+        problems = validate_plugin.check_engine_invocations(extra_folder=folder)
+    assert any("--report" in p for p in problems), problems
+    assert any("frobnicate" in p for p in problems), problems
+
+
 def test_validator_flags_missing_config_guards(tmp_path=None):
     """RTD-019：校验器必须自己发现"gitignore 漏挡"和"CI 漏跑校验"。"""
     import tempfile

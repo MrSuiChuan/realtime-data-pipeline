@@ -48,10 +48,12 @@ py -3 .rtd/engine/rtd.py env check --json
 ## 第四步：输出缺口清单
 
 ```
-py -3 .rtd/engine/rtd.py setup --report
+py -3 .rtd/engine/rtd.py env check          # 缺口清单就是它的输出（含 limits 缺项提示）
 ```
 
 格式固定：每个缺口写**缺什么、影响哪个阶段、下一步怎么补**。三项都齐了就打印 `READY`，可以进 `/rtd-dev`。
+
+> 注意：引擎没有 `setup --report` 这种写法（早期文档里写错过，已被校验器第 4 项拦住）。缺口一律看 `env check`。
 
 ## 收尾要说的话
 

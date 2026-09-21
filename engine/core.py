@@ -128,6 +128,8 @@ DEFAULT_LIMITS = {
     "poll_interval_s": 10,
     "poll_timeout_s": 300,
     "read_chunk_lines": 2000,
+    "confirm_window_minutes": 30,
+    "record_read_lines": 50,
 }
 
 # 证据类型登记表：payload 必填字段 + 通过条件。
