@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-012",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tests/test_score_inspection.py",
+  "scope": [
+    "tools/score_inspection.py",
+    "tests/test_score_inspection.py",
+    "tests/fixtures/inspection-snapshot.json",
+    "workflows/runbook-inspection.md"
+  ],
+  "verified_at": 1790001321710,
+  "checks": [
+    {
+      "name": "rtd-012-ed521ac-0",
+      "passed": true,
+      "details": "离线评分脚本：吃 snapshot_version=1 快照出 report.md 与 score.json；不碰网络、输出目录必须新建、不得写在插件仓库内部；硬拒超 8MiB 快照、重复键、非 v1 快照、已存在输出目录；覆盖不足时夹住上限并标暂评分。6 条用例覆盖正路径与四类坏输入。",
+      "criteria": [
+        "缺证据时不扣满也不判正常，暂评分单独标注"
+      ]
+    },
+    {
+      "name": "rtd-012-ed521ac-1",
+      "passed": true,
+      "details": "离线评分脚本：吃 snapshot_version=1 快照出 report.md 与 score.json；不碰网络、输出目录必须新建、不得写在插件仓库内部；硬拒超 8MiB 快照、重复键、非 v1 快照、已存在输出目录；覆盖不足时夹住上限并标暂评分。6 条用例覆盖正路径与四类坏输入。",
+      "criteria": [
+        "四类坏输入被拒：快照超限与重复键与版本不对、输出目录已存在、输出写在插件仓库内部"
+      ]
+    },
+    {
+      "name": "rtd-012-ed521ac-2",
+      "passed": true,
+      "details": "离线评分脚本：吃 snapshot_version=1 快照出 report.md 与 score.json；不碰网络、输出目录必须新建、不得写在插件仓库内部；硬拒超 8MiB 快照、重复键、非 v1 快照、已存在输出目录；覆盖不足时夹住上限并标暂评分。6 条用例覆盖正路径与四类坏输入。",
+      "criteria": [
+        "快照契约与评分口径写在脚本头部，工作流引用而不重述"
+      ]
+    }
+  ]
+}

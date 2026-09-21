@@ -79,6 +79,15 @@
 | 文档与引擎对账 | `validate_plugin` 第 4 项 + `tests/test_repo_invariants.py::test_engine_invocations_in_docs_match_the_engine` | 通过：修正 `commands/setup.md` 里不存在的 `setup --report`；新增检查会拦住"文档写了引擎不认的子命令/参数" |
 | 阈值校准 | —— | **未做**：脚本里的分档是待校准的技术启发式，需真实正常/故障窗口才能定（见台账 RTD-023） |
 
+**第二轮收尾（RTD-025/026/027）**
+
+| 项 | 方法 | 结果 |
+| --- | --- | --- |
+| 证据绑对象身份 | `tests/test_engine.py::test_evidence_expires_when_object_identity_changes` | 通过：换成另一个文件级 ID（版本相同）后，旧编译回执设门被拒 |
+| 非顺序推进要理由 | `tests/test_engine.py::test_non_sequential_advance_requires_reason` | 通过：跳阶段与回跳在空理由时被拒，有理由时放行并落记录 |
+| 运行时记插件版本 | `tests/test_engine.py::test_setup_records_plugin_version` | 通过：`_state.json` 的 engine 段含哈希与插件版本 |
+| 台账完成度 | `awr intake inspect --source-sha <提交>` | `source_completed 18 / verified_completed 18`，无 completion_unverified |
+
 **能力边界（写在引擎里，也写在这里）**
 
 引擎能验证证据的**存在、哈希、必填字段、时间与类型匹配**；它**不能**证明那份原始输出真的来自平台。伪造 `tool`/`command`/`observed_at` 是人要负责的边界，不是引擎能兜住的。

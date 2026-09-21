@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "work_item": "RTD-005",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "datasources/"
+  ],
+  "verified_at": 1790001269655,
+  "checks": [
+    {
+      "name": "rtd-005-ed521ac-0",
+      "passed": true,
+      "details": "元表生命周期与九类类型槽位在位；五条关键约束保留；与设计稿的「合成一份」差异在文件里写明理由。",
+      "criteria": [
+        "五条关键约束原样保留"
+      ]
+    },
+    {
+      "name": "rtd-005-ed521ac-1",
+      "passed": true,
+      "details": "元表生命周期与九类类型槽位在位；五条关键约束保留；与设计稿的「合成一份」差异在文件里写明理由。",
+      "criteria": [
+        "与设计稿\"生命周期 + 九份类型文件\"的差异有显式说明与理由"
+      ]
+    }
+  ]
+}

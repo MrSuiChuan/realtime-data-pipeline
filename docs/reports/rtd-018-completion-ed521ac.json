@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-018",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tests/test_hooks.py",
+  "scope": [
+    "hooks/gates.py",
+    "hooks/pretooluse.py",
+    "tests/test_hooks.py"
+  ],
+  "verified_at": 1790001348219,
+  "checks": [
+    {
+      "name": "rtd-018-ed521ac-0",
+      "passed": true,
+      "details": "hook 按配置执行器名识别工具（MCP 工具名不含 rtd/realtime）；引擎侧 MCP 出现写动词一律拒绝；平台系 MCP 写动词需近期当次确认。",
+      "criteria": [
+        "工具名命中配置里的 mcp_* 时进入门控"
+      ]
+    },
+    {
+      "name": "rtd-018-ed521ac-1",
+      "passed": true,
+      "details": "hook 按配置执行器名识别工具（MCP 工具名不含 rtd/realtime）；引擎侧 MCP 出现写动词一律拒绝；平台系 MCP 写动词需近期当次确认。",
+      "criteria": [
+        "引擎侧 MCP 出现启停类动词（如 restartJob/stopJob）一律拒绝"
+      ]
+    },
+    {
+      "name": "rtd-018-ed521ac-2",
+      "passed": true,
+      "details": "hook 按配置执行器名识别工具（MCP 工具名不含 rtd/realtime）；引擎侧 MCP 出现写动词一律拒绝；平台系 MCP 写动词需近期当次确认。",
+      "criteria": [
+        "有用例覆盖：引擎侧写操作被拒、普通 MCP 查询放行"
+      ]
+    }
+  ]
+}

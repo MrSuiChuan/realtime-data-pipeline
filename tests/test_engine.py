@@ -310,6 +310,71 @@ def test_high_risk_run_requires_trace_id():
     assert code == 0, out
 
 
+def test_evidence_expires_when_object_identity_changes():
+    """RTD-025：换了对象（文件级 ID 变了）旧证据同样作废，不能只看版本号。"""
+    project = _project()
+    _run("setup", "--project", str(project))
+    _run("object", "set", "--project", str(project), "--file-id", "F-1", "--version", "v1")
+    raw = _evidence_file(project, {"status": "SUCCESS", "observed_at": "2026-09-21T23:00:00+08:00"}, "c-f1.json")
+    code, out = _run(
+        "evidence", "add", "--project", str(project),
+        "--kind", "compile_receipt", "--from", str(raw), "--tool", "cli", "--command", "compile --json", "--json",
+    )
+    assert code == 0, out
+    evidence_id = json.loads(out)["id"]
+    assert json.loads(out)["object_file_id"] == "F-1"
+
+    # 换成另一个对象：版本一样，但证据必须失效
+    _run("object", "set", "--project", str(project), "--file-id", "F-2", "--version", "v1")
+    code, out = _run("gate", "set", "--project", str(project), "--name", "compile_ok", "--evidence", evidence_id)
+    assert code == 2, out
+    assert "过期" in out
+
+
+def test_non_sequential_advance_requires_reason():
+    """RTD-026：回跳/跳阶段必须写理由，空理由等于没留痕。"""
+    project = _project()
+    _run("setup", "--project", str(project))
+    runtime = core.Runtime(project)
+
+    # 跳阶段（discover → publish）：允许但要理由
+    state = runtime.load_state()
+    try:
+        runtime.advance(state, "publish", "", allow_back=True)
+    except core.RtError as err:
+        assert err.code == "phase_reason", err.code
+    else:
+        raise AssertionError("空理由的跳阶段应当被拒")
+
+    move = runtime.advance(state, "publish", "手工补录历史阶段：本地调试环境重建", allow_back=True)
+    assert move == {"from": "discover", "to": "publish"}
+
+    # 回跳（publish → build）：同样要理由
+    runtime.save_state(state)
+    state = runtime.load_state()
+    try:
+        runtime.advance(state, "build", "", allow_back=True)
+    except core.RtError as err:
+        assert err.code == "phase_reason", err.code
+    else:
+        raise AssertionError("空理由的回跳应当被拒")
+
+    # 回跳是"重做更早的阶段"，不该拿那个阶段的出口门来卡自己：有理由即放行
+    code, out = _run("advance", "--project", str(project), "--phase", "build", "--allow-back",
+                     "--reason", "回跳补编译证据")
+    assert code == 0, out
+    assert core.Runtime(project).load_state()["phase"] == "build"
+
+
+def test_setup_records_plugin_version():
+    """RTD-027：运行时里要能看出这份状态是哪版插件产生的。"""
+    project = _project()
+    _run("setup", "--project", str(project))
+    state = core.Runtime(project).load_state()
+    assert state["engine"]["hash"]
+    assert state["engine"]["plugin_version"]
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

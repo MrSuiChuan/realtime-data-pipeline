@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-024",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "commands/setup.md",
+    "skills/rtd-setup/SKILL.md",
+    "tools/validate_plugin.py",
+    "tests/test_repo_invariants.py"
+  ],
+  "verified_at": 1790001098103,
+  "checks": [
+    {
+      "name": "rtd-024-0",
+      "passed": true,
+      "details": "修正 commands/setup.md 里不存在的 setup --report（照文档做会吃 argparse 报错）；校验器第 4 项扩为「分层纯度 + 引擎调用一致性」，对 commands/ 与 workflows/ 里的引擎调用核对子命令与参数是否真实存在。用例 test_engine_invocations_in_docs_match_the_engine：真实文档零问题，注入 setup --report 与假子命令的文档被抓到。",
+      "criteria": [
+        "setup.md 改为用 env check 输出缺口，并注明历史写法错在哪"
+      ]
+    },
+    {
+      "name": "rtd-024-1",
+      "passed": true,
+      "details": "修正 commands/setup.md 里不存在的 setup --report（照文档做会吃 argparse 报错）；校验器第 4 项扩为「分层纯度 + 引擎调用一致性」，对 commands/ 与 workflows/ 里的引擎调用核对子命令与参数是否真实存在。用例 test_engine_invocations_in_docs_match_the_engine：真实文档零问题，注入 setup --report 与假子命令的文档被抓到。",
+      "criteria": [
+        "校验器第 4 项扩为\"分层纯度 + 引擎调用一致性\"，拦住不存在的子命令与参数"
+      ]
+    },
+    {
+      "name": "rtd-024-2",
+      "passed": true,
+      "details": "修正 commands/setup.md 里不存在的 setup --report（照文档做会吃 argparse 报错）；校验器第 4 项扩为「分层纯度 + 引擎调用一致性」，对 commands/ 与 workflows/ 里的引擎调用核对子命令与参数是否真实存在。用例 test_engine_invocations_in_docs_match_the_engine：真实文档零问题，注入 setup --report 与假子命令的文档被抓到。",
+      "criteria": [
+        "有用例：真实文档零问题、注入的坏文档被抓到"
+      ]
+    }
+  ]
+}

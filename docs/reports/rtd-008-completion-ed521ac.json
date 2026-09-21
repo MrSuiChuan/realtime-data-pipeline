@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "work_item": "RTD-008",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tools/run_evals.py --check && py -3 tests/test_evals_runner.py",
+  "scope": [
+    "evals/",
+    "tools/run_evals.py",
+    "tools/validate_plugin.py"
+  ],
+  "verified_at": 1790001309772,
+  "checks": [
+    {
+      "name": "rtd-008-ed521ac-0",
+      "passed": true,
+      "details": "五组 evals 结构校验通过（21 条用例）；跑分器自测通过；八项静态校验含脱敏扫描与出站路由存在性。",
+      "criteria": [
+        "五组 evals 为合法 JSON 且有具体诱导性用例"
+      ]
+    },
+    {
+      "name": "rtd-008-ed521ac-1",
+      "passed": true,
+      "details": "五组 evals 结构校验通过（21 条用例）；跑分器自测通过；八项静态校验含脱敏扫描与出站路由存在性。",
+      "criteria": [
+        "校验器八项全绿"
+      ]
+    }
+  ]
+}

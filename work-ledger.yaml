@@ -11,13 +11,13 @@ work_items:
   - plan.md 含第零部分优化记录与第七部分（运行时/宿主/执行器三章）
   - 28 个待清词在 plan.md 中命中数为 0
   - 失效引用（§8.3/§8.4/§9.1）已改到实际章节号
-  next_action: 无（已完成）；后续设计变更同步更新 plan.md 与 §0 变更记录。
+  next_action: 提交 work complete
   paths:
   - plan.md
   - plan.raw.md
-  evidence:
-  - path: docs/validation-report.md
-    summary: 脱敏与计划优化的核实记录
+  evidence: [{"path":"docs/validation-report.md","summary":"脱敏与计划优化的核实记录"},"docs/reports/rtd-000-completion-ed521ac.json"]
+  "blocker": null
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-001
   title: 仓库骨架、双宿主清单与 CI（Q1）
@@ -31,12 +31,15 @@ work_items:
   - .claude-plugin 与 .codex-plugin 清单可解析且版本单源
   - tools/build_codex_surface.py --check 通过
   - tools/validate_plugin.py 八项通过
-  next_action: 无（已完成）；新增文件后重跑生成器与校验器。
+  next_action: 提交 work complete
   paths:
   - .claude-plugin/plugin.json
   - .codex-plugin/plugin.json
   - tools/
   - .github/workflows/ci.yml
+  "blocker": null
+  "evidence": ["docs/reports/rtd-001-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-002
   title: 规制层七件（Q2）
@@ -49,9 +52,12 @@ work_items:
   acceptance:
   - 工作流只引用规制层，不复制条款（校验第 4 项分层纯度通过）
   - 引擎只读边界与门禁条款在宪法里各只有一份
-  next_action: 无（已完成）；规则变更只改 governance/。
+  next_action: 提交 work complete
   paths:
   - governance/
+  "blocker": null
+  "evidence": ["docs/reports/rtd-002-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-003
   title: 工作流层（Q3）
@@ -64,11 +70,14 @@ work_items:
   acceptance:
   - 与 plan.md §8.1–8.10 的步骤逐条对应
   - skills/ 为生成物且 --check 通过
-  next_action: 无（已完成）；流程变更改 commands/ 后重跑生成器。
+  next_action: 提交 work complete
   paths:
   - commands/
   - workflows/
   - skills/
+  "blocker": null
+  "evidence": ["docs/reports/rtd-003-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-004
   title: 执行器契约与配置层（Q4）
@@ -81,10 +90,13 @@ work_items:
   acceptance:
   - 契约文档里没有业务叙事词（校验第 4 项）
   - 占位符配置被判定为"未配置"（引擎用例 test_placeholder_config_is_not_ready）
-  next_action: 无（已完成）；真实字段名待联调回填（见 RTD-009）。
+  next_action: 提交 work complete
   paths:
   - executors/
   - templates/config.example.json
+  "blocker": null
+  "evidence": ["docs/reports/rtd-004-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-005
   title: 数据源层（Q5）
@@ -97,9 +109,12 @@ work_items:
   acceptance:
   - 五条关键约束原样保留
   - 与设计稿"生命周期 + 九份类型文件"的差异有显式说明与理由
-  next_action: 无（已完成）；字段契约回填见 RTD-010。
+  next_action: 提交 work complete
   paths:
   - datasources/
+  "blocker": null
+  "evidence": ["docs/reports/rtd-005-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-006
   title: 知识层与出站路由（Q6）
@@ -111,9 +126,12 @@ work_items:
   summary: FAQ 排查参考、出站路由映射（落到本机真实可触发的插件名）、链接解析规则。
   acceptance:
   - 校验第 8 项通过：路由目标必须是本机已安装的技能包
-  next_action: 无（已完成）；新增出站目标时同步 routing-outbound.md。
+  next_action: 提交 work complete
   paths:
   - knowledge/
+  "blocker": null
+  "evidence": ["docs/reports/rtd-006-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-007
   title: 引擎与 hook（Q7）
@@ -128,14 +146,14 @@ work_items:
   - tests/test_hooks.py 7 条通过
   - hook 二进制实测：三例阻断 + 一例放行
   - 端到端冒烟：setup → advance → evidence add → gate set → advance → verify 通过
-  next_action: 无（已完成）；新增门控键时同步 GATES 登记表与宪法对应表。
+  next_action: 提交 work complete
   paths:
   - engine/
   - hooks/
   - tests/
-  evidence:
-  - path: docs/validation-report.md
-    summary: 引擎/hook/端到端冒烟的核实记录
+  evidence: [{"path":"docs/validation-report.md","summary":"引擎/hook/端到端冒烟的核实记录"},"docs/reports/rtd-007-completion-ed521ac.json"]
+  "blocker": null
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-008
   title: evals 与八项静态校验（Q8）
@@ -148,10 +166,13 @@ work_items:
   acceptance:
   - 五组 evals 为合法 JSON 且有具体诱导性用例
   - 校验器八项全绿
-  next_action: 无（已完成）；自动跑分器见 RTD-013。
+  next_action: 提交 work complete
   paths:
   - evals/
   - tools/validate_plugin.py
+  "blocker": null
+  "evidence": ["docs/reports/rtd-008-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-009
   title: 回填工具 schema 快照与真实字段契约
@@ -208,7 +229,7 @@ work_items:
 - id: RTD-012
   title: 巡检评分脚本与阈值校准
   kind: delivery
-  status: in_progress
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P2
   required: false
@@ -217,12 +238,15 @@ work_items:
   - 缺证据时不扣满也不判正常，暂评分单独标注
   - 四类坏输入被拒：快照超限与重复键与版本不对、输出目录已存在、输出写在插件仓库内部
   - 快照契约与评分口径写在脚本头部，工作流引用而不重述
-  next_action: 已实现并通过 6 条用例；阈值校准见 RTD-023。
+  next_action: 提交 work complete
   paths:
   - workflows/runbook-inspection.md
   - tools/score_inspection.py
   - tests/test_score_inspection.py
   - tests/fixtures/inspection-snapshot.json
+  "evidence": ["docs/reports/rtd-012-completion.json","docs/reports/rtd-012-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
+  "blocker": null
 
 - id: RTD-013
   title: evals 自动跑分器
@@ -242,7 +266,7 @@ work_items:
   paths:
   - evals/
   - tools/run_evals.py
-  evidence: [{"path":"docs/validation-report.md","summary":"跑分器结构校验/导出/汇总的自测记录"},"docs/reports/rtd-013-completion.json"]
+  evidence: [{"path":"docs/validation-report.md","summary":"跑分器结构校验/导出/汇总的自测记录"},"docs/reports/rtd-013-completion.json","docs/reports/rtd-013-completion-ed521ac.json"]
   "blocker": null
   "verification": {"evidence_level":"locally_verified"}
 
@@ -299,8 +323,9 @@ work_items:
   paths:
   - engine/core.py
   - tests/test_engine.py
-  "evidence": ["docs/reports/rtd-016-completion.json"]
+  "evidence": ["docs/reports/rtd-016-completion.json","docs/reports/rtd-016-completion-ed521ac.json"]
   "verification": {"evidence_level":"locally_verified"}
+  "blocker": null
 
 - id: RTD-017
   title: 高风险执行记录必须留追踪 ID
@@ -318,8 +343,9 @@ work_items:
   paths:
   - engine/core.py
   - tests/test_engine.py
-  "evidence": ["docs/reports/rtd-017-completion.json"]
+  "evidence": ["docs/reports/rtd-017-completion.json","docs/reports/rtd-017-completion-ed521ac.json"]
   "verification": {"evidence_level":"locally_verified"}
+  "blocker": null
 
 - id: RTD-018
   title: hook 门控覆盖 MCP 工具与引擎只读边界
@@ -337,8 +363,9 @@ work_items:
   paths:
   - hooks/gates.py
   - tests/test_hooks.py
-  "evidence": ["docs/reports/rtd-018-completion.json"]
+  "evidence": ["docs/reports/rtd-018-completion.json","docs/reports/rtd-018-completion-ed521ac.json"]
   "verification": {"evidence_level":"locally_verified"}
+  "blocker": null
 
 - id: RTD-019
   title: 校验器补两项机器防护
@@ -356,8 +383,9 @@ work_items:
   paths:
   - tools/validate_plugin.py
   - tests/test_evals_runner.py
-  "evidence": ["docs/reports/rtd-019-completion.json"]
+  "evidence": ["docs/reports/rtd-019-completion.json","docs/reports/rtd-019-completion-ed521ac.json"]
   "verification": {"evidence_level":"locally_verified"}
+  "blocker": null
 
 - id: RTD-020
   title: Claude 侧清单字段与 hook 生效需实测
@@ -379,7 +407,7 @@ work_items:
 - id: RTD-021
   title: hook 确认窗口与读取行数走配置
   kind: fix
-  status: planned
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P2
   required: false
@@ -387,9 +415,12 @@ work_items:
   acceptance:
   - 窗口与行数从 .rtd/config.json 的 limits 读，缺省回落内置值
   - 有用例覆盖自定义窗口
-  next_action: 与 RTD-018 一起改，避免两次动同一个文件。
+  next_action: 提交 work complete
   paths:
   - hooks/gates.py
+  "evidence": ["docs/reports/rtd-021-completion.json","docs/reports/rtd-021-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
+  "blocker": null
 
 - id: RTD-022
   title: 补 resume 技能入口
@@ -406,8 +437,9 @@ work_items:
   paths:
   - commands/resume.md
   - skills/
-  "evidence": ["docs/reports/rtd-022-completion.json"]
+  "evidence": ["docs/reports/rtd-022-completion.json","docs/reports/rtd-022-completion-ed521ac.json"]
   "verification": {"evidence_level":"locally_verified"}
+  "blocker": null
 
 - id: RTD-023
   title: 用真实窗口校准巡检评分阈值
@@ -432,7 +464,7 @@ work_items:
 - id: RTD-024
   title: 文档与引擎接口对账
   kind: fix
-  status: in_progress
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -441,8 +473,61 @@ work_items:
   - setup.md 改为用 env check 输出缺口，并注明历史写法错在哪
   - 校验器第 4 项扩为"分层纯度 + 引擎调用一致性"，拦住不存在的子命令与参数
   - 有用例：真实文档零问题、注入的坏文档被抓到
-  next_action: 已实现；等完成流程绑定报告。
+  next_action: 提交 work complete
   paths:
   - commands/setup.md
   - tools/validate_plugin.py
   - tests/test_repo_invariants.py
+
+- id: RTD-025
+  title: 证据要绑对象身份，不只版本
+  kind: fix
+  status: in_progress
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: RTD-016 只比版本号：换成另一个对象但版本相同的场景下，旧证据会被当成有效，等于把 A 的编译回执拿去给 B 开门。
+  acceptance:
+  - 登记证据时同时记录对象文件级 ID 与版本
+  - 换对象或换版本，旧证据设门都被拒并说明过期
+  - 两条用例分别覆盖换版本与换对象
+  next_action: 已实现；等完成流程绑定报告。
+  paths:
+  - engine/core.py
+  - tests/test_engine.py
+
+- id: RTD-026
+  title: 回跳与跳阶段必须写理由
+  kind: fix
+  status: in_progress
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: advance 允许带 --allow-back 回跳或跨阶段，但不要求理由；空理由等于没有留痕，事后没人知道为什么绕过阶段顺序。
+  acceptance:
+  - 非顺序推进且理由为空时拒绝
+  - 有理由时放行并落进 phases 记录
+  - 用例覆盖跳阶段与回跳两侧
+  next_action: 已实现；等完成流程绑定报告。
+  paths:
+  - engine/core.py
+  - tests/test_engine.py
+
+- id: RTD-027
+  title: 运行时记录插件版本
+  kind: fix
+  status: in_progress
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P2
+  required: false
+  summary: 运行时只记引擎哈希，不记插件版本；排查"这份状态是哪版插件写出来的"时缺一环。
+  acceptance:
+  - setup 时把插件清单里的版本写进运行时
+  - 有用例断言版本非空
+  next_action: 已实现；等完成流程绑定报告。
+  paths:
+  - engine/rtd.py
+  - tests/test_engine.py
+  "evidence": ["docs/reports/rtd-024-completion.json","docs/reports/rtd-024-completion-ed521ac.json"]
+  "verification": {"evidence_level":"locally_verified"}
+  "blocker": null

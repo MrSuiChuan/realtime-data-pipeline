@@ -68,6 +68,21 @@ def install_engine(runtime: core.Runtime) -> str:
     return digest.hexdigest()[:16]
 
 
+def plugin_version() -> str:
+    """插件清单版本；写进运行时，方便回头看"这份状态是哪版引擎/技能产生的"（RTD-027）。"""
+    for rel in (".codex-plugin/plugin.json", ".claude-plugin/plugin.json"):
+        path = Path(__file__).resolve().parent.parent / rel
+        if not path.is_file():
+            continue
+        try:
+            version = str(json.loads(path.read_text(encoding="utf-8")).get("version") or "").strip()
+        except (OSError, json.JSONDecodeError):
+            continue
+        if version:
+            return version
+    return ""
+
+
 # ------------------------------------------------------------------ 子命令
 
 
@@ -79,7 +94,11 @@ def cmd_setup(args) -> int:
     result = runtime.setup(template)
 
     state = runtime.load_state()
-    state["engine"] = {"hash": engine_hash, "installed_at": core.now_iso()}
+    state["engine"] = {
+        "hash": engine_hash,
+        "plugin_version": plugin_version(),
+        "installed_at": core.now_iso(),
+    }
     runtime.save_state(state)
 
     report = core.env_status(runtime)

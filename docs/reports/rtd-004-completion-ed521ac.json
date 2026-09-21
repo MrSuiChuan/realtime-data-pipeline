@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "work_item": "RTD-004",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tools/validate_plugin.py . && py -3 tests/test_engine.py",
+  "scope": [
+    "executors/",
+    "templates/config.example.json"
+  ],
+  "verified_at": 1790001263719,
+  "checks": [
+    {
+      "name": "rtd-004-ed521ac-0",
+      "passed": true,
+      "details": "五份执行器契约与配置模板齐备；占位符配置被引擎判为未配置（用例 test_placeholder_config_is_not_ready）；limits 键与能力矩阵登记一致。",
+      "criteria": [
+        "契约文档里没有业务叙事词（校验第 4 项）"
+      ]
+    },
+    {
+      "name": "rtd-004-ed521ac-1",
+      "passed": true,
+      "details": "五份执行器契约与配置模板齐备；占位符配置被引擎判为未配置（用例 test_placeholder_config_is_not_ready）；limits 键与能力矩阵登记一致。",
+      "criteria": [
+        "占位符配置被判定为\"未配置\"（引擎用例 test_placeholder_config_is_not_ready）"
+      ]
+    }
+  ]
+}

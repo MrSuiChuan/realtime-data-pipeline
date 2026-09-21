@@ -392,12 +392,14 @@ class Runtime:
         stored = self.evidence_dir / f"{evidence_id}.json"
         stored.write_bytes(data)
 
-        # 记录注册时的对象版本：对象换版本后，这条证据要能被判为过期（RTD-016）。
-        # 没有运行时或没登记对象版本时留空——空值不参与过期判断，不误伤。
+        # 记录注册时的对象身份（文件级 ID + 版本）：换对象或换版本后，这条证据要能被判为过期
+        # （RTD-016 只比版本，RTD-025 补上对象身份）。空值不参与比较，不误伤。
         try:
-            object_version = str(self.load_state().get("object", {}).get("version") or "")
+            current_object = self.load_state().get("object", {})
         except RtError:
-            object_version = ""
+            current_object = {}
+        object_version = str(current_object.get("version") or "")
+        object_file_id = str(current_object.get("file_id") or "")
 
         item = {
             "id": evidence_id,
@@ -409,6 +411,7 @@ class Runtime:
             "command": command,
             "observed_at": payload.get("observed_at"),
             "object_version": object_version or None,
+            "object_file_id": object_file_id or None,
             "added_at": now_iso(),
             "validation": {"ok": ok, "reason": reason},
         }
@@ -521,12 +524,20 @@ class Runtime:
         if target not in PHASES:
             raise RtError("phase_unknown", f"未知阶段：{target}", "可用：" + ", ".join(PHASES))
         index_current, index_target = PHASES.index(current), PHASES.index(target)
+        reason = (reason or "").strip()
         if index_target < index_current and not allow_back:
             raise RtError("phase_back", f"{current} → {target} 是回跳，需要 --allow-back 与理由")
         if index_target == index_current:
             raise RtError("phase_same", f"已经在 {current}")
         if index_target > index_current + 1 and not allow_back:
             raise RtError("phase_skip", f"{current} → {target} 跨了中间阶段；逐阶段推进或在 --allow-back 下说明理由")
+        # 回跳与跳阶段都是非常规动作：必须写清为什么（RTD-026）。空理由等于没留痕。
+        if (index_target < index_current or index_target > index_current + 1) and not reason:
+            raise RtError(
+                "phase_reason",
+                f"{current} → {target} 是非顺序推进，必须给出理由（--reason）",
+                "写清触发原因与后续动作；这条理由会落进 phases 记录",
+            )
         if index_target > index_current:
             gaps = self.phase_gaps(state, current)
             if gaps:
@@ -645,12 +656,19 @@ class Runtime:
         return problems
 
     def _evidence_stale(self, state: Dict[str, Any], gate: str, item: Dict[str, Any]) -> bool:
-        """对象版本变了以后，旧证据一律作废（只做能确定的那部分判断）。"""
-        object_version = str(state.get("object", {}).get("version") or "")
-        if not object_version:
-            return False
-        recorded = str(item.get("object_version") or "")
-        return bool(recorded) and recorded != object_version
+        """换对象或换版本以后，旧证据一律作废（只做能确定的那部分判断）。"""
+        current = state.get("object", {}) if isinstance(state.get("object"), dict) else {}
+
+        recorded_file_id = str(item.get("object_file_id") or "")
+        current_file_id = str(current.get("file_id") or "")
+        if recorded_file_id and current_file_id and recorded_file_id != current_file_id:
+            return True
+
+        recorded_version = str(item.get("object_version") or "")
+        current_version = str(current.get("version") or "")
+        if recorded_version and current_version and recorded_version != current_version:
+            return True
+        return False
 
 
 def _validate_payload(kind: str, payload: Dict[str, Any], rule: Dict[str, Any]) -> Tuple[bool, str]:

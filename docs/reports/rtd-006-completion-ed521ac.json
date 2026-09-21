@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "work_item": "RTD-006",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "knowledge/"
+  ],
+  "verified_at": 1790001275375,
+  "checks": [
+    {
+      "name": "rtd-006-ed521ac-0",
+      "passed": true,
+      "details": "知识层三件齐备；第 8 项确认出站路由指向的技能包在本机真实存在。",
+      "criteria": [
+        "校验第 8 项通过：路由目标必须是本机已安装的技能包"
+      ]
+    }
+  ]
+}

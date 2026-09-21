@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-000",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "plan.md",
+    "plan.raw.md"
+  ],
+  "verified_at": 1790001222580,
+  "checks": [
+    {
+      "name": "rtd-000-ed521ac-0",
+      "passed": true,
+      "details": "脱敏版 plan.md 在位、未脱敏原稿 plan.raw.md 存在且被 gitignore 挡住；29 个待清词在 plan.md 中零命中（由第 7 项脱敏扫描覆盖）。",
+      "criteria": [
+        "plan.md 含第零部分优化记录与第七部分（运行时/宿主/执行器三章）"
+      ]
+    },
+    {
+      "name": "rtd-000-ed521ac-1",
+      "passed": true,
+      "details": "脱敏版 plan.md 在位、未脱敏原稿 plan.raw.md 存在且被 gitignore 挡住；29 个待清词在 plan.md 中零命中（由第 7 项脱敏扫描覆盖）。",
+      "criteria": [
+        "28 个待清词在 plan.md 中命中数为 0"
+      ]
+    },
+    {
+      "name": "rtd-000-ed521ac-2",
+      "passed": true,
+      "details": "脱敏版 plan.md 在位、未脱敏原稿 plan.raw.md 存在且被 gitignore 挡住；29 个待清词在 plan.md 中零命中（由第 7 项脱敏扫描覆盖）。",
+      "criteria": [
+        "失效引用（§8.3/§8.4/§9.1）已改到实际章节号"
+      ]
+    }
+  ]
+}

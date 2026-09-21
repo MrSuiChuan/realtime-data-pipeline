@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-013",
+  "source_sha": "ed521ac2b936c1892e42a547858b7ecc7bb7856d",
+  "command": "py -3 tools/run_evals.py --check && py -3 tests/test_evals_runner.py",
+  "scope": [
+    "tools/run_evals.py",
+    "tests/test_evals_runner.py",
+    "evals/",
+    ".github/workflows/ci.yml"
+  ],
+  "verified_at": 1790001328209,
+  "checks": [
+    {
+      "name": "rtd-013-ed521ac-0",
+      "passed": true,
+      "details": "evals 跑分器：结构校验 5 套 21 条、导出评分表、汇总得分并强制失败用例写理由；已接入 CI。语义判分仍刻意留给人。",
+      "criteria": [
+        "--check 通过并已接入 CI（5 套 21 条用例）"
+      ]
+    },
+    {
+      "name": "rtd-013-ed521ac-1",
+      "passed": true,
+      "details": "evals 跑分器：结构校验 5 套 21 条、导出评分表、汇总得分并强制失败用例写理由；已接入 CI。语义判分仍刻意留给人。",
+      "criteria": [
+        "--export 生成含全部用例的评分表"
+      ]
+    },
+    {
+      "name": "rtd-013-ed521ac-2",
+      "passed": true,
+      "details": "evals 跑分器：结构校验 5 套 21 条、导出评分表、汇总得分并强制失败用例写理由；已接入 CI。语义判分仍刻意留给人。",
+      "criteria": [
+        "--score 对缺评分与\"判失败却没写理由\"两种情况报错"
+      ]
+    }
+  ]
+}
