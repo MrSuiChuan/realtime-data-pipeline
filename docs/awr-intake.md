@@ -50,3 +50,34 @@ gaps: completion_unverified ×10, dependency_not_completed ×4
   验证方式：用新参数起一次 `awr-mcp.exe --project <本仓库>` 并调用 `awr_project_status`，返回 `project=realtime-data-plugin / state=ready / ready_count=3 / work_total=16`。
   多项目需要另一种配置：`awr-mcp --registry <注册表>` 起 HTTP 端点，单项目 stdio 一次只能服务一个仓库。
 - AWR 不执行任何命令，也不证明内容真伪：它检查的是**声明、引用与绑定**是否自洽。
+
+## 仓库与证据绑定（2026-09-21 晚）
+
+| 项 | 值 |
+| --- | --- |
+| remote | `ssh://git@ssh.github.com:443/MrSuiChuan/realtime-data-plugin.git` |
+| 首次提交 | `51f48bbaad35beb0c08281ca34377a7d49388f65`（main，已推送，远端与本地一致） |
+| 入场文件 | 93 个；`plan.raw.md`、`.rtd/`、`.awr/state.db*`、`.awr/intake/inventory.json`、`.tmp/` 全部排除（`git check-ignore` 逐项验过） |
+| 证据 | `evidence/rtd-013-evals-runner-verified`：level=`locally_verified`，source_sha=首次提交，scope=跑分器那 4 个路径 |
+| 完成校验 | 仍 `verified_completed=0`（见下） |
+
+## 卡点：手写 `completed` 会把自己锁死
+
+实测走了一遍 AWR 的完成校验，卡在三处，**都是真实限制，不是配置没填**：
+
+1. 我把 RTD-013 的 `status` 直接写成 `completed` → 之后 `awr session start --work RTD-013 --claim` 报
+   `DependencyBlocked: source status is completed`：**已完成的工作不能再被认领去验证**。
+2. `awr work reopen` 需要"绑定到该工作项"的会话，而不带 `--work` 的会话被拒：
+   `work action session must be bound to the exact target work`。
+3. 用绑定会话重开，提案生成了（`work.reopen`，已 approved），但 `proposal apply` 明确拒绝：
+   `runtime-owned files cannot be source mutation targets` —— **账本放在 `.awr/intake/` 下，AWR 不许写自己运行时目录里的文件**。
+
+**结论**：账本留在 `.awr/` 里，AWR 就只能读不能改；状态只能手写，而手写的 `completed` 永远拿不到 `verified_completed`（那 10 条 `completion_unverified` 就是这么来的）。
+
+**修法（下一步，改动小但要动源映射）**：
+
+1. 把账本与目标文件移出运行时目录，例如 `work-ledger.yaml`（仓库根）与 `GOALS.md`（仓库根或 `docs/`）；
+2. `awr source configure` 替换源映射，再 `awr source reindex`；
+3. 之后所有状态流转（progress / block / complete）都走 AWR 通道，`verified_completed` 才会动。
+
+**另一条纪律**：新工作项**不要手写 `completed`**。留 `ready`/`in_progress`，用 `awr work complete` 绑定验收报告后再置完成——否则同样锁死。
