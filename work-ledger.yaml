@@ -535,6 +535,23 @@ work_items:
   paths:
   - engine/rtd.py
   - tests/test_engine.py
+
+- id: RTD-028
+  title: 报告归档与验证锚点策略
+  kind: improvement
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: false
+  summary: 实测发现的固有成本：AWR 的完成校验按提交 SHA 计，所以每次提交都会让所有已完成项重新变成未验证；当前靠人工重跑一轮绑定，报告按短 SHA 累积在 docs/reports/，已是 40+ 文件且每轮 +21。
+  acceptance:
+  - 明确锚点策略：要么把校验锚定在最近的代码提交并在 README 写明"台账提交之后需重绑"，要么在 CI 里自动重绑
+  - 报告目录有保留策略（按轮次归档或只保留最近 N 轮），不无限增长
+  - 文档写清成本与操作步骤，不靠口口相传
+  next_action: 先定策略（自动重绑 vs 锚点说明），再决定报告目录结构。
+  paths:
+  - docs/reports/
+  - docs/awr-intake.md
   "evidence": ["docs/reports/rtd-024-completion.json","docs/reports/rtd-024-completion-ed521ac.json","docs/reports/rtd-027-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null

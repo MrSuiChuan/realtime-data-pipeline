@@ -120,3 +120,26 @@ awr intake inspect --project . --source-sha <commit> --json
 ```
 
 当前（`1ed1d51`）：`completed 15 / verified_completed 5 / planned 6 / ready 2`；缺口 `completion_unverified 10 + dependency_not_completed 5`。
+
+## 2026-09-22 凌晨：第二轮修复收口与验证锚点
+
+第二轮修复（RTD-016 ～ RTD-028）后，台账 28 项，其中 **21 项已完成并在 `ac3ac06` 上全部通过 SHA 校验**：
+
+```
+awr intake inspect --project . --source-sha ac3ac06 --json
+→ completed 21 / verified_completed 21 / completion_unverified 0
+```
+
+### 一个必须知道的固有成本：验证是"按提交"的
+
+AWR 的完成校验绑定具体提交。含义有三条：
+
+1. **跑绑定的那一轮之后，任何新提交都会让已完成项重新变成未验证**——不是回退，是"这一版还没验过"；
+2. 报告因此按提交短 SHA 命名（`docs/reports/rtd-016-completion-<sha>.json`），历史报告不覆盖；代价是每轮 +21 个文件，已经 40+；
+3. 查询时**必须显式带 SHA**，不带就只看得到状态声明而不是验证结论：
+
+```bash
+awr intake inspect --project . --source-sha <代码提交> --json
+```
+
+当前锚点约定：**校验锚定在代码提交**（`ac3ac06`）；其后的台账/报告提交（`7f07a5c`）只做记录，不重复绑定。这条约定与"报告目录要不要收缩"一起记在 RTD-028 里，等策略定了再动结构。
