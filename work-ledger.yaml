@@ -552,6 +552,140 @@ work_items:
   paths:
   - docs/reports/
   - docs/awr-intake.md
+
+# ── 2026-09-22 新目标：面向开源实时栈（Flink / Paimon / Fluss）────────────────
+
+- id: RTD-029
+  title: 支持开源实时栈作为一等执行器与数据源
+  kind: delivery
+  status: ready
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 插件现在只认"平台 CLI + 平台各域 MCP"这一套执行器，无法面向 Flink / Paimon / Fluss 这类开源组件开发。需要在执行器层与数据源层同时打开这条路，且保持包内零专有名。
+  acceptance:
+  - 执行器契约新增开源栈条目（Flink SQL Client / Flink CLI / Paimon catalog / Fluss 连接器），命令名与路径仍走项目级配置
+  - 能力矩阵登记开源组件版本与已知缺口，正文不内联版本号
+  - 工作流不出现开源组件的专有命令串（仍然只引用 executors/）
+  - 校验器八项与全部用例通过
+  next_action: 先落契约与能力矩阵条目，再用 WSL 实测回填。
+  paths:
+  - executors/
+  - governance/capability-matrix.json
+  - templates/config.example.json
+
+- id: RTD-030
+  title: WSL 本地安装 Flink 并跑通 SQL 作业
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 在本地 WSL（Debian 13，OpenJDK 21）装一份 Flink 集群，作为插件"开源执行器"的真实验证环境。没有真跑通的作业，插件对开源栈的支持就只是文档。
+  acceptance:
+  - Flink standalone 起来，JobManager 与 TaskManager 都活（Web UI 端口可访问）
+  - SQL Client 跑通一个批作业并拿到结果
+  - 跑通一个流作业（持续写入 + 查询），并把原始输出留成证据
+  - 安装方式、版本、端口、启停命令写进 docs/oss-lab.md
+  next_action: 下载 Flink 发行包，解压到 ~/oss/flink，启动 standalone 集群。
+  depends_on:
+  - RTD-029
+  paths:
+  - docs/oss-lab.md
+
+- id: RTD-031
+  title: WSL 本地安装 Paimon 并跑通流式入湖
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 装 Paimon 连接器，在 Flink SQL 里建 Paimon catalog、建表、流式写入并查回，验证"流式入湖"这条主链路。
+  acceptance:
+  - Paimon catalog 在 Flink SQL 里可创建并列出
+  - 建一张主键表，流式写入后有数据（SELECT 可查）
+  - 快照/文件落在 warehouse 目录，路径与版本记录在 docs/oss-lab.md
+  next_action: 取与 Flink 版本匹配的 Paimon 连接器 jar 放进 Flink lib，再跑 catalog DDL。
+  depends_on:
+  - RTD-030
+  paths:
+  - docs/oss-lab.md
+
+- id: RTD-032
+  title: WSL 本地安装 Fluss 并跑通 Flink 连接
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: 装 Fluss 本地集群与 Flink 连接器，验证"流存储"这条链路。Fluss 版本与 Flink 版本要匹配，若无同类可用版本则如实记录不可用原因。
+  acceptance:
+  - Fluss 本地集群可启动，客户端能建库建表
+  - Flink SQL 通过 Fluss 连接器写入并读回
+  - 版本矩阵与不可用原因（若有）写进 docs/oss-lab.md
+  next_action: 确认 Fluss 发行版与 Flink 兼容矩阵，再决定是否与 RTD-030 用同一个 Flink。
+  depends_on:
+  - RTD-030
+  paths:
+  - docs/oss-lab.md
+
+- id: RTD-033
+  title: 用开源栈跑通插件端到端链路
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: 用本地 Flink/Paimon 当执行器，走一遍插件自己的链路：setup → object set → 引用表回读证据 → 门控 → 阶段推进 → 执行记录，全部落真证据。这是"插件能面向开源栈工作"的唯一硬证明。
+  acceptance:
+  - rtd setup 生成的运行时能被本地执行器填满（config 指向 flink sql client 等）
+  - refs_readback 证据来自真实的 catalog 查询输出（不是手写 JSON）
+  - compile_ok 或等价门控用真实作业提交/查询结果作为证据
+  - 全过程命令与输出写进 docs/oss-lab.md，可照做复现
+  next_action: RTD-030/031 跑通后再做，届时把真实命令填进配置。
+  depends_on:
+  - RTD-030
+  - RTD-031
+  paths:
+  - docs/oss-lab.md
+
+- id: RTD-034
+  title: 执行器契约与能力矩阵补开源条目
+  kind: delivery
+  status: planned
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P1
+  required: true
+  summary: 把实测到的开源组件命令形态、版本、端口、已知坑写进 executors/ 与能力矩阵，让"面向开源栈开发"不只存在于一次会话里。
+  acceptance:
+  - 新增开源执行器契约（Flink/Paimon/Fluss），只写契约不写专有命令串
+  - 能力矩阵登记版本与已验证日期，正文仍不内联版本号
+  - 校验器第 3 项（能力矩阵引用一致性）通过
+  next_action: 等 RTD-030/031/032 有实测结论后回填。
+  depends_on:
+  - RTD-030
+  - RTD-031
+  - RTD-032
+  paths:
+  - executors/
+  - governance/capability-matrix.json
+
+- id: RTD-035
+  title: CI 修红并防回归
+  kind: fix
+  status: completed
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: CI 从推上去就没绿过。根因有两层：workflow 没有任何依赖安装步骤（pytest 必缺）；tools/validate_plugin.py 用 sys.argv[1] 当根目录，被 pytest 导入时 ROOT 指到测试文件上，检查静默失效；另有导入期 sys.stdout.reconfigure 在捕获流下崩。
+  acceptance:
+  - workflow 安装测试依赖，且把 hook 启动器检查纳入
+  - 校验器按脚本位置推导根目录；解析器加载失败时显式报错而非静默通过
+  - 本地按 workflow 顺序复跑五个步骤全绿（43 个用例）
+  next_action: 已推送 dd05eae；等 GitHub Actions 跑一轮确认。
+  paths:
+  - .github/workflows/ci.yml
+  - tools/validate_plugin.py
   "evidence": ["docs/reports/rtd-024-completion.json","docs/reports/rtd-024-completion-ed521ac.json","docs/reports/rtd-027-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
