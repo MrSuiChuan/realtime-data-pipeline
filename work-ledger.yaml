@@ -273,15 +273,16 @@ work_items:
 - id: RTD-014
   title: 裁决 hooks 字段在 Codex 侧是否生效
   kind: delivery
-  status: ready
+  status: in_progress
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
-  summary: plugin-creator 的校验器不接受 plugin.json 的 hooks 字段，但其 spec 文档列为合法；已装的同类插件在 ingest 后保留了该字段。需要实测 Codex 是否真的触发 hook。
+  summary: 已实测到关键结论——Claude Code 侧确认生效（组件清单列出 Hooks(2)，直写证据目录被真拦住且文件未创建）；Codex 侧清单字段被接受但 hook 未执行（--dangerously-bypass-hook-trust 下 hook 进程一次都没被调用，trace 无文件），需要应用内批准 hook 信任。细节见 docs/host-hooks.md。
   acceptance:
-  - 装进 Codex 后，构造一次"直写 .rtd/_evidence/"的调用，观察是否被拦
-  - 结论写进 docs/validation-report.md 与 SECURITY.md（若无效则如实降级为提示词层）
-  next_action: 把插件装进 Codex 并触发一次门控，记录宿主原始输出。
+  - Claude Code 侧实测（已完成：拦住 + 文件未创建 + 组件清单可见 hooks）
+  - Codex 侧在应用内批准 hook 信任后重跑实验，确认是否被拦（待批准）
+  - 结论写进 docs/validation-report.md 与 SECURITY.md（已按宿主如实区分）
+  next_action: 在 Codex 应用里批准本插件 hook 信任，然后重跑 docs/host-hooks.md 里的实验。
   paths:
   - hooks/
   - docs/validation-report.md

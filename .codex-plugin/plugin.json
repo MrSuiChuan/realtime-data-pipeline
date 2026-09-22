@@ -33,5 +33,5 @@
     ],
     "brandColor": "#0F766E"
   },
-  "hooks": "./hooks/claude-codex-hooks.json"
+  "hooks": "./hooks/codex-hooks.json"
 }

@@ -1,0 +1,16 @@
+{
+  "name": "realtime-data-plugin",
+  "description": "实时数据开发流水线插件：阶段状态机 + 硬门控（证据与当次确认两类门控，不可互替）。",
+  "owner": {
+    "name": "MrSuiChuan",
+    "url": "https://github.com/MrSuiChuan"
+  },
+  "plugins": [
+    {
+      "name": "realtime-data-plugin",
+      "description": "实时数据开发流水线：阶段状态机 + 硬门控，执行器与限额走项目级配置，包内不含任何平台专有名。",
+      "category": "productivity",
+      "source": "."
+    }
+  ]
+}

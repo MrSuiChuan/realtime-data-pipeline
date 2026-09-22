@@ -62,7 +62,7 @@ REQUIRED_PATHS = [
     "hooks/pretooluse.py",
     "hooks/sessionstart.py",
     "hooks/hooks.json",
-    "hooks/claude-codex-hooks.json",
+    "hooks/codex-hooks.json",
     "governance/safety-constitution.md",
     "governance/executor-arbitration.md",
     "governance/identity-and-time.md",
@@ -113,6 +113,7 @@ REQUIRED_PATHS = [
     "tests/fixtures/inspection-snapshot.json",
     "tests/test_score_inspection.py",
     "docs/reports/README.md",
+    "docs/host-hooks.md",
 ]
 
 # 第 4 项：执行器契约里不许出现业务叙事词；工作流里不许内联命令串

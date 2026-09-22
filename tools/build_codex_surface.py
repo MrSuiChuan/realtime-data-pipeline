@@ -119,9 +119,11 @@ def build_codex_manifest() -> str:
         "skills": "./skills/",
         "interface": INTERFACE,
     }
-    hooks = ROOT / "hooks" / "claude-codex-hooks.json"
+    # Codex 的事件键是短横线小写（pre-tool-use / session-start），与 Claude 的 PascalCase 不同；
+    # 各自一个文件，这里指向 Codex 那份（RTD-014 实测得出）。
+    hooks = ROOT / "hooks" / "codex-hooks.json"
     if hooks.is_file():
-        manifest["hooks"] = "./hooks/claude-codex-hooks.json"
+        manifest["hooks"] = "./hooks/codex-hooks.json"
     return json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
 
 

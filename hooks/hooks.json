@@ -1,5 +1,5 @@
 {
-  "description": "Claude Code 侧 hook 配置（与 claude-codex-hooks.json 内容一致；启动器由 tools/adapt_hooks.py 适配平台）。",
+  "description": "Claude Code 侧 hook 配置（Claude 按约定自动发现本文件；Codex 用 hooks/codex-hooks.json，事件键为短横线小写）。启动器由 tools/adapt_hooks.py 适配平台。",
   "hooks": {
     "PreToolUse": [
       {

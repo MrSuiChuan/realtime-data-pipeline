@@ -37,7 +37,7 @@ _configure_stdio()
 
 
 ROOT = Path(__file__).resolve().parent.parent
-HOOK_FILES = (ROOT / "hooks" / "hooks.json", ROOT / "hooks" / "claude-codex-hooks.json")
+HOOK_FILES = (ROOT / "hooks" / "hooks.json", ROOT / "hooks" / "codex-hooks.json")
 LAUNCHERS = ("py -3", "python3")
 
 

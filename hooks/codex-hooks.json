@@ -1,0 +1,24 @@
+{
+  "PreToolUse": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse.py\"",
+          "timeout": 60
+        }
+      ]
+    }
+  ],
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/sessionstart.py\"",
+          "timeout": 30
+        }
+      ]
+    }
+  ]
+}
