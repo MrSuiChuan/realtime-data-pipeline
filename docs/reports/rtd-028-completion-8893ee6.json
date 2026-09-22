@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "work_item": "RTD-028",
+  "source_sha": "8893ee6301639c33a8959a1f595bc2b20b1e0799",
+  "command": "py -3 tools/awr_reports.py && py -3 tools/validate_plugin.py .",
+  "scope": [
+    "docs/reports/README.md",
+    "docs/awr-intake.md",
+    "README.md",
+    "tools/awr_reports.py",
+    "tests/test_repo_invariants.py"
+  ],
+  "verified_at": 1790087325449,
+  "checks": [
+    {
+      "name": "rtd-028-8893ee6-0",
+      "passed": true,
+      "details": "锚点与归档定案并写进文档：验证锚定代码提交，只写台账/报告的提交不重新锚定，核对固定用 inspect 加 --source-sha；报告全量保留（单份约 2KB，删除会让历史提交的验证失去可复核性），命名 <工作项>-completion-<短SHA>.json 保持扁平。新增 tools/awr_reports.py 一条命令列出每个工作项最新一轮是哪个提交（--json / --limit N），并附用例断言命名约定可解析；docs/reports/README.md 写清三个约定，README 自检清单与校验器 REQUIRED_PATHS 均已纳入。",
+      "criteria": [
+        "明确锚点策略：要么把校验锚定在最近的代码提交并在 README 写明\"台账提交之后需重绑\"，要么在 CI 里自动重绑"
+      ]
+    },
+    {
+      "name": "rtd-028-8893ee6-1",
+      "passed": true,
+      "details": "锚点与归档定案并写进文档：验证锚定代码提交，只写台账/报告的提交不重新锚定，核对固定用 inspect 加 --source-sha；报告全量保留（单份约 2KB，删除会让历史提交的验证失去可复核性），命名 <工作项>-completion-<短SHA>.json 保持扁平。新增 tools/awr_reports.py 一条命令列出每个工作项最新一轮是哪个提交（--json / --limit N），并附用例断言命名约定可解析；docs/reports/README.md 写清三个约定，README 自检清单与校验器 REQUIRED_PATHS 均已纳入。",
+      "criteria": [
+        "报告目录有保留策略（按轮次归档或只保留最近 N 轮），不无限增长"
+      ]
+    },
+    {
+      "name": "rtd-028-8893ee6-2",
+      "passed": true,
+      "details": "锚点与归档定案并写进文档：验证锚定代码提交，只写台账/报告的提交不重新锚定，核对固定用 inspect 加 --source-sha；报告全量保留（单份约 2KB，删除会让历史提交的验证失去可复核性），命名 <工作项>-completion-<短SHA>.json 保持扁平。新增 tools/awr_reports.py 一条命令列出每个工作项最新一轮是哪个提交（--json / --limit N），并附用例断言命名约定可解析；docs/reports/README.md 写清三个约定，README 自检清单与校验器 REQUIRED_PATHS 均已纳入。",
+      "criteria": [
+        "文档写清成本与操作步骤，不靠口口相传"
+      ]
+    }
+  ]
+}

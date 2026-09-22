@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "work_item": "RTD-036",
+  "source_sha": "8893ee6301639c33a8959a1f595bc2b20b1e0799",
+  "command": "py -3 tests/test_engine.py",
+  "scope": [
+    "engine/core.py",
+    "tests/test_engine.py",
+    "commands/env.md",
+    "workflows/runbook-environment.md",
+    "README.md"
+  ],
+  "verified_at": 1790087321109,
+  "checks": [
+    {
+      "name": "rtd-036-8893ee6-0",
+      "passed": true,
+      "details": "env_status 改为按执行器登记表 EXECUTOR_SPECS 遍历，新增 oss_flink（home/rest_endpoint）、oss_paimon（connector_jar/warehouse）、oss_fluss（home/bootstrap_servers）三段，并按各自关键键判定是否已配置。模型改为「平台路径与开源路径，选一条配全」：平台路径至少一个执行器填全即算就绪，开源路径三段都要填全；只配开源栈不再报平台缺口；某条路配一半时点名缺哪个键。「是否开始配置」按主键判定，避免模板里 rest_endpoint/warehouse 这类默认值被误当成已开始。用例：只配 OSS 三段报 ready、OSS 缺 warehouse 报具体键名、空配置与模板占位符给出「两条路都没配置」。",
+      "criteria": [
+        "env check 覆盖 oss_flink / oss_paimon / oss_fluss，并按各自的关键键判定是否已配置"
+      ]
+    },
+    {
+      "name": "rtd-036-8893ee6-1",
+      "passed": true,
+      "details": "env_status 改为按执行器登记表 EXECUTOR_SPECS 遍历，新增 oss_flink（home/rest_endpoint）、oss_paimon（connector_jar/warehouse）、oss_fluss（home/bootstrap_servers）三段，并按各自关键键判定是否已配置。模型改为「平台路径与开源路径，选一条配全」：平台路径至少一个执行器填全即算就绪，开源路径三段都要填全；只配开源栈不再报平台缺口；某条路配一半时点名缺哪个键。「是否开始配置」按主键判定，避免模板里 rest_endpoint/warehouse 这类默认值被误当成已开始。用例：只配 OSS 三段报 ready、OSS 缺 warehouse 报具体键名、空配置与模板占位符给出「两条路都没配置」。",
+      "criteria": [
+        "只配开源栈时，不再报\"平台执行器未配置\"式的误导缺口（或明确说明二者是二选一的两条路）"
+      ]
+    },
+    {
+      "name": "rtd-036-8893ee6-2",
+      "passed": true,
+      "details": "env_status 改为按执行器登记表 EXECUTOR_SPECS 遍历，新增 oss_flink（home/rest_endpoint）、oss_paimon（connector_jar/warehouse）、oss_fluss（home/bootstrap_servers）三段，并按各自关键键判定是否已配置。模型改为「平台路径与开源路径，选一条配全」：平台路径至少一个执行器填全即算就绪，开源路径三段都要填全；只配开源栈不再报平台缺口；某条路配一半时点名缺哪个键。「是否开始配置」按主键判定，避免模板里 rest_endpoint/warehouse 这类默认值被误当成已开始。用例：只配 OSS 三段报 ready、OSS 缺 warehouse 报具体键名、空配置与模板占位符给出「两条路都没配置」。",
+      "criteria": [
+        "有用例：只填 OSS 三段时报 ready，键缺失时报出缺口"
+      ]
+    }
+  ]
+}

@@ -539,7 +539,7 @@ work_items:
 - id: RTD-028
   title: 报告归档与验证锚点策略
   kind: improvement
-  status: planned
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P1
   required: false
@@ -548,15 +548,17 @@ work_items:
   - 明确锚点策略：要么把校验锚定在最近的代码提交并在 README 写明"台账提交之后需重绑"，要么在 CI 里自动重绑
   - 报告目录有保留策略（按轮次归档或只保留最近 N 轮），不无限增长
   - 文档写清成本与操作步骤，不靠口口相传
-  next_action: 先定策略（自动重绑 vs 锚点说明），再决定报告目录结构。
+  next_action: 提交 work complete
   paths:
   - docs/reports/
   - docs/awr-intake.md
+  "evidence": ["docs/reports/rtd-028-completion-8893ee6.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-036
   title: env check 要认开源执行器
   kind: fix
-  status: ready
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -565,10 +567,12 @@ work_items:
   - env check 覆盖 oss_flink / oss_paimon / oss_fluss，并按各自的关键键判定是否已配置
   - 只配开源栈时，不再报"平台执行器未配置"式的误导缺口（或明确说明二者是二选一的两条路）
   - 有用例：只填 OSS 三段时报 ready，键缺失时报出缺口
-  next_action: 改 env_status 的执行器清单与每类的关键键，补用例。
+  next_action: 提交 work complete
   paths:
   - engine/core.py
   - tests/test_engine.py
+  "evidence": ["docs/reports/rtd-036-completion-8893ee6.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 # ── 2026-09-22 新目标：面向开源实时栈（Flink / Paimon / Fluss）────────────────
 
