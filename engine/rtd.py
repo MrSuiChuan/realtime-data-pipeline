@@ -25,13 +25,29 @@ import shutil
 import sys
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding="utf-8")
 # stderr 也要显式设编码：argparse 的报错里含中文 choices，Windows 上默认 cp936/cp1252
 # 会直接 UnicodeEncodeError（既有插件在 CI 上踩过同一个坑）。
-sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import core  # noqa: E402
+
+def _configure_stdio() -> None:
+    """把 stdout/stderr 设成 UTF-8。
+
+    捕获流（pytest、某些宿主）没有 reconfigure —— 直接调用会让整个模块导入失败，
+    所以这里一律带兜底：宁可输出编码不完美，也不能让模块导入崩掉（CI 上踩过）。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            continue
+
+
+_configure_stdio()
 
 ENGINE_FILES = ("core.py", "rtd.py")
 

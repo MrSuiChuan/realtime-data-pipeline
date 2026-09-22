@@ -16,9 +16,30 @@ import sys
 from glob import glob
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding="utf-8")
+def _configure_stdio() -> None:
+    """把 stdout/stderr 设成 UTF-8。
 
-ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
+    捕获流（pytest、某些宿主）没有 reconfigure —— 直接调用会让整个模块导入失败，
+    所以这里一律带兜底：宁可输出编码不完美，也不能让模块导入崩掉（CI 上踩过）。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            continue
+
+
+_configure_stdio()
+
+
+# 默认根目录用脚本自身位置推导，**不要**用 sys.argv——
+# 这个模块会被测试导入，而调用方（pytest）的 argv 里是测试文件路径，
+# 拿它当根目录会把 ROOT 指到测试文件上（踩过：整项校验静默失效）。
+DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+ROOT = DEFAULT_ROOT
 
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".tmp", ".rtd", "logs", "node_modules"}
 # plan.raw.md 是未脱敏原稿，本地私有（.gitignore 已排除），不参与扫描。
@@ -225,7 +246,9 @@ def check_engine_invocations(extra_folder: Path | None = None) -> list[str]:
     errors: list[str] = []
     parser = _engine_parser()
     if parser is None:
-        return errors
+        # 不能静默通过：检查没跑起来，和检查通过是两回事（CI 上踩过一次）。
+        detail = f"（{ENGINE_PARSER_ERROR}）" if ENGINE_PARSER_ERROR else ""
+        return [f"无法加载引擎解析器，引擎调用一致性未校验{detail}——请检查 engine/rtd.py 能否被导入"]
     known_subcommands = _subcommands(parser)
     pattern = re.compile(r"rtd\.py\s+([a-z-]+)((?:\s+--?[A-Za-z0-9_-]+)*)")
     bases = [ROOT / "commands", ROOT / "workflows"]
@@ -244,16 +267,22 @@ def check_engine_invocations(extra_folder: Path | None = None) -> list[str]:
     return errors
 
 
+ENGINE_PARSER_ERROR = ""
+
+
 def _engine_parser():
+    global ENGINE_PARSER_ERROR
     engine_dir = ROOT / "engine"
     if not (engine_dir / "rtd.py").is_file():
+        ENGINE_PARSER_ERROR = f"缺文件：{engine_dir / 'rtd.py'}"
         return None
     sys.path.insert(0, str(engine_dir))
     try:
         import rtd  # type: ignore
 
         return rtd.build_parser()
-    except Exception:
+    except Exception as exc:
+        ENGINE_PARSER_ERROR = f"{type(exc).__name__}: {exc}"
         return None
 
 
@@ -417,6 +446,9 @@ CHECKS = [
 
 
 def main() -> int:
+    global ROOT
+    if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
+        ROOT = Path(sys.argv[1]).resolve()
     failed = 0
     for label, fn in CHECKS:
         errors = fn()

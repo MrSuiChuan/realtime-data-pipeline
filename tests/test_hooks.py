@@ -11,12 +11,29 @@ import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "hooks"))
 
 import gates  # noqa: E402
+
+def _configure_stdio() -> None:
+    """把 stdout/stderr 设成 UTF-8。
+
+    捕获流（pytest、某些宿主）没有 reconfigure —— 直接调用会让整个模块导入失败，
+    所以这里一律带兜底：宁可输出编码不完美，也不能让模块导入崩掉（CI 上踩过）。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            continue
+
+
+_configure_stdio()
 
 
 def _project(cli_name: str = "myplatformcli", with_confirm: bool = False) -> Path:
