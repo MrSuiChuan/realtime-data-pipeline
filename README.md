@@ -71,6 +71,7 @@ py -3 tests/test_engine.py                   # 引擎：门控/证据/阶段/续
 py -3 tests/test_hooks.py                    # hook：三条硬规则的正负例
 py -3 tests/test_score_inspection.py         # 巡检评分：出报告 + 拦住四类坏输入
 py -3 tests/test_repo_invariants.py          # 仓库不变量
+py -3 tools/awr_reports.py                    # 台账验收报告：每个工作项最新一轮是哪个提交
 ```
 
 ## 引擎怎么用（一步到位的样子）

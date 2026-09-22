@@ -109,8 +109,10 @@ REQUIRED_PATHS = [
     "tools/build_codex_surface.py",
     "tools/run_evals.py",
     "tools/score_inspection.py",
+    "tools/awr_reports.py",
     "tests/fixtures/inspection-snapshot.json",
     "tests/test_score_inspection.py",
+    "docs/reports/README.md",
 ]
 
 # 第 4 项：执行器契约里不许出现业务叙事词；工作流里不许内联命令串

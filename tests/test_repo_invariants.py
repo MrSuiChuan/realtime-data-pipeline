@@ -115,6 +115,20 @@ def test_routing_check_skips_when_no_skills_installed():
         assert "knowledge-base-plugin:kbp-status" in messages, messages
 
 
+def test_awr_reports_helper_reads_the_report_dir():
+    """RTD-028：报告命名约定要能被工具解析出来，否则人会迷路。"""
+    import subprocess
+
+    proc = subprocess.run([sys.executable, str(ROOT / "tools" / "awr_reports.py"), "--json"],
+                          capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    payload = json.loads(proc.stdout)
+    assert payload["rounds"], "至少应有一个提交轮次"
+    assert any(item.startswith("RTD-") for item in payload["items"]), payload["items"].keys()
+    for info in payload["items"].values():
+        assert info["latest"] in info["all"]
+
+
 def test_validator_flags_missing_config_guards():
     """RTD-019：校验器必须自己发现"gitignore 漏挡"和"CI 漏跑校验"。"""
     import tempfile
