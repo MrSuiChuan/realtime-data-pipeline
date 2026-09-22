@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "work_item": "RTD-030",
+  "source_sha": "00f1f3b1d5eec8f1ae6cd6d06512d1b17a7c9b9e",
+  "command": "./bin/sql-client.sh -f .tmp/oss-lab/flink-{batch,stream}.sql",
+  "scope": [
+    "docs/oss-lab.md"
+  ],
+  "verified_at": 1790083109680,
+  "checks": [
+    {
+      "name": "rtd-030-00f1f3b-0",
+      "passed": true,
+      "details": "WSL2 Debian 13 + OpenJDK 21 装 Flink 2.2.0（官方 sha512 校验通过）。standalone 集群 JobManager+TaskManager 就绪（/overview taskmanagers=1）。批作业 datagen 5 行 SELECT 出结果；流作业 Job ID fa8fc316e07474bfce7a980495ac3ba3 跑到 FINISHED，print sink 在 TaskManager .out 中 20 行（grep -hc +I = 20）。安装/起停/端口/坑全部写进 docs/oss-lab.md。",
+      "criteria": [
+        "Flink standalone 起来，JobManager 与 TaskManager 都活（Web UI 端口可访问）"
+      ]
+    },
+    {
+      "name": "rtd-030-00f1f3b-1",
+      "passed": true,
+      "details": "WSL2 Debian 13 + OpenJDK 21 装 Flink 2.2.0（官方 sha512 校验通过）。standalone 集群 JobManager+TaskManager 就绪（/overview taskmanagers=1）。批作业 datagen 5 行 SELECT 出结果；流作业 Job ID fa8fc316e07474bfce7a980495ac3ba3 跑到 FINISHED，print sink 在 TaskManager .out 中 20 行（grep -hc +I = 20）。安装/起停/端口/坑全部写进 docs/oss-lab.md。",
+      "criteria": [
+        "SQL Client 跑通一个批作业并拿到结果"
+      ]
+    },
+    {
+      "name": "rtd-030-00f1f3b-2",
+      "passed": true,
+      "details": "WSL2 Debian 13 + OpenJDK 21 装 Flink 2.2.0（官方 sha512 校验通过）。standalone 集群 JobManager+TaskManager 就绪（/overview taskmanagers=1）。批作业 datagen 5 行 SELECT 出结果；流作业 Job ID fa8fc316e07474bfce7a980495ac3ba3 跑到 FINISHED，print sink 在 TaskManager .out 中 20 行（grep -hc +I = 20）。安装/起停/端口/坑全部写进 docs/oss-lab.md。",
+      "criteria": [
+        "跑通一个流作业（持续写入 + 查询），并把原始输出留成证据"
+      ]
+    },
+    {
+      "name": "rtd-030-00f1f3b-3",
+      "passed": true,
+      "details": "WSL2 Debian 13 + OpenJDK 21 装 Flink 2.2.0（官方 sha512 校验通过）。standalone 集群 JobManager+TaskManager 就绪（/overview taskmanagers=1）。批作业 datagen 5 行 SELECT 出结果；流作业 Job ID fa8fc316e07474bfce7a980495ac3ba3 跑到 FINISHED，print sink 在 TaskManager .out 中 20 行（grep -hc +I = 20）。安装/起停/端口/坑全部写进 docs/oss-lab.md。",
+      "criteria": [
+        "安装方式、版本、端口、启停命令写进 docs/oss-lab.md"
+      ]
+    }
+  ]
+}

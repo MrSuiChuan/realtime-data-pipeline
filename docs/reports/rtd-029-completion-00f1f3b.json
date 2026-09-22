@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "work_item": "RTD-029",
+  "source_sha": "00f1f3b1d5eec8f1ae6cd6d06512d1b17a7c9b9e",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "executors/contracts-oss-flink.md",
+    "executors/contracts-oss-paimon.md",
+    "executors/contracts-oss-fluss.md",
+    "governance/capability-matrix.json",
+    "templates/config.example.json"
+  ],
+  "verified_at": 1790083060498,
+  "checks": [
+    {
+      "name": "rtd-029-00f1f3b-0",
+      "passed": true,
+      "details": "三份开源执行器契约落地（Flink / Paimon / Fluss），配置模板新增 oss_flink、oss_paimon、oss_fluss 三段；能力矩阵登记实测结论与缺口，正文不含版本号（版本只进矩阵）。八项校验通过：第 3 项矩阵引用一致、第 4 项分层纯度通过。",
+      "criteria": [
+        "执行器契约新增开源栈条目（Flink SQL Client / Flink CLI / Paimon catalog / Fluss 连接器），命令名与路径仍走项目级配置"
+      ]
+    },
+    {
+      "name": "rtd-029-00f1f3b-1",
+      "passed": true,
+      "details": "三份开源执行器契约落地（Flink / Paimon / Fluss），配置模板新增 oss_flink、oss_paimon、oss_fluss 三段；能力矩阵登记实测结论与缺口，正文不含版本号（版本只进矩阵）。八项校验通过：第 3 项矩阵引用一致、第 4 项分层纯度通过。",
+      "criteria": [
+        "能力矩阵登记开源组件版本与已知缺口，正文不内联版本号"
+      ]
+    },
+    {
+      "name": "rtd-029-00f1f3b-2",
+      "passed": true,
+      "details": "三份开源执行器契约落地（Flink / Paimon / Fluss），配置模板新增 oss_flink、oss_paimon、oss_fluss 三段；能力矩阵登记实测结论与缺口，正文不含版本号（版本只进矩阵）。八项校验通过：第 3 项矩阵引用一致、第 4 项分层纯度通过。",
+      "criteria": [
+        "工作流不出现开源组件的专有命令串（仍然只引用 executors/）"
+      ]
+    },
+    {
+      "name": "rtd-029-00f1f3b-3",
+      "passed": true,
+      "details": "三份开源执行器契约落地（Flink / Paimon / Fluss），配置模板新增 oss_flink、oss_paimon、oss_fluss 三段；能力矩阵登记实测结论与缺口，正文不含版本号（版本只进矩阵）。八项校验通过：第 3 项矩阵引用一致、第 4 项分层纯度通过。",
+      "criteria": [
+        "校验器八项与全部用例通过"
+      ]
+    }
+  ]
+}

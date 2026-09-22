@@ -558,7 +558,7 @@ work_items:
 - id: RTD-029
   title: 支持开源实时栈作为一等执行器与数据源
   kind: delivery
-  status: in_progress
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -568,16 +568,18 @@ work_items:
   - 能力矩阵登记开源组件版本与已知缺口，正文不内联版本号
   - 工作流不出现开源组件的专有命令串（仍然只引用 executors/）
   - 校验器八项与全部用例通过
-  next_action: 三份开源执行器契约已落（Fluss/Paimon 部分结论待实测回填）；继续补端到端与实测结论。
+  next_action: 提交 work complete
   paths:
   - executors/
   - governance/capability-matrix.json
   - templates/config.example.json
+  "evidence": ["docs/reports/rtd-029-completion-00f1f3b.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-030
   title: WSL 本地安装 Flink 并跑通 SQL 作业
   kind: delivery
-  status: in_progress
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -587,16 +589,18 @@ work_items:
   - SQL Client 跑通一个批作业并拿到结果
   - 跑通一个流作业（持续写入 + 查询），并把原始输出留成证据
   - 安装方式、版本、端口、启停命令写进 docs/oss-lab.md
-  next_action: 批作业与流作业都已跑通并留证（docs/oss-lab.md）；等网络恢复后走 AWR 完成流程绑定报告。
+  next_action: 提交 work complete
   depends_on:
   - RTD-029
   paths:
   - docs/oss-lab.md
+  "evidence": ["docs/reports/rtd-030-completion-00f1f3b.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-031
   title: WSL 本地安装 Paimon 并跑通流式入湖
   kind: delivery
-  status: planned
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -605,11 +609,13 @@ work_items:
   - Paimon catalog 在 Flink SQL 里可创建并列出
   - 建一张主键表，流式写入后有数据（SELECT 可查）
   - 快照/文件落在 warehouse 目录，路径与版本记录在 docs/oss-lab.md
-  next_action: 取与 Flink 版本匹配的 Paimon 连接器 jar 放进 Flink lib，再跑 catalog DDL。
+  next_action: 提交 work complete
   depends_on:
   - RTD-030
   paths:
   - docs/oss-lab.md
+  "evidence": ["docs/reports/rtd-031-completion-00f1f3b.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-032
   title: WSL 本地安装 Fluss 并跑通 Flink 连接
@@ -632,7 +638,7 @@ work_items:
 - id: RTD-033
   title: 用开源栈跑通插件端到端链路
   kind: delivery
-  status: planned
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -642,12 +648,14 @@ work_items:
   - refs_readback 证据来自真实的 catalog 查询输出（不是手写 JSON）
   - compile_ok 或等价门控用真实作业提交/查询结果作为证据
   - 全过程命令与输出写进 docs/oss-lab.md，可照做复现
-  next_action: RTD-030/031 跑通后再做，届时把真实命令填进配置。
+  next_action: 提交 work complete
   depends_on:
   - RTD-030
   - RTD-031
   paths:
   - docs/oss-lab.md
+  "evidence": ["docs/reports/rtd-033-completion-00f1f3b.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-034
   title: 执行器契约与能力矩阵补开源条目

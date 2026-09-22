@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-031",
+  "source_sha": "00f1f3b1d5eec8f1ae6cd6d06512d1b17a7c9b9e",
+  "command": "./bin/sql-client.sh -f .tmp/oss-lab/paimon-{write,read}.sql",
+  "scope": [
+    "docs/oss-lab.md",
+    "executors/contracts-oss-paimon.md",
+    "governance/capability-matrix.json"
+  ],
+  "verified_at": 1790083132727,
+  "checks": [
+    {
+      "name": "rtd-031-00f1f3b-0",
+      "passed": true,
+      "details": "补 flink-shaded-hadoop-2-uber-2.8.3-10.0.jar 后 ClassNotFoundException 消失。建 catalog/库/主键分区表成功，流式写入 10 行（Job 87f7e97028abddf2f227414fcaaf623e FINISHED），warehouse 出 snapshot/manifest/schema 与 dt=2026-09-22 分区 parquet；批模式读回 COUNT=10 且明细 order_id 1..5 正确。契约与矩阵同步更新（blocked 改为 requirement）。",
+      "criteria": [
+        "Paimon catalog 在 Flink SQL 里可创建并列出"
+      ]
+    },
+    {
+      "name": "rtd-031-00f1f3b-1",
+      "passed": true,
+      "details": "补 flink-shaded-hadoop-2-uber-2.8.3-10.0.jar 后 ClassNotFoundException 消失。建 catalog/库/主键分区表成功，流式写入 10 行（Job 87f7e97028abddf2f227414fcaaf623e FINISHED），warehouse 出 snapshot/manifest/schema 与 dt=2026-09-22 分区 parquet；批模式读回 COUNT=10 且明细 order_id 1..5 正确。契约与矩阵同步更新（blocked 改为 requirement）。",
+      "criteria": [
+        "建一张主键表，流式写入后有数据（SELECT 可查）"
+      ]
+    },
+    {
+      "name": "rtd-031-00f1f3b-2",
+      "passed": true,
+      "details": "补 flink-shaded-hadoop-2-uber-2.8.3-10.0.jar 后 ClassNotFoundException 消失。建 catalog/库/主键分区表成功，流式写入 10 行（Job 87f7e97028abddf2f227414fcaaf623e FINISHED），warehouse 出 snapshot/manifest/schema 与 dt=2026-09-22 分区 parquet；批模式读回 COUNT=10 且明细 order_id 1..5 正确。契约与矩阵同步更新（blocked 改为 requirement）。",
+      "criteria": [
+        "快照/文件落在 warehouse 目录，路径与版本记录在 docs/oss-lab.md"
+      ]
+    }
+  ]
+}

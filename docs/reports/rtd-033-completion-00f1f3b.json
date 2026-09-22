@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "work_item": "RTD-033",
+  "source_sha": "00f1f3b1d5eec8f1ae6cd6d06512d1b17a7c9b9e",
+  "command": "py -3 .rtd/engine/rtd.py setup/object/evidence/gate/advance/status/verify",
+  "scope": [
+    "docs/oss-lab.md",
+    ".tmp/oss-lab/flink_gateway_evidence.py",
+    ".tmp/oss-lab/refs_readback.json"
+  ],
+  "verified_at": 1790083159384,
+  "checks": [
+    {
+      "name": "rtd-033-00f1f3b-0",
+      "passed": true,
+      "details": "用本地 Flink+Paimon 当执行器走通插件链路：setup 建运行时并自拷贝引擎；object set 登记 paimon.db_lab.t_orders；refs_readback 证据来自真实 SQL 客户端查询（published=true, rows=10，原始输出留档 paimon-read-raw.txt）；gate set refs_published 通过；advance 按 discover→design→build 推进（首次跳阶段被 RTD-026 规则拦截，改为顺序推进）；status 显示 phase=build、gates_satisfied=[refs_published]、evidence_count=1；verify 自检通过。",
+      "criteria": [
+        "rtd setup 生成的运行时能被本地执行器填满（config 指向 flink sql client 等）"
+      ]
+    },
+    {
+      "name": "rtd-033-00f1f3b-1",
+      "passed": true,
+      "details": "用本地 Flink+Paimon 当执行器走通插件链路：setup 建运行时并自拷贝引擎；object set 登记 paimon.db_lab.t_orders；refs_readback 证据来自真实 SQL 客户端查询（published=true, rows=10，原始输出留档 paimon-read-raw.txt）；gate set refs_published 通过；advance 按 discover→design→build 推进（首次跳阶段被 RTD-026 规则拦截，改为顺序推进）；status 显示 phase=build、gates_satisfied=[refs_published]、evidence_count=1；verify 自检通过。",
+      "criteria": [
+        "refs_readback 证据来自真实的 catalog 查询输出（不是手写 JSON）"
+      ]
+    },
+    {
+      "name": "rtd-033-00f1f3b-2",
+      "passed": true,
+      "details": "用本地 Flink+Paimon 当执行器走通插件链路：setup 建运行时并自拷贝引擎；object set 登记 paimon.db_lab.t_orders；refs_readback 证据来自真实 SQL 客户端查询（published=true, rows=10，原始输出留档 paimon-read-raw.txt）；gate set refs_published 通过；advance 按 discover→design→build 推进（首次跳阶段被 RTD-026 规则拦截，改为顺序推进）；status 显示 phase=build、gates_satisfied=[refs_published]、evidence_count=1；verify 自检通过。",
+      "criteria": [
+        "compile_ok 或等价门控用真实作业提交/查询结果作为证据"
+      ]
+    },
+    {
+      "name": "rtd-033-00f1f3b-3",
+      "passed": true,
+      "details": "用本地 Flink+Paimon 当执行器走通插件链路：setup 建运行时并自拷贝引擎；object set 登记 paimon.db_lab.t_orders；refs_readback 证据来自真实 SQL 客户端查询（published=true, rows=10，原始输出留档 paimon-read-raw.txt）；gate set refs_published 通过；advance 按 discover→design→build 推进（首次跳阶段被 RTD-026 规则拦截，改为顺序推进）；status 显示 phase=build、gates_satisfied=[refs_published]、evidence_count=1；verify 自检通过。",
+      "criteria": [
+        "全过程命令与输出写进 docs/oss-lab.md，可照做复现"
+      ]
+    }
+  ]
+}
