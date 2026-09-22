@@ -50,7 +50,7 @@ claude -p "请用 Bash 工具执行这条命令…：echo hello > .rtd/_evidence
 - Claude Code **按约定自动发现 `hooks/hooks.json`**；官方插件（如 `security-guidance`）有该文件但清单里**不声明** `hooks` 字段，说明字段不是必需的；
 - 插件里的 `commands/*.md` 与 `skills/rtd-*/SKILL.md` **两边都会加载**（组件清单里 26 个），后者是给 Codex 用的生成物，在 Claude 侧属于重复（约 694 token always-on）。这是一处可优化点，尚未处理。
 
-## 二、Codex：清单字段被接受，但 hook 未执行 ❌（待信任）
+## 二、Codex：会话里会跑，`codex exec` 不跑（已用对照实验定论）
 
 环境：Codex CLI（`codex plugin` / `codex exec`），插件通过个人 marketplace 装入。
 
@@ -65,21 +65,41 @@ claude -p "请用 Bash 工具执行这条命令…：echo hello > .rtd/_evidence
 | **hook 需要"信任"才会执行** | `config.toml` 的 `[hooks.state]` 按 `插件@市场:文件:事件:索引:索引` 记 `trusted_hash`；二进制含 `--dangerously-bypass-hook-trust`、`Trust to view hooks` 等文案 |
 | CLI 有绕过开关 | `--dangerously-bypass-hook-trust`：Run enabled hooks without requiring persisted hook trust for this invocation |
 
-### 实测结论
+### 关键：`codex exec` 不跑插件 hook（用对照实验证明）
 
-```bash
-codex exec -C <项目> -s workspace-write --skip-git-repo-check \
-  --dangerously-bypass-hook-trust --json "用 shell 执行：echo hello > .rtd/_evidence/probe.json"
+第一次测试我得出"hook 没被调用"的结论，但那个测试本身是**无效的**——需要一个已信任的插件做对照才能定论。
+
+| 实验 | 结果 |
+| --- | --- |
+| `codex exec` 里让 ddp（**已信任**的插件）去写它自己 guard 的 `.data-dev/runtime/` | 写入**成功**，没被拦 → **exec 模式不跑插件 hook** |
+| 本次桌面会话里，让 ddp 去写同一路径 | **被拦**（原文：`Command blocked by PreToolUse hook: [data-development-plugin:runtime_guard] …`） |
+| 本次会话里 patch 里出现 `.data-dev/runtime` 字样 | **同样被拦**（说明它连 apply_patch 的 payload 也看） |
+
+结论：**hook 在 Codex 桌面会话里是生效的**（ddp 就是活证据），`codex exec` 这条 CLI 路径不加载插件 hook。所以之前那次"我们的 hook 没跑"不能推出"信任没批"。
+
+### 本插件为什么在当前会话里没生效
+
+插件是在**当前会话开始之后**才安装的，会话启动时已经加载完插件列表：
+
+```
+在项目里写 .rtd/_evidence/probe-session.json  → 写入成功（本会话未加载本插件）
+同时 ddp 的 hook 能拦住同会话的其它写入        → 钩子机制本身是活的
 ```
 
-- 命令**执行成功**，文件被创建 → **没有被拦**；
-- 用我们自己的 hook trace（`RTD_HOOK_TRACE`）验证：**trace 文件根本没生成** → 说明 hook 进程**一次都没被调用**（不是"调用了但放行"）。
+### 下一步（一条人工动作：开一个新会话）
 
-即：在 `codex exec` 这条路径上，插件 hook 没有跑起来。信任记录目前只有 `ponytail` 与 `data-development-plugin` 的条目——那是**在 Codex 应用里被批准过**的钩子，说明正常路径是"应用内批准"。
+**新开一个 Codex 会话**（新会话才会加载刚装的插件）。加载时若出现 hook 信任提示就批准；判据是 `~/.codex/config.toml` 的 `[hooks.state]` 里出现本插件条目：
 
-### 下一步（一条人工动作）
+```toml
+[hooks.state."realtime-data-plugin@personal:hooks/codex-hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:…"
+[hooks.state."realtime-data-plugin@personal:hooks/codex-hooks.json:session_start:0:0"]
+trusted_hash = "sha256:…"
+```
 
-在 Codex 应用里打开本插件，让它弹出 hook 信任提示并**批准**（`config.toml` 的 `[hooks.state]` 会出现 `realtime-data-plugin@personal:…` 条目）。批准后再跑一次上面的实验：预期是"被拒绝 + 文件不存在 + trace 里能看到 `PreToolUse` 载荷"。
+（现在这些条目只有 `ponytail` / `data-development-plugin` / `knowledge-base-plugin`——说明这个提示确实出现过、你当时批准过；本插件还没被任何新会话加载过，所以没提示。）
+
+然后在新会话里跑一次实验：写入 `.rtd/_evidence/` → 预期"被拒绝 + 文件不存在"。
 
 ### 已经改好的部分
 

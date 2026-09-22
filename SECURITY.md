@@ -25,9 +25,10 @@
 | 宿主 | 状态 | 证据 |
 | --- | --- | --- |
 | Claude Code 2.1.231 | **已实测拦得住** | 直写 `.rtd/_evidence/` 被拒且文件未创建，拒绝原因来自本插件的门；组件清单显示 `Hooks (2)` |
-| Codex CLI（`codex exec`） | **尚未生效** | 清单字段已被接受，但 `--dangerously-bypass-hook-trust` 下 hook 进程一次都没被调用（trace 无文件），写入未被拦 |
+| Codex 桌面会话 | **机制已证实生效**（用已信任的姊妹插件 ddp 做对照：它的 hook 能拦住本会话里的写入）；本插件待新会话加载 | `docs/host-hooks.md` 第二节 |
+| Codex CLI（`codex exec`） | **不加载插件 hook**（对照实验：已信任的 ddp 在 exec 模式下也没拦住） | 同上 |
 
-结论：**在 Codex 侧批准 hook 信任之前，不要把 Codex 环境下的门禁当作硬门**——那时它只是提示词层的纪律。细节与复现步骤见 `docs/host-hooks.md`。
+结论：Codex 侧的门禁强度取决于**会话是否加载了本插件**——新会话加载并通过信任后才是硬门；`codex exec` 这类非交互调用一律不受门控，脚本化场景要自己兜住。
 
 ## 使用者的责任
 

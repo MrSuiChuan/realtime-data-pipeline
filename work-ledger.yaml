@@ -280,9 +280,9 @@ work_items:
   summary: 已实测到关键结论——Claude Code 侧确认生效（组件清单列出 Hooks(2)，直写证据目录被真拦住且文件未创建）；Codex 侧清单字段被接受但 hook 未执行（--dangerously-bypass-hook-trust 下 hook 进程一次都没被调用，trace 无文件），需要应用内批准 hook 信任。细节见 docs/host-hooks.md。
   acceptance:
   - Claude Code 侧实测（已完成：拦住 + 文件未创建 + 组件清单可见 hooks）
-  - Codex 侧在应用内批准 hook 信任后重跑实验，确认是否被拦（待批准）
+  - 新开一个 Codex 会话加载本插件（必要时批准信任），重跑写入实验确认被拦
   - 结论写进 docs/validation-report.md 与 SECURITY.md（已按宿主如实区分）
-  next_action: 在 Codex 应用里批准本插件 hook 信任，然后重跑 docs/host-hooks.md 里的实验。
+  next_action: 新开一个 Codex 会话（当前会话是插件安装前启动的，加载不到），按 docs/host-hooks.md 第二节重跑实验；同时补一条已验证结论——codex exec 不跑插件 hook（ddp 对照实验证明）。
   paths:
   - hooks/
   - docs/validation-report.md
