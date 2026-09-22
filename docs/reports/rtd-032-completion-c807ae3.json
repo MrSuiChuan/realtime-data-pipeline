@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-032",
+  "source_sha": "c807ae34e97667735f24df8722e32e00edd3cfbb",
+  "command": "./bin/local-cluster.sh start + ./bin/sql-client.sh -f .tmp/oss-lab/fluss-{write,read}.sql",
+  "scope": [
+    "docs/oss-lab.md",
+    "executors/contracts-oss-fluss.md",
+    "governance/capability-matrix.json"
+  ],
+  "verified_at": 1790085298728,
+  "checks": [
+    {
+      "name": "rtd-032-c807ae3-0",
+      "passed": true,
+      "details": "Fluss 1.0.0 本地集群跑通：local-cluster.sh 一次起 zookeeper(2181)/coordinator/tablet（Fluss 9123）；Flink SQL 建 catalog/库/日志表并流式写入 10 行，作业 ddfe7d21f2e79a90bb2fb62ab7734209 终态 FINISHED，数据落 /tmp/fluss-data/db_lab/log_orders-0/log-0；批模式读回 COUNT=10 且明细 order_id 1..5 正确。发行包经官方 sha512 校验（换 USTC 镜像 11.4MB/s 下完，archive 直连仅 6.7KB/s）。契约与矩阵同步转 verified。",
+      "criteria": [
+        "Fluss 本地集群可启动，客户端能建库建表"
+      ]
+    },
+    {
+      "name": "rtd-032-c807ae3-1",
+      "passed": true,
+      "details": "Fluss 1.0.0 本地集群跑通：local-cluster.sh 一次起 zookeeper(2181)/coordinator/tablet（Fluss 9123）；Flink SQL 建 catalog/库/日志表并流式写入 10 行，作业 ddfe7d21f2e79a90bb2fb62ab7734209 终态 FINISHED，数据落 /tmp/fluss-data/db_lab/log_orders-0/log-0；批模式读回 COUNT=10 且明细 order_id 1..5 正确。发行包经官方 sha512 校验（换 USTC 镜像 11.4MB/s 下完，archive 直连仅 6.7KB/s）。契约与矩阵同步转 verified。",
+      "criteria": [
+        "Flink SQL 通过 Fluss 连接器写入并读回"
+      ]
+    },
+    {
+      "name": "rtd-032-c807ae3-2",
+      "passed": true,
+      "details": "Fluss 1.0.0 本地集群跑通：local-cluster.sh 一次起 zookeeper(2181)/coordinator/tablet（Fluss 9123）；Flink SQL 建 catalog/库/日志表并流式写入 10 行，作业 ddfe7d21f2e79a90bb2fb62ab7734209 终态 FINISHED，数据落 /tmp/fluss-data/db_lab/log_orders-0/log-0；批模式读回 COUNT=10 且明细 order_id 1..5 正确。发行包经官方 sha512 校验（换 USTC 镜像 11.4MB/s 下完，archive 直连仅 6.7KB/s）。契约与矩阵同步转 verified。",
+      "criteria": [
+        "版本矩阵与不可用原因（若有）写进 docs/oss-lab.md"
+      ]
+    }
+  ]
+}

@@ -620,7 +620,7 @@ work_items:
 - id: RTD-032
   title: WSL 本地安装 Fluss 并跑通 Flink 连接
   kind: delivery
-  status: planned
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P1
   required: true
@@ -629,11 +629,13 @@ work_items:
   - Fluss 本地集群可启动，客户端能建库建表
   - Flink SQL 通过 Fluss 连接器写入并读回
   - 版本矩阵与不可用原因（若有）写进 docs/oss-lab.md
-  next_action: 确认 Fluss 发行版与 Flink 兼容矩阵，再决定是否与 RTD-030 用同一个 Flink。
+  next_action: 提交 work complete
   depends_on:
   - RTD-030
   paths:
   - docs/oss-lab.md
+  "evidence": ["docs/reports/rtd-032-completion-c807ae3.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-033
   title: 用开源栈跑通插件端到端链路
@@ -660,7 +662,7 @@ work_items:
 - id: RTD-034
   title: 执行器契约与能力矩阵补开源条目
   kind: delivery
-  status: planned
+  status: completed
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P1
   required: true
@@ -669,7 +671,7 @@ work_items:
   - 新增开源执行器契约（Flink/Paimon/Fluss），只写契约不写专有命令串
   - 能力矩阵登记版本与已验证日期，正文仍不内联版本号
   - 校验器第 3 项（能力矩阵引用一致性）通过
-  next_action: 等 RTD-030/031/032 有实测结论后回填。
+  next_action: 提交 work complete
   depends_on:
   - RTD-030
   - RTD-031
@@ -677,6 +679,8 @@ work_items:
   paths:
   - executors/
   - governance/capability-matrix.json
+  "evidence": ["docs/reports/rtd-034-completion-c807ae3.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-035
   title: CI 修红并防回归

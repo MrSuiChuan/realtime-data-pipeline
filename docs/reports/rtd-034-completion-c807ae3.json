@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-034",
+  "source_sha": "c807ae34e97667735f24df8722e32e00edd3cfbb",
+  "command": "py -3 tools/validate_plugin.py .",
+  "scope": [
+    "executors/contracts-oss-flink.md",
+    "executors/contracts-oss-paimon.md",
+    "executors/contracts-oss-fluss.md",
+    "governance/capability-matrix.json"
+  ],
+  "verified_at": 1790085308587,
+  "checks": [
+    {
+      "name": "rtd-034-c807ae3-0",
+      "passed": true,
+      "details": "三份开源契约与能力矩阵全部按实测回填：Flink 增加 SQL Gateway 取证能力与两条要求；Paimon 的 Hadoop 前置从 blocked 改为 requirement 并记录读写结论；Fluss 转 verified 并记录「无 SQL 控制台」与「镜像选择」两条缺口。矩阵登记 verified_on 与运行环境，正文不内联版本号；validate 第 3 项（矩阵引用一致性）通过。",
+      "criteria": [
+        "新增开源执行器契约（Flink/Paimon/Fluss），只写契约不写专有命令串"
+      ]
+    },
+    {
+      "name": "rtd-034-c807ae3-1",
+      "passed": true,
+      "details": "三份开源契约与能力矩阵全部按实测回填：Flink 增加 SQL Gateway 取证能力与两条要求；Paimon 的 Hadoop 前置从 blocked 改为 requirement 并记录读写结论；Fluss 转 verified 并记录「无 SQL 控制台」与「镜像选择」两条缺口。矩阵登记 verified_on 与运行环境，正文不内联版本号；validate 第 3 项（矩阵引用一致性）通过。",
+      "criteria": [
+        "能力矩阵登记版本与已验证日期，正文仍不内联版本号"
+      ]
+    },
+    {
+      "name": "rtd-034-c807ae3-2",
+      "passed": true,
+      "details": "三份开源契约与能力矩阵全部按实测回填：Flink 增加 SQL Gateway 取证能力与两条要求；Paimon 的 Hadoop 前置从 blocked 改为 requirement 并记录读写结论；Fluss 转 verified 并记录「无 SQL 控制台」与「镜像选择」两条缺口。矩阵登记 verified_on 与运行环境，正文不内联版本号；validate 第 3 项（矩阵引用一致性）通过。",
+      "criteria": [
+        "校验器第 3 项（能力矩阵引用一致性）通过"
+      ]
+    }
+  ]
+}
