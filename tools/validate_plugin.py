@@ -273,6 +273,17 @@ def check_engine_invocations(extra_folder: Path | None = None) -> list[str]:
 ENGINE_PARSER_ERROR = ""
 
 
+class Skip:
+    """标记"本机无法判定"，与"检查失败"区分开。
+
+    出站路由指向的插件装没装，只有本机知道；CI runner 上什么都没装，
+    这时把"不知道"当成"不存在"会误报（实测在 GitHub Actions 上就红在这条）。
+    """
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+
+
 def _engine_parser():
     global ENGINE_PARSER_ERROR
     engine_dir = ROOT / "engine"
@@ -396,29 +407,32 @@ def check_desensitize() -> list[str]:
     return errors
 
 
-def check_routing() -> list[str]:
+def check_routing(roots: list[Path] | None = None, patterns: list[Path] | None = None) -> list:
     path = ROOT / "knowledge" / "routing-outbound.md"
     if not path.is_file():
         return []
-    installed = _installed_skill_pairs()
-    installed_plugins = _installed_plugin_names()
+    roots = SKILL_ROOTS if roots is None else roots
+    patterns = PLUGIN_CACHE_GLOBS if patterns is None else patterns
+    installed = _installed_skill_pairs(patterns)
+    installed_plugins = {name.split(":", 1)[0] for name in installed}
+
+    # 既没有技能根目录、也没有任何插件缓存 → 本机根本没装技能包（CI/新机器），无法判定。
+    if not any(item.is_dir() for item in roots) and not installed:
+        return [Skip("本机没有任何技能根目录（CI 或新机器），出站路由存在性无法判定；这条只在本地生效")]
+
     errors: list[str] = []
     for name in set(re.findall(r"`([a-z][a-z0-9-]*:[a-z0-9-]+)`", read_text(path))):
         plugin, _skill = name.split(":", 1)
         if name in installed or plugin in installed_plugins:
             continue
-        if not any((root / plugin / "SKILL.md").exists() or (root / plugin).is_dir() for root in SKILL_ROOTS):
+        if not any((root / plugin / "SKILL.md").exists() or (root / plugin).is_dir() for root in roots):
             errors.append(f"routing-outbound.md 指向未安装的技能包：{name}")
     return errors
 
 
-def _installed_plugin_names() -> set[str]:
-    return {name.split(":", 1)[0] for name in _installed_skill_pairs()}
-
-
-def _installed_skill_pairs() -> set[str]:
+def _installed_skill_pairs(patterns: list[Path] | None = None) -> set[str]:
     pairs: set[str] = set()
-    for pattern in PLUGIN_CACHE_GLOBS:
+    for pattern in (PLUGIN_CACHE_GLOBS if patterns is None else patterns):
         for match in (Path(item) for item in glob(str(pattern.expanduser()).replace("\\", "/"))):
             parts = match.parts
             if "skills" not in parts:
@@ -455,6 +469,11 @@ def main() -> int:
     failed = 0
     for label, fn in CHECKS:
         errors = fn()
+        skips = [item for item in errors if isinstance(item, Skip)]
+        errors = [item for item in errors if not isinstance(item, Skip)]
+        if skips and not errors:
+            print(f"[SKIP] {label} —— {skips[0].reason}")
+            continue
         if errors:
             failed += 1
             print(f"[FAIL] {label}")

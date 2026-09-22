@@ -86,9 +86,33 @@ def test_engine_invocations_in_docs_match_the_engine():
             "```\npy -3 .rtd/engine/rtd.py setup --report\npy -3 .rtd/engine/rtd.py frobnicate --x\n```\n",
             encoding="utf-8",
         )
+        # 必须在 with 内调用：临时目录一旦回收，扫描就找不到文件，会假通过（踩过）
         problems = validate_plugin.check_engine_invocations(extra_folder=folder)
     assert any("--report" in p for p in problems), problems
     assert any("frobnicate" in p for p in problems), problems
+
+
+def test_routing_check_skips_when_no_skills_installed():
+    """CI/新机器上没有任何技能包时，出站路由检查必须"跳过"，不能判失败。"""
+    import tempfile
+    from pathlib import Path as _Path
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    import validate_plugin
+
+    with tempfile.TemporaryDirectory() as tmp:
+        empty_roots = [_Path(tmp) / "skills", _Path(tmp) / "agents-skills"]
+        result = validate_plugin.check_routing(roots=empty_roots, patterns=[])
+    assert len(result) == 1 and isinstance(result[0], validate_plugin.Skip), result
+
+    # 装了一个插件时：指向它的路由放行，指向另一个仍报错
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _Path(tmp) / "skills"
+        (root / "data-development-plugin").mkdir(parents=True)
+        result = validate_plugin.check_routing(roots=[root], patterns=[])
+        assert not any(isinstance(item, validate_plugin.Skip) for item in result), result
+        messages = "\n".join(str(item) for item in result)
+        assert "knowledge-base-plugin:kbp-status" in messages, messages
 
 
 def test_validator_flags_missing_config_guards():
