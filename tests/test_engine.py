@@ -260,7 +260,8 @@ def test_env_check_lists_gaps_for_empty_config():
     assert code == 0
     payload = json.loads(out)
     assert payload["ready"] is False
-    assert any("mcp_ops" in gap for gap in payload["gaps"])
+    # 两条路都没配时，给的是"选一条"的提示，而不是逐个平台执行器报缺失（RTD-036）
+    assert any("两条路都没配置" in gap for gap in payload["gaps"])
     assert payload["limits"]["scan_budget_s"] == 120
 
 
@@ -272,7 +273,44 @@ def test_placeholder_config_is_not_ready():
     assert code == 0
     payload = json.loads(out)
     assert payload["ready"] is False
-    assert any("executors.cli 未配置" == gap for gap in payload["gaps"])
+    assert any("两条路都没配置" in gap for gap in payload["gaps"])
+
+
+def test_env_check_accepts_oss_only():
+    """RTD-036：只配开源执行器也算就绪，不该再报一堆平台缺口。"""
+    project = _project()
+    _run("setup", "--project", str(project))
+    (project / ".rtd" / "config.json").write_text(json.dumps({
+        "executors": {
+            "oss_flink": {"home": "/home/u/oss/flink-2.2.0", "sql_client": "/home/u/oss/flink-2.2.0/bin/sql-client.sh",
+                          "rest_endpoint": "http://127.0.0.1:8081", "java_home": "/usr/lib/jvm/java-21-openjdk-amd64"},
+            "oss_paimon": {"connector_jar": "/home/u/oss/paimon-flink-2.2-1.4.1.jar", "warehouse": "file:///tmp/paimon-warehouse"},
+            "oss_fluss": {"home": "/home/u/oss/fluss-1.0.0", "bootstrap_servers": "localhost:9123"},
+        }
+    }), encoding="utf-8")
+    code, out = _run("env", "check", "--project", str(project), "--json")
+    assert code == 0, out
+    payload = json.loads(out)
+    assert payload["ready"] is True, payload["gaps"]
+    assert payload["paths"]["oss"]["complete"] is True
+    assert not any("平台" in gap for gap in payload["gaps"]), payload["gaps"]
+
+
+def test_env_check_reports_half_configured_path():
+    """只填了开源路径的一部分：要点名缺哪个键。"""
+    project = _project()
+    _run("setup", "--project", str(project))
+    (project / ".rtd" / "config.json").write_text(json.dumps({
+        "executors": {
+            "oss_flink": {"home": "/home/u/oss/flink-2.2.0", "rest_endpoint": "http://127.0.0.1:8081"},
+            "oss_paimon": {"connector_jar": "/home/u/oss/paimon.jar"},   # 缺 warehouse
+            "oss_fluss": {"home": "/home/u/oss/fluss-1.0.0", "bootstrap_servers": "localhost:9123"},
+        }
+    }), encoding="utf-8")
+    code, out = _run("env", "check", "--project", str(project), "--json")
+    payload = json.loads(out)
+    assert payload["ready"] is False
+    assert any("oss_paimon.warehouse" in gap for gap in payload["gaps"]), payload["gaps"]
 
 
 def test_evidence_expires_when_object_version_changes():

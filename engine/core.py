@@ -132,6 +132,24 @@ DEFAULT_LIMITS = {
     "record_read_lines": 50,
 }
 
+# 执行器登记表：路径（平台 / 开源）+ 判定"已配置"所需的关键键。
+# keys 为空表示该执行器的值本身就是命令名/服务名（字符串或 {name, cmd} 形态）。
+EXECUTOR_SPECS: Dict[str, Dict[str, Any]] = {
+    "cli": {"path": "platform", "keys": ["cmd"]},
+    "mcp_dev": {"path": "platform", "keys": []},
+    "mcp_ops": {"path": "platform", "keys": []},
+    "mcp_asset": {"path": "platform", "keys": []},
+    "mcp_engine": {"path": "platform", "keys": []},
+    "oss_flink": {"path": "oss", "keys": ["home", "rest_endpoint"]},
+    "oss_paimon": {"path": "oss", "keys": ["connector_jar", "warehouse"]},
+    "oss_fluss": {"path": "oss", "keys": ["home", "bootstrap_servers"]},
+}
+
+PATH_HINTS = {
+    "platform": "平台路径：至少把 executors.cli.cmd（或某个 mcp_* 服务名）填上",
+    "oss": "开源路径：oss_flink.home/rest_endpoint、oss_paimon.connector_jar/warehouse、oss_fluss.home/bootstrap_servers 三段都要填",
+}
+
 # 证据类型登记表：payload 必填字段 + 通过条件。
 EVIDENCE_RULES: Dict[str, Dict[str, Any]] = {
     "refs_readback": {
@@ -709,42 +727,82 @@ def _looks_like_now(value: str) -> bool:
 
 
 def env_status(runtime: Runtime) -> Dict[str, Any]:
-    """执行器三态：配置存在 / 已探测 / 未知。引擎不主动调平台。"""
+    """执行器三态：配置存在 / 已探测 / 未知。引擎不主动调平台。
+
+    模型是**两条路选一条配全**：平台路径（cli / 各域 MCP）与开源路径（Flink / Paimon / Fluss）。
+    以前只认平台那条，配了开源执行器的人会看到一堆误导性的"平台执行器未配置"缺口（RTD-036）。
+    """
     config = runtime.load_config()
     executors = config.get("executors") if isinstance(config.get("executors"), dict) else {}
-    rows = []
-    gaps = []
-    for name in ("cli", "mcp_dev", "mcp_ops", "mcp_asset", "mcp_engine"):
+
+    rows: List[Dict[str, Any]] = []
+    for name, spec in EXECUTOR_SPECS.items():
         value = executors.get(name)
-        if isinstance(value, dict):
-            configured = _real_value(value.get("cmd"))
-            probe = value.get("verified_at")
-        else:
-            configured = _real_value(value)
-            probe = None
-        if not configured:
-            gaps.append(f"executors.{name} 未配置")
-        rows.append(
-            {
-                "executor": name,
-                "configured": configured,
-                "probe": probe or None,
-                "state": "配置存在" if configured else "缺失",
-            }
-        )
+        filled, missing = _executor_keys(value, spec["keys"])
+        # 判定"用户是否开始配这条执行器"看**主键**（keys 的第一个）：
+        # 模板里 rest_endpoint / warehouse 这类带默认值的键是真值，不能当成已经开始配置。
+        primary = spec["keys"][0] if spec["keys"] else None
+        started = bool(filled) and (primary is None or primary in filled)
+        probe = value.get("verified_at") if isinstance(value, dict) else None
+        rows.append({
+            "executor": name,
+            "path": spec["path"],
+            "configured": not missing and bool(filled),
+            "started": started,
+            "missing": missing,
+            "probe": probe or None,
+            "state": "配置存在" if (not missing and filled) else ("部分配置" if filled else "缺失"),
+        })
+
     storage = executors.get("storage") if isinstance(executors.get("storage"), dict) else {}
+    storage_gaps = []
     for name in ("log_cli", "light_db_cli"):
         if not _real_value(storage.get(name)):
-            gaps.append(f"executors.storage.{name} 未配置")
+            storage_gaps.append(f"executors.storage.{name} 未配置")
+
+    gaps: List[str] = []
+    path_state: Dict[str, Dict[str, Any]] = {}
+    for path in ("platform", "oss"):
+        path_rows = [row for row in rows if row["path"] == path]
+        started = any(row["started"] for row in path_rows)
+        complete = (
+            any(row["configured"] for row in path_rows)
+            if path == "platform"
+            else all(row["configured"] for row in path_rows)
+        )
+        path_state[path] = {"started": started, "complete": complete,
+                            "missing": [f"executors.{row['executor']}.{key}"
+                                        for row in path_rows for key in row["missing"]]}
+        if started and not complete:
+            gaps.append(f"{path} 路径配了一半：缺 " + "、".join(path_state[path]["missing"]))
+
+    if not any(item["started"] for item in path_state.values()):
+        gaps.append("两条路都没配置 —— " + PATH_HINTS["platform"] + "；或 " + PATH_HINTS["oss"])
+
     limits, limit_gaps = runtime.limits()
     gaps.extend(limit_gaps)
     return {
         "executors": rows,
+        "paths": path_state,
         "limits": limits,
         "gaps": gaps,
-        "ready": not gaps,
+        "storage_gaps": storage_gaps,
+        "ready": any(item["complete"] for item in path_state.values()),
         "note": "认证完成与当前会话可调用需要一次只读探测才能判定；本命令不做任何平台调用。",
     }
+
+
+def _executor_keys(value: Any, keys: List[str]) -> Tuple[List[str], List[str]]:
+    """返回（已填字段, 缺失字段）。keys 为空时看值本身。"""
+    if not keys:
+        if isinstance(value, dict):
+            filled = [k for k in ("cmd", "name") if _real_value(value.get(k))]
+            return filled, [] if filled else ["<值>"]
+        return (["<值>"] if _real_value(value) else []), ([] if _real_value(value) else ["<值>"])
+    if not isinstance(value, dict):
+        return [], list(keys)
+    filled = [key for key in keys if _real_value(value.get(key))]
+    return filled, [key for key in keys if key not in filled]
 
 
 def _real_value(value: Any) -> bool:
