@@ -553,6 +553,23 @@ work_items:
   - docs/reports/
   - docs/awr-intake.md
 
+- id: RTD-036
+  title: env check 要认开源执行器
+  kind: fix
+  status: ready
+  goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
+  priority: P0
+  required: true
+  summary: engine/core.py 的 env_status 只遍历 cli 与四个 mcp_*，完全不知道本轮新增的 oss_flink / oss_paimon / oss_fluss；而且判定"已配置"时只看 cmd 键，而 OSS 三段用的键是 home / connector_jar / warehouse / bootstrap_servers。后果：只配开源执行器的人跑 rtd-env 会看到一堆平台缺口，却看不到自己那三段到底填没填全。
+  acceptance:
+  - env check 覆盖 oss_flink / oss_paimon / oss_fluss，并按各自的关键键判定是否已配置
+  - 只配开源栈时，不再报"平台执行器未配置"式的误导缺口（或明确说明二者是二选一的两条路）
+  - 有用例：只填 OSS 三段时报 ready，键缺失时报出缺口
+  next_action: 改 env_status 的执行器清单与每类的关键键，补用例。
+  paths:
+  - engine/core.py
+  - tests/test_engine.py
+
 # ── 2026-09-22 新目标：面向开源实时栈（Flink / Paimon / Fluss）────────────────
 
 - id: RTD-029
