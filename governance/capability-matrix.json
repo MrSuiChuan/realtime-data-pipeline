@@ -76,10 +76,17 @@
     },
     "oss_fluss": {
       "configured_name_ref": "executors.oss_fluss",
-      "verified_on": null,
+      "verified_on": "2026-09-22",
+      "verified_env": "WSL2 Debian 13 + OpenJDK 21 + Fluss 1.0.0 本地集群 + fluss-flink-2.2-1.0.0.jar",
+      "verified_capabilities": [
+        "local-cluster.sh 一次起 zookeeper/coordinator/tablet（2181 / 9123）",
+        "Flink SQL 建 catalog/库/日志表并流式写入 10 行（作业 FINISHED）",
+        "批模式读回 COUNT=10 且明细正确"
+      ],
       "version_alignment": "连接器按 Flink 版本分构件（2.2 / 1.20 各有对应系列），必须对齐",
       "known_gaps": [
-        {"capability": "cluster-and-connector", "status": "unverified", "note": "构件已下载并核对版本对齐，集群启动与读写链路尚未实测"}
+        {"capability": "sql-console", "status": "gotcha", "note": "发行版没有 SQL 控制台；fluss-console.sh 只用于起服务，建库建表必须走 Flink SQL 或客户端 SDK"},
+        {"capability": "artifact-mirror", "status": "operational", "note": "archive.apache.org 直连实测 6.7 KB/s，换国内镜像 11.4 MB/s；拉 Fluss 包优先用镜像（镜像上可能没有 .sha512，校验文件回到 archive 取）"}
       ]
     }
   },

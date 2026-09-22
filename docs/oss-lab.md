@@ -217,11 +217,54 @@ rtd.py verify  → 运行时自检通过：状态、证据哈希、门控引用�
 
 **结论**：插件面向开源栈的链路是通的——`refs_readback` 证据来自真实的 Paimon 查询，门控按证据开，阶段推进受规则约束，运行时自检可复核。
 
-## 十一、Fluss：受阻（2026-09-22 晚）
+## 十一、Fluss 已跑通（2026-09-22 晚）
 
-`fluss-1.0.0-bin.tgz`（约 560 MB）下载失败两次：
+### 下载：换国内镜像是关键
 
-1. 第一次被网络中断打断，包只有 281 MB，`tar` 报 `Unexpected EOF`；
-2. 第二次直连 `archive.apache.org` 的 IP 只有约 **10 KB/s**；换 `dlcdn` / `downloads` 镜像直连均 `http=000`（该网络只通部分 IP，且 DNS 走 UDP 被封、只能靠 TCP 查询绕过）。
+`archive.apache.org` 直连只有 **6.7 KB/s**（497 MB 要 20 小时），`dlcdn` / `downloads` 直连全 `http=000`。换国内镜像后：
 
-连接器 `fluss-flink-2.2-1.0.0.jar`（70 MB）已就位，版本对齐也核对过，但**集群没起、读写没测**。台账 RTD-032 保持"未验证"，`capability-matrix` 里 `oss_fluss` 也标着 `unverified`——网络恢复后再补。
+| 源 | 实测速度 |
+| --- | --- |
+| mirrors.ustc.edu.cn | **11.4 MB/s**（43 秒下完 497 MB） |
+| mirror.nju.edu.cn | 10.8 MB/s |
+| mirrors.aliyun.com | 8.5 MB/s |
+| archive.apache.org（直连） | 6.7 KB/s |
+
+包与官方 `.sha512` 比对一致：
+
+```
+期望 4cc134d1…b7d52ca
+实际 4cc134d1…b7d52ca   校验通过
+```
+
+**这条经验值得记住**：以后拉 Apache 发行包先试国内镜像，别跟 archive 直连死磕。
+
+### 集群与读写（全部实测）
+
+```
+bin/local-cluster.sh start
+→ Starting zookeeper daemon / coordinator-server daemon / tablet-server daemon
+→ 端口：ZooKeeper 2181、Fluss 9123（listening 127.0.0.1:9123）
+→ 日志：TabletServer registered、Coordinator 收到 CHILD_ADDED
+```
+
+`fluss-console.sh` **不是 SQL 控制台**（它只用来起 coordinator-server / tablet-server / zookeeper），所以入口就是 Flink SQL + Fluss 连接器：
+
+```
+cp fluss-flink-2.2-1.0.0.jar ~/oss/flink-2.2.0/lib/     # 之后重启 Flink 集群
+CREATE CATALOG fluss WITH ('type'='fluss', 'bootstrap.servers'='localhost:9123')
+CREATE DATABASE fluss.db_lab
+CREATE TABLE fluss.db_lab.log_orders (order_id BIGINT, amount DECIMAL(10,2), dt STRING)   -- 默认是日志表
+INSERT … SELECT … FROM datagen 源
+→ Job ID ddfe7d21f2e79a90bb2fb62ab7734209，终态 FINISHED
+→ 数据落盘：/tmp/fluss-data/db_lab/log_orders-0/log-0
+```
+
+读回（批模式）：
+
+```
+| cnt | → 10        （1 row in set, 9.42 秒）
+| order_id | amount | dt | → 5 行，order_id 1..5，dt=2026-09-22
+```
+
+**结论**：Fluss 作为"流存储"在本地可用；契约里那条版本对齐矩阵（连接器按 Flink 版本分构件）得到验证——`fluss-flink-2.2-1.0.0.jar` 配 Flink 2.2.0 正常读写。

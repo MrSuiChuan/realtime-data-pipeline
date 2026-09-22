@@ -37,6 +37,13 @@ Fluss 的连接器按 Flink 版本分构件，**必须与 Flink 版本对齐**�
 | 证据 | Flink 侧作业终态 + Flink 侧读回的行；Fluss 客户端侧的建表回执 |
 | 巡检 | 只读检查连接可用性与读写延迟，不做 compaction 或分区变更 |
 
-## 尚未验证（诚实标注）
+## 本地实测结论（2026-09-22，见 docs/oss-lab.md 第十一节）
 
-本机只完成了构件下载与版本对齐核对，**集群启动与读写链路尚未实测**（当时网络中断，见 `docs/oss-lab.md` 第七节）。等验证完成再回填这里与能力矩阵；在那之前，涉及 Fluss 的结论都按"未验证"呈现。
+| 项 | 结论 |
+| --- | --- |
+| 集群启动 | `bin/local-cluster.sh start` 一次起 zookeeper + coordinator + tablet；ZooKeeper 2181、Fluss 9123 |
+| SQL 入口 | **没有 SQL 控制台**——`fluss-console.sh` 是起服务用的；建库建表读写都走 Flink SQL + 连接器 |
+| 连接器 | `fluss-flink-2.2-1.0.0.jar` 放进 Flink `lib/` 后重启集群；版本必须与 Flink 对齐（见上面的对齐矩阵） |
+| 写入 | 建 catalog / 库 / 日志表（默认 append-only），datagen 流式写入 10 行，作业 `FINISHED`，数据落 `/tmp/fluss-data/db_lab/log_orders-0/log-0` |
+| 读回 | 批模式 `COUNT=10`，明细 order_id 1..5 正确 |
+| 与 Paimon 的分工 | Fluss 当流存储（日志表、append-only），Paimon 当湖表目录（主键表 + 快照），两者在 Flink SQL 里是两套 catalog，互不替代 |
