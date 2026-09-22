@@ -558,7 +558,7 @@ work_items:
 - id: RTD-029
   title: 支持开源实时栈作为一等执行器与数据源
   kind: delivery
-  status: ready
+  status: in_progress
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -568,7 +568,7 @@ work_items:
   - 能力矩阵登记开源组件版本与已知缺口，正文不内联版本号
   - 工作流不出现开源组件的专有命令串（仍然只引用 executors/）
   - 校验器八项与全部用例通过
-  next_action: 先落契约与能力矩阵条目，再用 WSL 实测回填。
+  next_action: 三份开源执行器契约已落（Fluss/Paimon 部分结论待实测回填）；继续补端到端与实测结论。
   paths:
   - executors/
   - governance/capability-matrix.json
@@ -577,7 +577,7 @@ work_items:
 - id: RTD-030
   title: WSL 本地安装 Flink 并跑通 SQL 作业
   kind: delivery
-  status: planned
+  status: in_progress
   goal: "file:///C:/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.awr/intake/GOALS.md#goal-rtd-plugin"
   priority: P0
   required: true
@@ -587,7 +587,7 @@ work_items:
   - SQL Client 跑通一个批作业并拿到结果
   - 跑通一个流作业（持续写入 + 查询），并把原始输出留成证据
   - 安装方式、版本、端口、启停命令写进 docs/oss-lab.md
-  next_action: 下载 Flink 发行包，解压到 ~/oss/flink，启动 standalone 集群。
+  next_action: 批作业与流作业都已跑通并留证（docs/oss-lab.md）；等网络恢复后走 AWR 完成流程绑定报告。
   depends_on:
   - RTD-029
   paths:

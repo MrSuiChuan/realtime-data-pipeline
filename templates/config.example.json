@@ -13,6 +13,22 @@
     "storage": {
       "log_cli": "<日志平台 CLI>",
       "light_db_cli": "<轻量库 CLI>"
+    },
+    "oss_flink": {
+      "home": "<Flink 安装目录，例如 ~/oss/flink-2.2.0>",
+      "sql_client": "<home>/bin/sql-client.sh",
+      "rest_endpoint": "http://127.0.0.1:8081",
+      "java_home": "<JDK 路径>"
+    },
+    "oss_paimon": {
+      "connector_jar": "<paimon-flink-<版本>.jar 路径>",
+      "catalog_type": "paimon",
+      "warehouse": "file:///tmp/paimon-warehouse"
+    },
+    "oss_fluss": {
+      "home": "<Fluss 安装目录>",
+      "bootstrap_servers": "<host:port>",
+      "connector_jar": "<fluss-flink-<版本>.jar 路径>"
     }
   },
   "limits": {

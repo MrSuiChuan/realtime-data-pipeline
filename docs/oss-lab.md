@@ -114,3 +114,24 @@ grep -hc "+I" log/flink-*-taskexecutor-*.out   → 20
 
 - Paimon 连接器与 Fluss 的安装与验证（RTD-031 / RTD-032）——本文件继续追加。
 - 用 Flink REST + SQL 客户端做插件端到端链路（RTD-033）。
+
+## 七、Paimon 安装进展与卡点（2026-09-22）
+
+已下载：`paimon-flink-2.2-1.4.1.jar`（54 MB，来自 Maven Central），已放进 `~/oss/flink-2.2.0/lib/` 并重启集群。
+
+**卡点**：创建 Paimon catalog 时报
+
+```
+java.lang.ClassNotFoundException: org.apache.hadoop.conf.Configuration
+```
+
+原因：Paimon 的 filesystem catalog 走 Hadoop FileSystem API，而 **Flink 2.2.0 不再自带 shaded Hadoop**（`lib/` 里没有任何 hadoop jar，`opt/` 只有 S3/OSS/GS/Azure 插件）。需要在 `lib/` 里补 `flink-shaded-hadoop-2-uber`（或等价 hadoop-common 依赖）。
+
+**当时的网络状态**：DNS 解析失败（`Could not resolve host: repo1.maven.org`，Windows 侧与 WSL 侧同时失效），因此这一步的依赖下载被迫中断。恢复后继续：下载 shaded hadoop uber → 放进 `lib/` → 重启集群 → 重跑 `paimon-write.sql` / `paimon-read.sql`。
+
+已落好的验证脚本（网络恢复后直接用）：
+
+| 脚本 | 做什么 |
+| --- | --- |
+| `.tmp/oss-lab/paimon-write.sql` | 建 Paimon catalog 与主键表，datagen 造 10 行流式写入（含 3 秒检查点） |
+| `.tmp/oss-lab/paimon-read.sql` | 批模式读回：行数 + 前 5 行明细 |

@@ -39,6 +39,39 @@
         "只读，永久；不得用于任何作业变更",
         "火焰图采样需先定位目标并评估开销"
       ]
+    },
+    "oss_flink": {
+      "configured_name_ref": "executors.oss_flink",
+      "verified_on": "2026-09-22",
+      "verified_env": "WSL2 Debian 13 + OpenJDK 21（见 docs/oss-lab.md）",
+      "verified_capabilities": [
+        "SQL 客户端批作业出结果",
+        "流作业提交到 REST 可查的 Job ID，跑到 FINISHED，print sink 行数可核对"
+      ],
+      "known_gaps": [
+        {"capability": "cluster-persistence", "status": "environment", "note": "start-cluster.sh 在 WSL 会话结束时收到 SIGHUP 被杀；需长驻会话或容器"},
+        {"capability": "sql-client-non-interactive", "status": "requirement", "note": "非交互模式必须显式设置 tableau 结果模式，否则查询直接报错"},
+        {"capability": "session-timezone", "status": "gotcha", "note": "SQL 会话默认 UTC，与机器本地时区不一致"}
+      ]
+    },
+    "oss_paimon": {
+      "configured_name_ref": "executors.oss_paimon",
+      "verified_on": null,
+      "known_gaps": [
+        {"capability": "filesystem-catalog", "status": "blocked", "note": "依赖 Hadoop FileSystem API；Flink 2.x 不自带 shaded Hadoop，缺依赖时报 ClassNotFoundException: org.apache.hadoop.conf.Configuration（2026-09-22 实测，网络中断未能补齐依赖）"}
+      ],
+      "notable_limits": [
+        "流式写入必须开检查点，否则读不回来",
+        "读回验证用批模式，不用流模式自证"
+      ]
+    },
+    "oss_fluss": {
+      "configured_name_ref": "executors.oss_fluss",
+      "verified_on": null,
+      "version_alignment": "连接器按 Flink 版本分构件（2.2 / 1.20 各有对应系列），必须对齐",
+      "known_gaps": [
+        {"capability": "cluster-and-connector", "status": "unverified", "note": "构件已下载并核对版本对齐，集群启动与读写链路尚未实测"}
+      ]
     }
   },
   "limits": {
