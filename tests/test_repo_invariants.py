@@ -129,6 +129,35 @@ def test_awr_reports_helper_reads_the_report_dir():
         assert info["latest"] in info["all"]
 
 
+def test_hooks_files_are_recognizable_by_hosts():
+    """两层包装 + PascalCase 事件名：少了 `hooks` 包裹会让宿主静默识别到 0 个钩子。"""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import validate_plugin
+
+    assert validate_plugin.check_hooks_files() == []
+
+    # 注入一个"少了 hooks 包裹"的文件，确认能被抓出来
+    import tempfile
+    from pathlib import Path as _Path
+
+    original = validate_plugin.ROOT
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = _Path(tmp)
+            (fake / "hooks").mkdir()
+            (fake / "hooks" / "hooks.json").write_text('{"PreToolUse": []}', encoding="utf-8")
+            (fake / "hooks" / "codex-hooks.json").write_text(
+                '{"hooks": {"pre-tool-use": [{"hooks": [{"type": "command", "command": "x"}]}]}}',
+                encoding="utf-8",
+            )
+            validate_plugin.ROOT = fake
+            problems = validate_plugin.check_hooks_files()
+        assert any("缺 `hooks` 包裹" in p for p in problems), problems
+        assert any("事件名不认识" in p for p in problems), problems
+    finally:
+        validate_plugin.ROOT = original
+
+
 def test_validator_flags_missing_config_guards():
     """RTD-019：校验器必须自己发现"gitignore 漏挡"和"CI 漏跑校验"。"""
     import tempfile

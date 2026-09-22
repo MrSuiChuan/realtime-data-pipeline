@@ -181,6 +181,53 @@ def check_structure() -> list[str]:
     for script in ("tools/validate_plugin.py", "tools/run_evals.py", "tools/build_codex_surface.py"):
         if script not in ci:
             errors.append(f"CI 没有跑 {script}")
+    errors.extend(check_hooks_files())
+    return errors
+
+
+HOOK_EVENTS = ("PreToolUse", "PostToolUse", "SessionStart", "UserPromptSubmit",
+               "SubagentStart", "SubagentStop", "PreCompact", "PostCompact", "PermissionRequest")
+
+
+def check_hooks_files() -> list[str]:
+    """hook 配置文件必须能被宿主认出来。
+
+    踩过的坑：Codex 的 hooks 文件顶层必须包一层 `hooks`；少了它宿主识别到 0 个钩子，
+    既不报错也不弹信任提示，属于静默失效。这条检查专门拦它。
+    """
+    errors: list[str] = []
+    for name in ("hooks/hooks.json", "hooks/codex-hooks.json"):
+        path = ROOT / name
+        if not path.is_file():
+            errors.append(f"缺 hook 配置：{name}")
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as err:
+            errors.append(f"{name} 不是合法 JSON：{err}")
+            continue
+        if not isinstance(data, dict) or "hooks" not in data:
+            errors.append(f"{name} 顶层缺 `hooks` 包裹（宿主会识别到 0 个钩子且不报错）")
+            continue
+        events = data["hooks"]
+        if not isinstance(events, dict) or not events:
+            errors.append(f"{name} 的 hooks 段为空")
+            continue
+        for event, entries in events.items():
+            if event not in HOOK_EVENTS:
+                errors.append(f"{name} 事件名不认识：{event}（宿主用 PascalCase）")
+                continue
+            if not isinstance(entries, list) or not entries:
+                errors.append(f"{name} 的 {event} 没有条目")
+                continue
+            for index, entry in enumerate(entries):
+                commands = entry.get("hooks") if isinstance(entry, dict) else None
+                if not isinstance(commands, list) or not commands:
+                    errors.append(f"{name} 的 {event}[{index}] 缺 hooks 命令数组")
+                    continue
+                for command in commands:
+                    if not isinstance(command, dict) or not str(command.get("command") or "").strip():
+                        errors.append(f"{name} 的 {event}[{index}] 有命令条目没有 command")
     return errors
 
 

@@ -1,24 +1,27 @@
 {
-  "PreToolUse": [
-    {
-      "hooks": [
-        {
-          "type": "command",
-          "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse.py\"",
-          "timeout": 60
-        }
-      ]
-    }
-  ],
-  "SessionStart": [
-    {
-      "hooks": [
-        {
-          "type": "command",
-          "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/sessionstart.py\"",
-          "timeout": 30
-        }
-      ]
-    }
-  ]
+  "description": "realtime-data-plugin 的 Codex 侧 hook：PreToolUse 硬门（证据/状态文件保护、--yes 自行追加、高风险动词、MCP 与引擎只读边界）+ SessionStart 阶段提醒。事件键与 Claude 一致为 PascalCase；顶层必须有 hooks 包裹——少了它 Codex 识别到 0 个钩子，连信任提示都不会出现（踩过）。",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"${CLAUDE_PLUGIN_ROOT}/hooks/sessionstart.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
 }
