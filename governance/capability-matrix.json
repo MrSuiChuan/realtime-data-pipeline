@@ -46,19 +46,28 @@
       "verified_env": "WSL2 Debian 13 + OpenJDK 21（见 docs/oss-lab.md）",
       "verified_capabilities": [
         "SQL 客户端批作业出结果",
-        "流作业提交到 REST 可查的 Job ID，跑到 FINISHED，print sink 行数可核对"
+        "流作业提交到 REST 可查的 Job ID，跑到 FINISHED，print sink 行数可核对",
+        "SQL Gateway REST 可作为结构化取证通道（需显式配置 rest.address）"
       ],
       "known_gaps": [
         {"capability": "cluster-persistence", "status": "environment", "note": "start-cluster.sh 在 WSL 会话结束时收到 SIGHUP 被杀；需长驻会话或容器"},
         {"capability": "sql-client-non-interactive", "status": "requirement", "note": "非交互模式必须显式设置 tableau 结果模式，否则查询直接报错"},
-        {"capability": "session-timezone", "status": "gotcha", "note": "SQL 会话默认 UTC，与机器本地时区不一致"}
+        {"capability": "session-timezone", "status": "gotcha", "note": "SQL 会话默认 UTC，与机器本地时区不一致"},
+        {"capability": "sql-gateway-required-address", "status": "requirement", "note": "Flink 2.2 必须配置 sql-gateway.endpoint.rest.address，否则启动报 Missing required options: address"},
+        {"capability": "sql-gateway-batch-empty-pages", "status": "gotcha", "note": "批模式下 Gateway 结果页为空；流模式的 changelog 才能取到值"}
       ]
     },
     "oss_paimon": {
       "configured_name_ref": "executors.oss_paimon",
-      "verified_on": null,
+      "verified_on": "2026-09-22",
+      "verified_env": "WSL2 Debian 13 + OpenJDK 21 + Flink 2.2.0 + paimon-flink-2.2-1.4.1",
+      "verified_capabilities": [
+        "建 catalog / 建主键分区表 / 流式写入 10 行（作业 FINISHED）",
+        "批模式读回：COUNT=10 且明细正确",
+        "warehouse 落盘 snapshot/manifest/parquet 齐全"
+      ],
       "known_gaps": [
-        {"capability": "filesystem-catalog", "status": "blocked", "note": "依赖 Hadoop FileSystem API；Flink 2.x 不自带 shaded Hadoop，缺依赖时报 ClassNotFoundException: org.apache.hadoop.conf.Configuration（2026-09-22 实测，网络中断未能补齐依赖）"}
+        {"capability": "filesystem-catalog", "status": "requirement", "note": "依赖 Hadoop FileSystem API；Flink 2.x 不自带，必须把 flink-shaded-hadoop-2-uber 放进 lib/，否则报 ClassNotFoundException: org.apache.hadoop.conf.Configuration（2026-09-22 已验证：补 jar 后恢复）"}
       ],
       "notable_limits": [
         "流式写入必须开检查点，否则读不回来",

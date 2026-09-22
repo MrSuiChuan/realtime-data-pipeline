@@ -40,3 +40,12 @@ java.lang.ClassNotFoundException: org.apache.hadoop.conf.Configuration
 
 - 插件**不管理** Paimon 的 compaction、快照过期等表维护作业；它们属于数据平台侧，需要时按诊断流程观察，不在这里自动触发；
 - Paimon 表的 schema 变更走元表流程（`runbook-metatable.md`）的同一套确认纪律。
+
+## 本地实测结论（2026-09-22，见 docs/oss-lab.md）
+
+| 项 | 结论 |
+| --- | --- |
+| 前置依赖 | 必须在 Flink `lib/` 放 `flink-shaded-hadoop-2-uber`；补齐后 `ClassNotFoundException` 消失 |
+| 流式写入 | 开 3 秒检查点的 datagen→Paimon 写入，作业 `FINISHED`，warehouse 出 `snapshot/manifest/parquet` |
+| 读回 | 批模式 `COUNT=10`，明细行正确 |
+| `refs_readback` 的等价口径 | OSS 场景没有"已发布版本"这个概念，**等价物是"表存在、可读、查询能返回行"**——用一条真实的 COUNT 查询证明（`published = rows > 0`），不靠声明 |

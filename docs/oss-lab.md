@@ -135,3 +135,93 @@ java.lang.ClassNotFoundException: org.apache.hadoop.conf.Configuration
 | --- | --- |
 | `.tmp/oss-lab/paimon-write.sql` | 建 Paimon catalog 与主键表，datagen 造 10 行流式写入（含 3 秒检查点） |
 | `.tmp/oss-lab/paimon-read.sql` | 批模式读回：行数 + 前 5 行明细 |
+
+## 八、Paimon 已跑通（2026-09-22 晚）
+
+补齐 `flink-shaded-hadoop-2-uber-2.8.3-10.0.jar` 到 `lib/` 后，`ClassNotFoundException` 消失，链路全通：
+
+**1. 流式入湖**
+
+```
+CREATE CATALOG paimon / CREATE DATABASE db_lab / CREATE TABLE t_orders(主键 + 按 dt 分区)  全部 Execute statement succeeded
+INSERT 提交成功：Job ID 87f7e97028abddf2f227414fcaaf623e
+作业终态：FINISHED
+```
+
+落盘结构：
+
+```
+/tmp/paimon-warehouse/db_lab.db/t_orders/{snapshot,manifest,schema,dt=2026-09-22/bucket-0/data-*.parquet}
+```
+
+**2. 读回验证（批模式）**
+
+```
+| cnt |
+|  10 |        → 1 row in set
+| order_id |      amount |         dt |   → 5 rows，order_id 1..5，dt=2026-09-22
+```
+
+**3. 结论**：Paimon 作为"湖表目录"在本地可用；`governance/capability-matrix.json` 里 `oss_paimon.filesystem-catalog` 的 blocked 状态已解除，前置条件是 shaded Hadoop 必须进 `lib/`。
+
+## 九、SQL Gateway 取证通道（2026-09-22 晚）
+
+插件要求证据是结构化 JSON，所以启用了 Flink 自带的 SQL Gateway REST（8003 端口那一类用法）：
+
+```
+./bin/sql-gateway.sh start-foreground     → Rest endpoint listening at localhost:8083
+```
+
+踩到的四个坑（都写进脚本注释了）：
+
+1. **必须显式配置 `sql-gateway.endpoint.rest.address`**，否则启动即报 `Missing required options: address`；Flink 2.2 的配置文件名是 `conf/config.yaml`；
+2. **操作是异步的**：提交语句拿到 `operationHandle` 后要先轮询 `/status` 到 `FINISHED`，再去 `/result/0` 取数，否则只会拿到空；
+3. **批模式下结果页是空的**（实测），流模式反而能拿到完整 changelog——`{"kind":"UPDATE_AFTER","fields":[10]}`，取最后一条非 `UPDATE_BEFORE` 的值就是终值；
+4. `nextResultUri` 是**相对路径**，要自己拼上 gateway 前缀。
+
+## 十、插件端到端链路跑通（RTD-033）
+
+取证脚本：`.tmp/oss-lab/flink_gateway_evidence.py`，两条通道：
+
+| 通道 | 说明 |
+| --- | --- |
+| `--via gateway` | 走 SQL Gateway REST 直接拿 JSON（结构最干净，但计数查询页面翻不完，实测不稳） |
+| `--via client` | 跑 `sql-client.sh -f paimon-read.sql`，解析真实输出成契约 JSON，**原始输出一并留档** `paimon-read-raw.txt` |
+
+实际用的是 client 通道，产出的证据：
+
+```json
+{
+  "observed_at": "2026-09-22T21:11:09+08:00",
+  "source": "flink-sql-client",
+  "command": "…/sql-client.sh -f …/paimon-read.sql",
+  "exit_code": 0,
+  "tables": [{"name": "paimon.db_lab.t_orders", "published": true, "rows": 10, "query": "SELECT COUNT(*) AS cnt …"}]
+}
+```
+
+拿着它跑插件自己的流程（命令与输出都是实跑）：
+
+```
+rtd.py setup                        → 运行时建好，引擎自拷贝进 .rtd/engine/
+rtd.py object set --file-id paimon.db_lab.t_orders --source flink-sql-client
+rtd.py evidence add --kind refs_readback --from refs_readback.json --tool flink-sql-client --command "sql-client.sh -f paimon-read.sql"
+   → 校验通过：1 张引用表全部已发布；object_file_id 已记录
+rtd.py gate set --name refs_published --evidence refs_readback-20260922211134-31ce69
+rtd.py advance --phase design → build
+rtd.py status  → phase=build, gates_satisfied=['refs_published'], evidence_count=1
+rtd.py verify  → 运行时自检通过：状态、证据哈希、门控引用一致
+```
+
+顺带被自己的检查拦了一次：第一次直接 `advance --phase build` 被拒（"跨了中间阶段"）——那是 RTD-026 新增的规则在生效，改成 design → build 两步即通过。
+
+**结论**：插件面向开源栈的链路是通的——`refs_readback` 证据来自真实的 Paimon 查询，门控按证据开，阶段推进受规则约束，运行时自检可复核。
+
+## 十一、Fluss：受阻（2026-09-22 晚）
+
+`fluss-1.0.0-bin.tgz`（约 560 MB）下载失败两次：
+
+1. 第一次被网络中断打断，包只有 281 MB，`tar` 报 `Unexpected EOF`；
+2. 第二次直连 `archive.apache.org` 的 IP 只有约 **10 KB/s**；换 `dlcdn` / `downloads` 镜像直连均 `http=000`（该网络只通部分 IP，且 DNS 走 UDP 被封、只能靠 TCP 查询绕过）。
+
+连接器 `fluss-flink-2.2-1.0.0.jar`（70 MB）已就位，版本对齐也核对过，但**集群没起、读写没测**。台账 RTD-032 保持"未验证"，`capability-matrix` 里 `oss_fluss` 也标着 `unverified`——网络恢复后再补。

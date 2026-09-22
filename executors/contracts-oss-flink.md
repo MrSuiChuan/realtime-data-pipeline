@@ -45,3 +45,14 @@
 ## 巡检与诊断怎么用它
 
 只读来源：REST 的 `/jobs/overview`、`/jobs/<id>`、`/jobs/<id>/exceptions`，加上 TaskManager 的 `.out`/`.log`。**不启动、不停止、不取消作业**——要变更走 `runbook-lifecycle.md` 的门。
+
+## 结构化取证：SQL Gateway REST（本地实测）
+
+插件要求证据是 JSON，SQL 客户端的表格输出不能直接当证据。两条可用通道：
+
+| 通道 | 形态 | 实测结论 |
+| --- | --- | --- |
+| REST `/jobs/*` | 原生 JSON | 可取作业状态与异常，适合"作业终态"类证据 |
+| SQL Gateway `/v1/sessions` | 原生 JSON 查询结果 | 可做查询类证据；注意三点：必须显式配置 `sql-gateway.endpoint.rest.address`、操作要先轮询 `/status` 到终态、批模式结果页为空（用流模式 changelog 取值） |
+
+若环境里 Gateway 不可用，退路是"跑 SQL 客户端 + 解析真实输出成契约 JSON"，**必须同时保留原始输出文件**并在证据里写明命令——不允许只留下手写的 JSON。
