@@ -15,6 +15,14 @@ plan.raw.md
 # 根目录临时产物
 /_*
 
+# 实验环境的构件与下载日志（体积大，属于本地环境，不进仓库）
+# 教训：下载命令后台启动时没固定目录，构件落到了仓库里，还被 git add 抓过一次空壳。
+/fluss-*.tgz
+/fluss-*.jar
+/paimon-*.jar
+/flink-*.tgz
+/dl-*.log
+
 # AWR 运行时状态（权威源 .awr/intake/ 与 project.toml 要提交）
 .awr/state.db
 .awr/state.db-*
