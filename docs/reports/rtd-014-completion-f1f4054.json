@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "work_item": "RTD-014",
+  "source_sha": "f1f4054a05e9c1224a5f6db3831faa39ad6aa1b2",
+  "command": "claude plugin details / claude -p / codex plugin list / codex 会话内写入实验",
+  "scope": [
+    "docs/host-hooks.md",
+    "SECURITY.md",
+    "docs/validation-report.md",
+    "hooks/codex-hooks.json",
+    "tools/validate_plugin.py"
+  ],
+  "verified_at": 1790122007859,
+  "checks": [
+    {
+      "name": "rtd-014-f1f4054-0",
+      "passed": true,
+      "details": "两个宿主都实测过。Claude Code 2.1.231：装插件后组件清单列出 Hooks(2)，非交互会话里往证据目录写探针被拒且文件未创建，对照组正常。Codex：个人 marketplace 装入并启用；config.toml 出现本插件 pre_tool_use 与 session_start 两条信任记录；在已加载插件的会话里执行针对证据目录的写入命令被拒（Command blocked by PreToolUse hook: [realtime-data-plugin:evidence_write] ...）。对照实验（已信任的姊妹插件在 codex exec 下写它 guard 的目录成功）证明 codex exec 不加载插件 hook，门禁只覆盖交互式会话。过程中修掉一个静默失效：Codex hooks 文件缺顶层 hooks 包裹时宿主识别到 0 个钩子且不报错，已由校验器第 1 项拦住。",
+      "criteria": [
+        "Claude Code 侧实测（已完成：拦住 + 文件未创建 + 组件清单可见 hooks）"
+      ]
+    },
+    {
+      "name": "rtd-014-f1f4054-1",
+      "passed": true,
+      "details": "两个宿主都实测过。Claude Code 2.1.231：装插件后组件清单列出 Hooks(2)，非交互会话里往证据目录写探针被拒且文件未创建，对照组正常。Codex：个人 marketplace 装入并启用；config.toml 出现本插件 pre_tool_use 与 session_start 两条信任记录；在已加载插件的会话里执行针对证据目录的写入命令被拒（Command blocked by PreToolUse hook: [realtime-data-plugin:evidence_write] ...）。对照实验（已信任的姊妹插件在 codex exec 下写它 guard 的目录成功）证明 codex exec 不加载插件 hook，门禁只覆盖交互式会话。过程中修掉一个静默失效：Codex hooks 文件缺顶层 hooks 包裹时宿主识别到 0 个钩子且不报错，已由校验器第 1 项拦住。",
+      "criteria": [
+        "新开一个 Codex 会话加载本插件（必要时批准信任），重跑写入实验确认被拦"
+      ]
+    },
+    {
+      "name": "rtd-014-f1f4054-2",
+      "passed": true,
+      "details": "两个宿主都实测过。Claude Code 2.1.231：装插件后组件清单列出 Hooks(2)，非交互会话里往证据目录写探针被拒且文件未创建，对照组正常。Codex：个人 marketplace 装入并启用；config.toml 出现本插件 pre_tool_use 与 session_start 两条信任记录；在已加载插件的会话里执行针对证据目录的写入命令被拒（Command blocked by PreToolUse hook: [realtime-data-plugin:evidence_write] ...）。对照实验（已信任的姊妹插件在 codex exec 下写它 guard 的目录成功）证明 codex exec 不加载插件 hook，门禁只覆盖交互式会话。过程中修掉一个静默失效：Codex hooks 文件缺顶层 hooks 包裹时宿主识别到 0 个钩子且不报错，已由校验器第 1 项拦住。",
+      "criteria": [
+        "结论写进 docs/validation-report.md 与 SECURITY.md（已按宿主如实区分）"
+      ]
+    }
+  ]
+}

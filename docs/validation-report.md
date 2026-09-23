@@ -94,6 +94,28 @@
 
 ---
 
+## 2026-09-23 · hook 在两个宿主的实测（RTD-014）
+
+**核实人**：维护者（本机）
+
+| 项 | 方法 | 结果 |
+| --- | --- | --- |
+| Claude Code 装载 | `claude plugin marketplace add` + `install`，再 `claude plugin details` | 通过：组件清单列出 `Hooks (2) PreToolUse, SessionStart` |
+| Claude Code 拦截 | 非交互会话里让模型往证据目录写一个探针文件 | **被拒**，文件未创建，拒绝原因来自本插件的 `evidence_write` 门；对照组（写系统临时目录）正常执行 |
+| Codex 装载 | 个人 marketplace 加条目 + `codex plugin add`，看 `codex plugin list` | 通过：`installed, enabled` |
+| Codex 信任 | 看 `~/.codex/config.toml` 的 `[hooks.state]` | 通过：出现本插件的 `pre_tool_use:0:0` 与 `session_start:0:0` 两条信任记录 |
+| Codex 拦截 | 在已加载插件的会话里执行一条针对证据目录的写入命令 | **被拒**：`Command blocked by PreToolUse hook: [realtime-data-plugin:evidence_write] …` |
+| `codex exec` 行为 | 用已信任的姊妹插件做对照：在 exec 模式下写它 guard 的运行时目录 | 写入**成功** → **`codex exec` 不加载插件 hook**，门禁只覆盖交互式会话 |
+
+**踩过并已修的坑（两条）**
+
+1. **Codex 的 hooks 文件顶层必须包一层 `hooks`**：我一度把它去掉，宿主识别到 0 个钩子——既不报错也不弹信任提示（这就是"别的插件都弹了、它不弹"的原因）。现在校验器第 1 项会拦：缺包裹、事件名不是 PascalCase、命令条目缺 `command` 都会红。
+2. **门会连带拦住"提到受保护路径的文档与补丁"**：写这份记录时，补丁正文里出现证据目录字面量就被自己的门拒了一次。属于可接受的假阳性（改措辞即可绕开），但也说明：**门拦的是字符串，不区分"要写文件"还是"只是提到"**。
+
+**未验证**：非交互/脚本化调用（`codex exec`、CI 里直接跑 shell）不受门控，任何自动化流程要自己兜住写操作。
+
+---
+
 ## 待裁决：`hooks` 字段与官方校验器的冲突
 
 **事实（两边都核实过）**

@@ -286,7 +286,7 @@ work_items:
 - id: RTD-014
   title: 裁决 hooks 字段在 Codex 侧是否生效
   kind: delivery
-  status: in_progress
+  status: completed
   goal: goal-rtd-plugin
   priority: P0
   required: true
@@ -295,10 +295,12 @@ work_items:
   - Claude Code 侧实测（已完成：拦住 + 文件未创建 + 组件清单可见 hooks）
   - 新开一个 Codex 会话加载本插件（必要时批准信任），重跑写入实验确认被拦
   - 结论写进 docs/validation-report.md 与 SECURITY.md（已按宿主如实区分）
-  next_action: 新开一个 Codex 会话（当前会话是插件安装前启动的，加载不到），按 docs/host-hooks.md 第二节重跑实验；同时补一条已验证结论——codex exec 不跑插件 hook（ddp 对照实验证明）。
+  next_action: 提交 work complete
   paths:
   - hooks/
   - docs/validation-report.md
+  "evidence": ["docs/reports/rtd-014-completion-f1f4054.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-015
   title: 定版与发布准备
