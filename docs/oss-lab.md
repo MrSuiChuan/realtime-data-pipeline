@@ -60,7 +60,7 @@ curl -s http://127.0.0.1:8081/overview
 脚本 `.tmp/oss-lab/flink-batch.sql`（datagen 造 5 行 + SELECT）：
 
 ```bash
-./bin/sql-client.sh -f /mnt/c/Users/wuzongyun/Documents/ChatGPT/realtime-data-plugin/.tmp/oss-lab/flink-batch.sql
+./bin/sql-client.sh -f <仓库路径>/.tmp/oss-lab/flink-batch.sql    # WSL 里通常写作 /mnt/c/... 或 ~/...
 ```
 
 结果：

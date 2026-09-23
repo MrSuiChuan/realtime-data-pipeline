@@ -13,14 +13,6 @@ adapter = "markdown-heading-v1"
 [sources.options]
 
 [[sources]]
-domain = "goal"
-role = "primary"
-path = ".awr/intake/GOALS.md"
-adapter = "markdown-heading-v1"
-
-[sources.options]
-
-[[sources]]
 domain = "ledger"
 role = "primary"
 path = "work-ledger.yaml"

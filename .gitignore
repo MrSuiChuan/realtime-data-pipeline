@@ -1,32 +1,11 @@
-__pycache__/
-*.pyc
-.pytest_cache/
-*.log
-.DS_Store
-.tmp/
-*.key
-
-# 运行时（项目侧）：状态、证据、执行记录、配置（含真实平台名）都不进仓库
+# ── 运行时（项目侧）：状态、证据、执行记录、配置（含真实平台名）都不进仓库 ──
 .rtd/
 
-# 未脱敏的设计原稿：含真实平台名与内部代号，只留本地
+# ── 只留本地：未脱敏原稿 + 脱敏词表（词表里是真实内部代号，CI 用 secret 注入） ──
 plan.raw.md
-
-# 脱敏词表：里面是真实内部代号，只留本地；CI 用 secret RTD_DESENSITIZE_TERMS 注入
 tools/desensitize_terms.txt
 
-# 根目录临时产物
-/_*
-
-# 实验环境的构件与下载日志（体积大，属于本地环境，不进仓库）
-# 教训：下载命令后台启动时没固定目录，构件落到了仓库里，还被 git add 抓过一次空壳。
-/fluss-*.tgz
-/fluss-*.jar
-/paimon-*.jar
-/flink-*.tgz
-/dl-*.log
-
-# AWR 运行时状态（权威源 .awr/intake/ 与 project.toml 要提交）
+# ── AWR：台账 work-ledger.yaml 与 docs/reports/ 属过程证据，要提交；只排除运行时状态 ──
 .awr/state.db
 .awr/state.db-*
 .awr/artifacts/
@@ -36,11 +15,21 @@ tools/desensitize_terms.txt
 .awr/executions/
 .awr/intake/inventory.json
 
-# AWR local runtime state
-.awr/state.db
-.awr/state.db-*
-.awr/artifacts/
-.awr/mutations/
-.awr/cache/
-.awr/clients/
-.awr/executions/
+# ── 通用噪音 ──
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+.DS_Store
+.tmp/
+*.key
+
+# ── 根目录临时产物 ──
+/_*
+
+# ── 实验构件与下载日志（体积大，属本地环境） ──
+/fluss-*.tgz
+/fluss-*.jar
+/paimon-*.jar
+/flink-*.tgz
+/dl-*.log

@@ -11,7 +11,7 @@
 仓库自带 Claude Code 的 marketplace 清单 `.claude-plugin/marketplace.json`，所以能直接从本地目录装：
 
 ```bash
-claude plugin marketplace add "C:\Users\wuzongyun\Documents\ChatGPT\realtime-data-plugin"
+claude plugin marketplace add "<本仓库路径>"     # 例如 ~/projects/realtime-data-plugin
 claude plugin install realtime-data-plugin@realtime-data-plugin
 ```
 

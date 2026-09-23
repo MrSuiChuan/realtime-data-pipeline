@@ -26,25 +26,63 @@
 
 配置缺项时的行为是**报缺口并停**：不猜命令名、不自动安装、不自动切换到另一个执行器。
 
-## 快速开始（目标形态）
+仓库里同样**不含脱敏词表本身**：`tools/desensitize_terms.txt` 写的是要拦的真实内部代号，随仓库公开等于公开要藏的名字——所以它只在本地（已 gitignore），CI 用仓库 secret `RTD_DESENSITIZE_TERMS` 注入；两边都没有时第 7 项显示 `SKIP` 并写明原因。格式见 `tools/desensitize_terms.example.txt`。
 
-> 下面的命令是本插件全部阶段落地后的用法。现在仓库还在骨架阶段，`commands/` 与 `skills/` 尚未生成，照此执行会找不到入口——进度见下一节的表。
+## 安装
+
+两个宿主共用同一套引擎、工作流与 hook 脚本，装哪个都行（也可以都装）。
 
 ```bash
-# 1) 装插件：从本仓库目录加载（两宿主共用同一引擎与 hook）
-#    Claude Code:  marketplace 指向本仓库根目录
-#    Codex:        把本仓库路径加进插件来源后重载
+# Codex
+codex plugin marketplace add <本仓库路径>
+codex plugin add realtime-data-plugin@personal
 
-# 2) 在项目里初始化运行时并接入你的平台
-/rtd-setup          # Claude Code；Codex 侧入口是技能 rtd-setup
+# Claude Code（仓库自带 .claude-plugin/marketplace.json）
+claude plugin marketplace add <本仓库路径>
+claude plugin install realtime-data-plugin@realtime-data-plugin
+```
 
-# 3) 开工
+**装完必须开新会话**：插件列表在会话启动时加载，当前会话里看不到新装的插件。首次加载时宿主会问是否信任这个插件的 hook——**要信任**，否则硬门不生效（原因与核实方法见 `docs/host-hooks.md`）。
+
+## 快速开始
+
+```bash
+# 1) 在项目里初始化运行时并填执行器配置
+/rtd-setup                 # Claude Code；Codex 侧入口是技能 rtd-setup
+
+# 2) 开工：从需求到上线，阶段出口有门控
 /rtd-dev "把这两张实时表做成一条宽表任务，10 秒聚合"
 ```
 
 初始化会创建 `<项目>/.rtd/`（状态、证据、执行记录）并生成 `config.json` 模板；填好执行器后 `rtd-status` 会列出当前还缺哪一项。
 
 执行器有两条路，选一条配全即可：**平台路径**（平台 CLI + 各域 MCP）或**开源路径**（Flink / Paimon / Fluss，三段 `oss_*` 都要填）。`rtd-env` 分别判定，不会拿另一条路的要求来报缺口。
+
+## 要求
+
+- Python 3.11+（引擎、校验器与工具只用标准库；跑测试需要 pytest）；
+- Windows / macOS / Linux 均可；hook 的启动器用 `tools/adapt_hooks.py` 按平台适配；
+- 不需要任何平台凭据也能启动：配置为空时引擎报缺口并停下，不替你猜。
+
+## 范围与边界（先说清不做什么）
+
+| 做 | 不做 |
+| --- | --- |
+| 阶段状态机与门控键（证据 / 当次确认两类，不可互替） | 不内置任何平台的命令名与服务名（走项目级配置） |
+| 证据账本（哈希可验）、执行记录、跨会话对账 | 不替你做线上变更；写操作都要当次确认 |
+| 十份 runbook 与执行器契约 | 不打包平台专有的 schema 快照与内部测试集 |
+| 开源栈（Flink / Paimon / Fluss）已本地实测 | 平台路径（平台 CLI / 各域 MCP）**未经真实环境验证**，按"未验证"呈现 |
+
+## 文档索引
+
+| 文档 | 内容 |
+| --- | --- |
+| `plan.md` | 设计源（脱敏版）：融合判断、五处关键合并、构建顺序 |
+| `docs/host-hooks.md` | 两个宿主里 hook 的实测记录：什么生效、什么不生效、怎么核实 |
+| `docs/oss-lab.md` | 本地开源栈实验：Flink / Paimon / Fluss 的安装、跑通过程与踩过的坑 |
+| `docs/reports/README.md` | 台账验收报告的命名与锚点约定 |
+| `docs/validation-report.md` | 验证记录：哪些已验证、哪些没有、边界在哪 |
+| `governance/` `workflows/` `executors/` `datasources/` | 规制层、工作流层、执行器契约、数据源契约 |
 
 ## 现在到哪一步
 
