@@ -30,7 +30,10 @@ jobs:
           RTD_TERMS_JSON: ${{ toJSON(secrets.RTD_DESENSITIZE_TERMS) }}
         run: |
           python - <<'PY'
-          import json, os, pathlib
+          import json, os, pathlib, sys
+          # Windows runner 的 stdout 默认 cp1252，打印中文会 UnicodeEncodeError——
+          # 本仓 CONTRIBUTING 里就写着这条规矩，第一版这里漏了，CI 当场红。
+          sys.stdout.reconfigure(encoding="utf-8", errors="replace")
           raw = os.environ.get("RTD_TERMS_JSON", "")
           terms = json.loads(raw) if raw and raw != "null" else ""
           if terms:

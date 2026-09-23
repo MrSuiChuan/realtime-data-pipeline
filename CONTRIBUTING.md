@@ -42,7 +42,8 @@ py -3 -m pytest tests -q
 ## 两条踩过的坑（别重复）
 
 1. **中文打印在 Windows CI 上崩**：GitHub Windows runner 的默认 stdout 编码是 cp1252，`print()` 中文直接 `UnicodeEncodeError`。所有脚本开头必须
-   `sys.stdout.reconfigure(encoding="utf-8")`，重定向日志时同样。
+   `sys.stdout.reconfigure(encoding="utf-8")`，重定向日志时同样。**这条对 CI 里的内联脚本同样适用**——`.github/workflows/ci.yml` 里那段 heredoc Python
+   第一版就漏了这行，4 个矩阵作业当场红（本地用 `PYTHONIOENCODING=cp1252` 可以复现）。
 2. **行尾**：仓库按 LF 统一（`.gitattributes`）。任何"文件哈希"类校验都必须先把行尾归一为 LF 再哈希，否则本地 CRLF 工作副本与 CI 克隆结果不一致，校验会全线飘红。
 
 ## 脱敏

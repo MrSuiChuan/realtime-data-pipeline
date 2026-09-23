@@ -2,11 +2,15 @@
 
 ## 报告问题
 
-仓库已经公开，优先走 GitHub 的私密报告入口：**Security 标签页 → Report a vulnerability**。如果那个入口还没打开，维护者需要先到 **Settings → Security** 启用 **Private vulnerability reporting**（该功能只对公开仓库生效）。
+**GitHub 上不一定有这个入口**：私密报告叫 *Private vulnerability reporting*，属于 Code Security 功能——私有仓库没有；公开仓库也要在 **Settings → Code security** 里手动打开，Security 标签页才会出现 **Report a vulnerability**。所以先确认它真的存在，别照着习惯写。
 
-备选：开一个带 `security` 标签的 issue，只贴最小复现，不要贴真实凭据。
+现在实际可走的路径：
 
-> 改这段之前先确认入口真的存在——它只在公开仓库 + 启用 Advanced Security 时才有。
+- **有仓库权限** → 开一个带 `security` 标签的 issue，只贴最小复现；私有仓库里这个 issue 只有协作者可见；
+- **没有仓库权限** → 走已有的私下渠道联系维护者；
+- **等入口打开之后** → 改用 Security 标签页的 **Report a vulnerability**（对报告者更省事，不要求先有仓库权限）。
+
+报告时**不要贴真实凭据、内网地址或平台专有名**——本项目的边界是：仓库内不含这些，配置在项目本地。
 
 ## 安全模型（三层强度不一样，请分清）
 
