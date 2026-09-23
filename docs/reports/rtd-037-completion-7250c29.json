@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "work_item": "RTD-037",
+  "source_sha": "7250c29939e7e1dcee74fc42db68617302793416",
+  "command": "py -3 tests/test_oss_cli.py",
+  "scope": [
+    "tools/oss_cli.py",
+    "tests/test_oss_cli.py",
+    "tools/validate_plugin.py",
+    "executors/contracts-oss-flink.md",
+    "executors/contracts-oss-fluss.md",
+    "docs/oss-lab.md",
+    "docs/validation-report.md",
+    "README.md",
+    "CHANGELOG.md",
+    "work-ledger.yaml"
+  ],
+  "verified_at": 1790173960647,
+  "checks": [
+    {
+      "name": "rtd-037-7250c29-0",
+      "passed": true,
+      "details": "tools/oss_cli.py 一个入口覆盖 Flink 与 Fluss：flink jobs/status/exceptions 走 JobManager REST（原生 JSON），flink submit/query 与 fluss sql 走 SQL 通道（--via，默认 client），evidence refs 产出 refs_readback 契约 JSON。地址与路径全部来自 .rtd/config.json 的 executors.oss_*，<占位符> 不算已配置，缺项报缺口并停。WSL 真集群实跑：flink submit -f paimon-write.sql 提交后 REST 回读 Job 798df256… 为 FINISHED、表里 10 行；fluss sql -f 建 catalog/库/表并提交写入，Job 0eb6a762… 为 FINISHED。",
+      "criteria": [
+        "一个入口覆盖 Flink 与 Fluss（Fluss 没有 SQL 控制台，走 Flink catalog）",
+        "地址与路径全部来自 .rtd/config.json 的 executors.oss_*，占位符不算已配置，缺项报缺口并停"
+      ]
+    },
+    {
+      "name": "rtd-037-7250c29-1",
+      "passed": true,
+      "details": "evidence refs 每张表跑一条真实 COUNT，产出的 JSON 行数与真实值一致（paimon.db_lab.t_orders 与 fluss.db_lab.log_orders 各自 published=true, rows=10，退出码 0），并用 --raw-dir 留档 SQL 客户端的原始输出；fluss.* 表由同一命令按表名前缀现建 fluss catalog（SQL 客户端每次 -f 都是新会话，catalog 不落盘）。解析器按列名锚定，因为实测客户端把表格边框粘在语句 echo 后面（SELECT COUNT(*)+-----+）。",
+      "criteria": [
+        "evidence refs 产出 refs_readback 契约 JSON，并留档 SQL 客户端的原始输出"
+      ]
+    },
+    {
+      "name": "rtd-037-7250c29-2",
+      "passed": true,
+      "details": "修掉两条真缺陷。其一：SQL 客户端语句失败时退出码仍可能是 0，错误只在输出的 [ERROR] 段里，原实现按退出码判定，于是“表不存在”被读成“0 行 → 未发布”——现在成败按文本判定，解析不出结果也记 published=null + error 并退 2；实测 evidence refs --table paimon.db_lab.t_missing 返回 rc 2、published=null、error 为 Object 't_missing' not found。其二：取证把 catalog 写死在脚本里，fluss.* 表根本查不了——现在按前缀现建。单元测试 15 条（含真实输出回归、失败不冒充未发布、单表失败不掐断其余表、fluss catalog 现建、--via 默认 client）全通过；仓库全量 pytest 64 passed。",
+      "criteria": [
+        "语句失败 / 解析不出结果 → published=null + 原因 + 退出码 2；查到 0 行才是 published=false",
+        "本地真集群实跑：提交作业、两张表（paimon.* / fluss.*）回读、失败案例，各留原始输出"
+      ]
+    }
+  ]
+}
