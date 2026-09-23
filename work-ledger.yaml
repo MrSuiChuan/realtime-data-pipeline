@@ -738,3 +738,33 @@ work_items:
   "evidence": ["docs/reports/rtd-024-completion.json","docs/reports/rtd-024-completion-ed521ac.json","docs/reports/rtd-027-completion-ac3ac06.json"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
+
+- id: RTD-037
+  title: 开源栈薄封装 CLI（Flink / Fluss）
+  kind: delivery
+  status: completed
+  goal: goal-rtd-plugin
+  priority: P1
+  required: false
+  summary: |
+    把 Flink / Fluss 的接口包成 tools/oss_cli.py：作业查询走 JobManager REST，
+    SQL 执行与取证走 SQL 客户端（默认）或 SQL Gateway（备选）。目标不是"再写一个客户端"，
+    而是让插件在开源栈上的取证有可复现的入口——证据必须来自真实查询，且"查失败"不能写成"没数据"。
+  acceptance:
+  - 一个入口覆盖 Flink 与 Fluss（Fluss 没有 SQL 控制台，走 Flink catalog）
+  - 地址与路径全部来自 .rtd/config.json 的 executors.oss_*，占位符不算已配置，缺项报缺口并停
+  - evidence refs 产出 refs_readback 契约 JSON，并留档 SQL 客户端的原始输出
+  - 语句失败 / 解析不出结果 → published=null + 原因 + 退出码 2；查到 0 行才是 published=false
+  - 本地真集群实跑：提交作业、两张表（paimon.* / fluss.*）回读、失败案例，各留原始输出
+  next_action: 已推送；等 GitHub Actions 跑一轮确认。
+  depends_on:
+  - RTD-033
+  paths:
+  - tools/oss_cli.py
+  - tests/test_oss_cli.py
+  - executors/contracts-oss-flink.md
+  - executors/contracts-oss-fluss.md
+  - docs/oss-lab.md
+  "evidence": ["docs/validation-report.md","docs/oss-lab.md"]
+  "verification": {"evidence_level":"locally_verified"}
+  "blocker": null

@@ -58,6 +58,22 @@ claude plugin install realtime-data-plugin@realtime-data-plugin
 
 执行器有两条路，选一条配全即可：**平台路径**（平台 CLI + 各域 MCP）或**开源路径**（Flink / Paimon / Fluss，三段 `oss_*` 都要填）。`rtd-env` 分别判定，不会拿另一条路的要求来报缺口。
 
+## 开源栈 CLI（可选，但要连真集群时用它）
+
+`tools/oss_cli.py` 是 Flink / Fluss 的薄封装：配置读 `.rtd/config.json` 的 `executors.oss_*`，不接平台、不装依赖，只用标准库。
+
+```bash
+py -3 tools/oss_cli.py flink jobs                    # 列作业（Flink REST，原生 JSON）
+py -3 tools/oss_cli.py flink status <jobId>          # 单作业状态
+py -3 tools/oss_cli.py flink submit -f job.sql       # 提交 DDL/DML
+py -3 tools/oss_cli.py fluss  sql -f fluss.sql       # Fluss 走 Flink 的 catalog（Fluss 没有 SQL 控制台）
+py -3 tools/oss_cli.py evidence refs --table paimon.db_lab.t_orders --raw-dir raw/
+```
+
+三条要知道的：默认通道是 **SQL 客户端**（`--via gateway` 是备选，Gateway 在 Flink 2.2 上取结果不稳）；`evidence refs` 按表名前缀现建 `paimon.` / `fluss.` catalog，产出的 JSON 直接喂 `rtd.py evidence add --kind refs_readback`；**查失败一律记 `published: null` + 原因**，不会写成"没数据"。要连真集群时，CLI 得跑在能访问 `rest_endpoint` 的机器上。
+
+实测记录（含失败案例）在 `docs/oss-lab.md` 第十二节。
+
 ## 要求
 
 - Python 3.11+（引擎、校验器与工具只用标准库；跑测试需要 pytest）；
@@ -108,6 +124,7 @@ py -3 tools/validate_plugin.py .             # 八项静态校验（含脱敏扫
 py -3 tests/test_engine.py                   # 引擎：门控/证据/阶段/续跑
 py -3 tests/test_hooks.py                    # hook：三条硬规则的正负例
 py -3 tests/test_score_inspection.py         # 巡检评分：出报告 + 拦住四类坏输入
+py -3 tests/test_oss_cli.py                  # 开源栈 CLI：真实输出回归 + 失败不冒充未发布
 py -3 tests/test_repo_invariants.py          # 仓库不变量
 py -3 tools/awr_reports.py                    # 台账验收报告：每个工作项最新一轮是哪个提交
 ```

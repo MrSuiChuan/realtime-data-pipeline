@@ -116,6 +116,39 @@
 
 ---
 
+---
+
+## 2026-09-23 · 开源栈薄封装 CLI（RTD-037）
+
+**核实人**：维护者（本机 WSL）
+
+把 Flink / Fluss 的接口包成 `tools/oss_cli.py` 之后，拿本地真集群跑了一遍。**命令、输出与失败案例都抄在 `docs/oss-lab.md` 第十二节**，这里只记结论。
+
+| 项 | 方法 | 结果 |
+| --- | --- | --- |
+| 作业查询 | `oss_cli flink jobs` / `status` / `exceptions`（Flink REST） | 通过：作业列表、终态、异常历史都是平台原生 JSON |
+| 提交 DDL/DML | `oss_cli flink submit -f paimon-write.sql` | 通过：建 catalog/库/表 + 提交写入，`Job ID 798df256…` → REST 回读 `FINISHED`，表里 10 行 |
+| Fluss 读写 | `oss_cli fluss sql -f fluss-write.sql` | 通过：`Job ID 0eb6a762…` → `FINISHED`，数据 10 行 |
+| 引用表证据 | `oss_cli evidence refs --table paimon.db_lab.t_orders` / `--table fluss.db_lab.log_orders` | 通过：两张表各自 `published: true, rows: 10`，退出码 0；`fluss.*` 由同一命令按前缀现建 catalog |
+| 查失败的判据 | `evidence refs --table paimon.db_lab.t_missing`（不存在的表） | **rc 2**，`published: null` + 真实错误文本。修之前会落成 `published: false`——**"查失败"被写成"没数据"**，正是宪法里那条要拦的 |
+| 原始输出留档 | `--raw-dir` | 通过：每次 SQL 客户端的原始文本落盘，解析与留档同源 |
+| 单元测试 | `py -3 tests/test_oss_cli.py`（15 条） | 通过：含真实输出回归（表格边框粘在语句 echo 后）、失败不冒充未发布、单表失败不掐断其余表、fluss catalog 现建、`--via` 默认 client |
+
+**修掉的真缺陷（两条）**
+
+1. **SQL 客户端语句失败时退出码仍是 0**，错误只在输出的 `[ERROR]` 段里。原实现只看退出码 + 正则取数，于是"表不存在"被读成"0 行 → 未发布"。现在成败按文本判定，解析不出结果也记 `null` + 原因。
+2. **取证只认 `paimon.*`**：catalog 写死在脚本里，`fluss.*` 的表根本查不了。现在按表名前缀在每条脚本里现建 catalog（SQL 客户端每次 `-f` 都是新会话，catalog 不落盘）。
+
+**未验证**
+
+| 项 | 现状 | 说明 |
+| --- | --- | --- |
+| 跨网络/容器/生产集群连通 | 未测 | 只在同一台 WSL 里跑过；CLI 必须部署在能访问 `rest_endpoint` 的地方，这点由使用者核实 |
+| `--via gateway` 取结果 | 已知不稳 | Flink 2.2 实测：流模式 `COUNT` 会把会话打成 ERROR、批模式结果页为空；保留为备选，不当默认 |
+| 断言数值的可信范围 | 仅演示数据 | `rows: 10` 来自本地演示表（datagen 造 10 行），不能当作任何生产结论 |
+
+---
+
 ## 待裁决：`hooks` 字段与官方校验器的冲突
 
 **事实（两边都核实过）**

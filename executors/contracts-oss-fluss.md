@@ -32,10 +32,14 @@ Fluss 的连接器按 Flink 版本分构件，**必须与 Flink 版本对齐**�
 
 | 动作 | 约定 |
 | --- | --- |
-| 建库建表 | 走 Fluss 客户端；库表名与分区键来自真实查询，不猜 |
+| 建库建表 | 走 Flink SQL + Fluss 连接器（**没有**独立 SQL 控制台）；库表名与分区键来自真实查询，不猜 |
 | Flink 读写 | catalog 与连接信息全部来自配置；连接器 jar 由使用方放进 Flink `lib/` |
-| 证据 | Flink 侧作业终态 + Flink 侧读回的行；Fluss 客户端侧的建表回执 |
+| 证据 | Flink 侧作业终态 + Flink 侧读回的行（`fluss.db_lab.log_orders` 这类表名走 `tools/oss_cli.py evidence refs`） |
 | 巡检 | 只读检查连接可用性与读写延迟，不做 compaction 或分区变更 |
+
+`tools/oss_cli.py` 的 `fluss sql -s/-f` 与 `evidence refs --table fluss.*` 就是上面两条通道的封装：
+它能按 `fluss.` 前缀现建 catalog（配置读 `executors.oss_fluss.bootstrap_servers`），
+所以查 Fluss 表不需要额外脚本。工具细节见 `contracts-oss-flink.md` 的薄封装 CLI 一节。
 
 ## 本地实测结论（2026-09-22，见 docs/oss-lab.md 第十一节）
 
@@ -47,3 +51,8 @@ Fluss 的连接器按 Flink 版本分构件，**必须与 Flink 版本对齐**�
 | 写入 | 建 catalog / 库 / 日志表（默认 append-only），datagen 流式写入 10 行，作业 `FINISHED`，数据落 `/tmp/fluss-data/db_lab/log_orders-0/log-0` |
 | 读回 | 批模式 `COUNT=10`，明细 order_id 1..5 正确 |
 | 与 Paimon 的分工 | Fluss 当流存储（日志表、append-only），Paimon 当湖表目录（主键表 + 快照），两者在 Flink SQL 里是两套 catalog，互不替代 |
+
+**2026-09-23 复跑（经 `tools/oss_cli.py`）**：`fluss sql -f` 建 catalog/库/表并提交写入（Job `0eb6a762…` →
+`FINISHED`），`evidence refs --table fluss.db_lab.log_orders` 读回 `rows: 10, published: true`，退出码 0。
+两点补充：Fluss 集群的 zookeeper / coordinator / tablet **也会随启动它的会话被 SIGHUP 带走**（与 Flink 集群同一个坑），
+要在长驻会话里起；`/tmp` 被清过之后数据与 `db_lab` 都会消失，读到"表不存在"时先确认集群与数据目录，而不是改查询。

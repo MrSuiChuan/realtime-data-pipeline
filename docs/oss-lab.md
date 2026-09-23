@@ -268,3 +268,83 @@ INSERT … SELECT … FROM datagen 源
 ```
 
 **结论**：Fluss 作为"流存储"在本地可用；契约里那条版本对齐矩阵（连接器按 Flink 版本分构件）得到验证——`fluss-flink-2.2-1.0.0.jar` 配 Flink 2.2.0 正常读写。
+
+## 十二、薄封装 CLI 实跑（2026-09-23，RTD-037）
+
+把 Flink/Fluss 的接口包成 `tools/oss_cli.py` 之后，用它把两条链路各跑了一遍。**下面每一条都是真跑的输出，不是设计意图**。
+
+### 1. 起环境时先撞到两件事（都不是 CLI 的问题）
+
+| 现象 | 现场 | 结论 |
+| --- | --- | --- |
+| 作业反复 `RESTARTING`，异常是 `NoResourceAvailableException: Could not acquire the minimum required resources` | `/overview` 显示 `taskmanagers: 0` | JobManager 在跑，TaskManager 早没了；`bin/taskmanager.sh start-foreground` 起来后作业立刻恢复并跑完 |
+| Fluss 集群端口消失，coordinator 日志刷 `Connection refused localhost:2181` | zookeeper / coordinator / tablet 进程都在，但 zk 端口没了 | **Fluss 的守护进程与 Flink 一样会随启动它的会话被 SIGHUP 带走**；要在长驻会话里起（`local-cluster.sh start` 后让会话挂着） |
+
+这两条与本文件第五节第 1 条同源：WSL 里"脚本返回了就以为服务在跑"，下次会话再来看才发现是空场。
+
+### 2. 通过 CLI 建的 Paimon 表（`flink submit`）
+
+```bash
+python3 tools/oss_cli.py --project .tmp/oss-lab/project flink submit -f .tmp/oss-lab/paimon-write.sql
+# Job ID: 798df2565d712d2277dc7776b7222ff7
+python3 tools/oss_cli.py --project .tmp/oss-lab/project flink status 798df2565d712d2277dc7776b7222ff7
+# 作业 798df… 状态：FINISHED
+```
+
+客户端通道的特征在这里看得最清楚：**提交是异步的**（打印 Job ID 后就关会话），真正的终态要去 REST 回读——所以"提交成功"与"作业跑完"是两条证据，不能互相顶替。
+
+### 3. 两张表的引用回读（`evidence refs`）
+
+```bash
+python3 tools/oss_cli.py --project .tmp/oss-lab/project evidence refs \
+  --table paimon.db_lab.t_orders --raw-dir .tmp/oss-lab/raw
+# → published: true, rows: 10，退出码 0
+
+python3 tools/oss_cli.py --project .tmp/oss-lab/project fluss sql -f .tmp/oss-lab/fluss-write.sql
+# CREATE CATALOG fluss / CREATE DATABASE / CREATE TABLE / INSERT 全部 Execute statement succeeded
+# Job ID: 0eb6a7626a4cd27749a5fcd255a43656 → FINISHED
+
+python3 tools/oss_cli.py --project .tmp/oss-lab/project evidence refs \
+  --table fluss.db_lab.log_orders --raw-dir .tmp/oss-lab/raw
+# → published: true, rows: 10，退出码 0
+```
+
+`fluss.*` 这张表是同一个 `evidence refs` 读的：脚本按表名前缀现建 `fluss` catalog，所以不需要为 Fluss 单开一条通道。
+
+### 4. 失败案例（这条是本轮修的东西）
+
+```bash
+python3 tools/oss_cli.py --project .tmp/oss-lab/project evidence refs --table paimon.db_lab.t_missing
+# rc 2
+# "published": null, "rows": null,
+# "error": "Could not execute SQL statement. Reason: … Object 't_missing' not found within 'paimon.db_lab'"
+```
+
+**修之前**这里会落成 `published: false, rows: null`——把"查失败"写成了"表没数据"，正好是插件宪法里"查询失败≠零事件"那条要拦的事。
+根因是 SQL 客户端**语句失败时退出码仍是 0**，错误只在输出的 `[ERROR]` 段里；现在成败按文本判定，解析不出结果也记 `null` + 原因，绝不降级成"未发布"。
+
+### 5. 客户端输出格式的两个坑（写进了解析器）
+
+```
+Flink SQL> 
+> SELECT COUNT(*)+-----+
+| cnt |
++-----+
+|  10 |
++-----+
+1 row in set (21.45 seconds)
+```
+
+1. 表格边框被**粘在语句 echo 后面**（`SELECT COUNT(*)+-----+`），所以解析不能按行号硬切，只能按列名锚定；
+2. 计数查询在**批模式**下必须显式 `SET 'execution.runtime-mode' = 'batch'`，结果模式必须 `tableau`（非交互模式只认它）。
+
+### 6. 结论与边界
+
+| 项 | 结论 |
+| --- | --- |
+| Flink 作业查询/异常 | 走 REST，返回原生 JSON，已实跑 |
+| Flink/Fluss SQL 执行 | 走 SQL 客户端，已实跑（建表 + 写入 + 读回） |
+| 引用表证据 | `refs_readback` JSON 由真实 `COUNT` 产出，行数与真实值一致，原始输出留档在 `--raw-dir` |
+| Gateway 通道 | 保留为 `--via gateway`，但取结果在 Flink 2.2 上不可靠（见第十节），**不当默认** |
+| 运行位置 | CLI 必须跑在能连到集群的机器上；本地是"在 WSL 里跑"（Windows 侧直连被代理拦） |
+| 未验证 | 跨机器 / 容器内 / 生产集群的连通性没测；工具覆盖 Flink 与 Fluss，Paimon 通过 Flink catalog 间接覆盖 |

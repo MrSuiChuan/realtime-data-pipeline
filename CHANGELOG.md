@@ -20,6 +20,8 @@
 - 证据绑定对象身份（文件级 ID + 版本），换对象或换版本旧证据一律作废；
 - 非顺序阶段推进（回跳/跳阶段）必须写理由；运行时记录插件版本；
 - 八项静态校验 `tools/validate_plugin.py`（含脱敏扫描与出站路由存在性）与生成器 `tools/build_codex_surface.py`；
+- 开源栈薄封装 CLI `tools/oss_cli.py`：一个入口管 Flink 与 Fluss（作业查询走 REST、SQL 走客户端/网关两条通道），
+  `evidence refs` 产出 `refs_readback` JSON，查失败记 `published: null` + 原因而不是"未发布"；
 - 仓库规范与 CI（Windows + Linux、Python 3.11/3.12）；
 - 脱敏词表 `tools/desensitize_terms.txt` 与 CI 的脱敏扫描；
 - 设计源 `plan.md`（脱敏版）与本地私有 `plan.raw.md`（未脱敏 + 替换对照表）。

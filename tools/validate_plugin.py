@@ -112,8 +112,10 @@ REQUIRED_PATHS = [
     "tools/run_evals.py",
     "tools/score_inspection.py",
     "tools/awr_reports.py",
+    "tools/oss_cli.py",
     "tests/fixtures/inspection-snapshot.json",
     "tests/test_score_inspection.py",
+    "tests/test_oss_cli.py",
     "docs/reports/README.md",
     "docs/host-hooks.md",
 ]

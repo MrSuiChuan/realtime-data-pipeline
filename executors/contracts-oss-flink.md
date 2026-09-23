@@ -48,11 +48,32 @@
 
 ## 结构化取证：SQL Gateway REST（本地实测）
 
-插件要求证据是 JSON，SQL 客户端的表格输出不能直接当证据。两条可用通道：
+插件要求证据是 JSON。三条通道的分工（**2026-09-23 全部在本地实测过**）：
 
 | 通道 | 形态 | 实测结论 |
 | --- | --- | --- |
 | REST `/jobs/*` | 原生 JSON | 可取作业状态与异常，适合"作业终态"类证据 |
-| SQL Gateway `/v1/sessions` | 原生 JSON 查询结果 | 可做查询类证据；注意三点：必须显式配置 `sql-gateway.endpoint.rest.address`、操作要先轮询 `/status` 到终态、批模式结果页为空（用流模式 changelog 取值） |
+| SQL Gateway `/v1/sessions` | 原生 JSON 查询结果 | 能跑通，但**取结果页不可靠**：必须显式配置 `sql-gateway.endpoint.rest.address`、操作要先轮询 `/status`、批模式结果页为空、流模式的 `COUNT` 会把会话自己打成 ERROR |
+| SQL 客户端 + 解析输出 | 文本表格解析成契约 JSON | **默认取证通道**：跑通 `paimon.*` 与 `fluss.*` 两张表，行数与真实值一致；原始输出必须留档 |
 
-若环境里 Gateway 不可用，退路是"跑 SQL 客户端 + 解析真实输出成契约 JSON"，**必须同时保留原始输出文件**并在证据里写明命令——不允许只留下手写的 JSON。
+**判据不放松**：查失败（表不存在、语法错）不能写成"0 行 / 未发布"。客户端在语句失败时**退出码仍可能是 0**，错误只在输出的 `[ERROR]` 段里，所以成败按文本判定：解析不出结果或出现 `[ERROR]` 一律记 `published: null` + `error`，退出码 2。
+
+## 薄封装 CLI（`tools/oss_cli.py`）
+
+把上面这些接口包成一条命令，避免每次手拼 REST 路径与 SQL 脚本。配置全部来自 `.rtd/config.json` 的 `executors.oss_flink`（`rest_endpoint` 必填；`home` / `sql_client` 供客户端通道用）。
+
+| 子命令 | 做什么 | 走哪条通道 |
+| --- | --- | --- |
+| `flink jobs` | 列作业与状态（`/jobs/overview`） | REST |
+| `flink status <jobId>` / `flink exceptions <jobId>` | 单作业状态与异常 | REST |
+| `flink submit -f <sql 文件>` | 提交 DDL/DML | `--via`（默认 `client`） |
+| `flink query -s "<SQL>"` | 跑一条语句并取回结果 | `--via`（默认 `client`） |
+| `evidence refs --table <catalog.db.table>` | 每张表跑一条真实 `COUNT`，产出 `refs_readback` 契约 JSON | `--via`（默认 `client`，`--raw-dir` 留档原始输出） |
+
+三处必须知道的行为：
+
+1. **`--via client`（默认）会等语句真正结束**：提交一个不结束的流作业就会一直等。要异步提交就显式用 `--via gateway`，并接受它的取结果限制。
+2. **CLI 必须跑在能连到集群的那台机器上**：`rest_endpoint` 是集群侧地址，跨机器/跨 WSL 边界能不能连通由使用者自己核实（本地实测是"在 WSL 里跑"）。
+3. **catalog 现建**：`evidence refs` 按表名前缀（`paimon.` / `fluss.`）在每条脚本里 `CREATE CATALOG IF NOT EXISTS`——SQL 客户端每次 `-f` 都是新会话，catalog 不落盘。
+
+实测记录（命令、原始输出、失败案例）在 `docs/oss-lab.md` 第十二节。
