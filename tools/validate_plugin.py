@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from glob import glob
@@ -44,6 +45,7 @@ ROOT = DEFAULT_ROOT
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".tmp", ".rtd", "logs", "node_modules"}
 # plan.raw.md 是未脱敏原稿，本地私有（.gitignore 已排除），不参与扫描。
 SKIP_FILES = {"desensitize_terms.txt", "plan.raw.md"}
+TERMS_FILE = ROOT / "tools" / "desensitize_terms.txt"
 
 # 第 1 项：结构必须齐的路径（随各阶段落地逐步加长）
 REQUIRED_PATHS = [
@@ -104,7 +106,7 @@ REQUIRED_PATHS = [
     "tests/test_repo_invariants.py",
     "templates/config.example.json",
     "docs/validation-report.md",
-    "tools/desensitize_terms.txt",
+    "tools/desensitize_terms.example.txt",
     "tools/adapt_hooks.py",
     "tools/build_codex_surface.py",
     "tools/run_evals.py",
@@ -432,19 +434,31 @@ def check_frontmatter() -> list[str]:
 
 
 def load_terms() -> list[str]:
-    path = ROOT / "tools" / "desensitize_terms.txt"
-    terms = []
-    for line in read_text(path).splitlines():
+    """脱敏词表按"本地私有文件 → 环境变量"的顺序找。
+
+    词表里写的是真实内部代号，**不能随仓库公开**（公开词表等于公开要藏的名字）。
+    所以：本地放 `tools/desensitize_terms.txt`（已 gitignore），CI 用仓库 secret 注入同名文件，
+    两边都没有时这项检查跳过而不是报错——但要在输出里说清"没检查"，不许静默算通过。
+    """
+    env_terms = os.environ.get("RTD_DESENSITIZE_TERMS", "")
+    if env_terms.strip():
+        return [line.strip() for line in env_terms.splitlines() if line.strip() and not line.strip().startswith("#")]
+
+    terms: list[str] = []
+    for line in read_text(TERMS_FILE).splitlines():
         line = line.strip()
         if line and not line.startswith("#"):
             terms.append(line)
     return terms
 
 
-def check_desensitize() -> list[str]:
+def check_desensitize() -> list:
     terms = load_terms()
     if not terms:
-        return ["脱敏词表为空：tools/desensitize_terms.txt"]
+        return [Skip(
+            "没有脱敏词表：本地缺 tools/desensitize_terms.txt 且未设置 RTD_DESENSITIZE_TERMS；"
+            "格式见 tools/desensitize_terms.example.txt（词表本身不入仓库）"
+        )]
     errors: list[str] = []
     for path in walk_files():
         if path.stat().st_size > 2 * 1024 * 1024:

@@ -1,0 +1,15 @@
+# 脱敏词表示例（本文件可以公开，里面只有格式与占位示例）
+#
+# 用法：
+#   1) 复制成 tools/desensitize_terms.txt —— 该文件名已列入 .gitignore，不会进仓库；
+#   2) 把你自己要拦的词逐行写进去，每行一个词，`#` 开头是注释；
+#   3) 跑 py -3 tools/validate_plugin.py . —— 第 7 项会扫全包，命中即失败。
+#
+# CI 里没有这个本地文件时，可以用仓库 secret 注入（见 .github/workflows/ci.yml）：
+#   RTD_DESENSITIZE_TERMS 的值就是同一份逐行词表。
+#
+# 为什么要这样设计：词表里写的是真实内部代号，词表随仓库公开等于把要藏的名字一起公开。
+#
+# 下面两行只是**格式示例**，请替换成你自己的词：
+internal-platform-name
+内部代号示例

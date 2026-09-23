@@ -42,22 +42,32 @@ def test_manifests_share_one_version():
     assert codex["version"].startswith(claude["version"])
 
 
-def test_desensitize_terms_are_present_and_not_empty():
+def test_desensitize_example_is_valid_and_real_list_stays_private():
+    """词表本身不入仓库；仓库里只留可公开的示例，示例要能被解析。"""
+    example = ROOT / "tools" / "desensitize_terms.example.txt"
+    assert example.is_file(), "缺脱敏词表示例文件"
     terms = [
         line.strip()
-        for line in (ROOT / "tools" / "desensitize_terms.txt").read_text(encoding="utf-8").splitlines()
+        for line in example.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
-    assert terms, "脱敏词表为空"
-    assert len(set(terms)) == len(terms), "脱敏词表有重复项"
+    assert terms, "示例词表里至少要有一行可解析的词"
+    assert len(set(terms)) == len(terms), "示例词表有重复项"
+
+    # 真实词表必须被 gitignore 挡住（否则公开仓库等于公开要藏的名字）
+    ignored = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    assert "tools/desensitize_terms.txt" in ignored
 
 
 def test_plan_md_has_no_denied_terms():
-    terms = [
-        line.strip()
-        for line in (ROOT / "tools" / "desensitize_terms.txt").read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]
+    """有词表就真查；没词表就明说没查——不许静默算通过。"""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import validate_plugin
+
+    terms = validate_plugin.load_terms()
+    if not terms:
+        print("[skip] 本地没有脱敏词表，plan.md 的脱敏检查未执行")
+        return
     plan = (ROOT / "plan.md").read_text(encoding="utf-8").lower()
     hits = [term for term in terms if term.lower() in plan]
     assert not hits, f"plan.md 命中脱敏词：{hits}"
@@ -156,6 +166,25 @@ def test_hooks_files_are_recognizable_by_hosts():
         assert any("事件名不认识" in p for p in problems), problems
     finally:
         validate_plugin.ROOT = original
+
+
+def test_desensitize_check_skips_when_term_list_is_absent():
+    """没有词表时第 7 项要明确 SKIP，而不是报"空词表"失败、也不许静默通过。"""
+    import os
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    import validate_plugin
+
+    original_file = validate_plugin.TERMS_FILE
+    original_env = os.environ.pop("RTD_DESENSITIZE_TERMS", None)
+    try:
+        validate_plugin.TERMS_FILE = ROOT / "tools" / "no-such-terms.txt"
+        result = validate_plugin.check_desensitize()
+    finally:
+        validate_plugin.TERMS_FILE = original_file
+        if original_env is not None:
+            os.environ["RTD_DESENSITIZE_TERMS"] = original_env
+    assert len(result) == 1 and isinstance(result[0], validate_plugin.Skip), result
 
 
 def test_validator_flags_missing_config_guards():

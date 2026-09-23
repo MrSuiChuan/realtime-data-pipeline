@@ -23,6 +23,22 @@ jobs:
       - name: 安装测试依赖
         shell: bash
         run: python -m pip install --disable-pip-version-check "pytest~=8.0"
+      # 脱敏词表本身不能进仓库（里面是真实内部代号）。配了 secret 就注入，没配就跳过该检查。
+      - name: 注入脱敏词表（可选）
+        shell: bash
+        env:
+          RTD_TERMS_JSON: ${{ toJSON(secrets.RTD_DESENSITIZE_TERMS) }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          raw = os.environ.get("RTD_TERMS_JSON", "")
+          terms = json.loads(raw) if raw and raw != "null" else ""
+          if terms:
+              pathlib.Path("tools/desensitize_terms.txt").write_text(terms.rstrip("\n") + "\n", encoding="utf-8")
+              print("已从 secret 注入脱敏词表")
+          else:
+              print("未配置 secret RTD_DESENSITIZE_TERMS：第 7 项会显示 SKIP（本地需自备词表）")
+          PY
       - name: 生成 Codex 入口技能（并校验生成物与提交一致）
         shell: bash
         run: python tools/build_codex_surface.py --check

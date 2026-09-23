@@ -12,6 +12,9 @@ __pycache__/
 # 未脱敏的设计原稿：含真实平台名与内部代号，只留本地
 plan.raw.md
 
+# 脱敏词表：里面是真实内部代号，只留本地；CI 用 secret RTD_DESENSITIZE_TERMS 注入
+tools/desensitize_terms.txt
+
 # 根目录临时产物
 /_*
 
