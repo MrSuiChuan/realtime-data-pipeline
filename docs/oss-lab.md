@@ -601,3 +601,52 @@ rtd_backend_alive=true
 Doris 与 StarRocks 是同一个架构血统，容器布局几乎一致，所以直接复用同一份编排脚本
 （只换镜像与容器内路径）。FE 镜像 `apache/doris:fe-3.0.3` 已从同一个镜像源拉到（2.24GB）；
 BE 镜像体积更大，拉取仍在进行。这一节按实际结果补写，不预填结论。
+
+## 十九、Doris：拉到构件之后卡在内存账（2026-10-01）
+
+BE 镜像第四次拉取（带缓存续传）终于成功：**6.06 GB**。此后一路排查，结论是**没跑通**，
+原因不在配方，而在内存。过程按顺序记下来：
+
+### 1. 入口脚本要环境变量（与 StarRocks 不同）
+
+第一次起容器直接退出，日志只列了五种参数组合：
+
+```
+[ERROR] [Entrypoint]: EOF
+        Note that you did not configure the required parameters!
+        plan 4: FE_SERVERS & FE_ID & BE_SERVERS & FQDN
+```
+
+FE 给 `FE_SERVERS=fe1:127.0.0.1:8030` + `FE_ID=1`；BE 给 `FE_SERVERS=...` + `BE_ADDR`。
+`BE_ADDR` 不是 IP——只写 IP 会报 `BE_ADDR rule error！example: $BE_IP:$HEARTBEAT_SERVICE_PORT`，
+要写 `127.0.0.1:9050`。
+
+### 2. 两个内核前置
+
+BE 启动前做两项检查，都不满足：
+
+| 检查 | 报错 | 处置 |
+| --- | --- | --- |
+| `vm.max_map_count ≥ 2000000` | `Set kernel parameter 'vm.max_map_count' to a value greater than 2000000` | `wsl -u root sysctl -w vm.max_map_count=2000000`（WSL 重启后要重设） |
+| 不能有 swap | `Disable swap memory before starting be` | `swapoff -a`；WSL 的 swap 由 Windows 侧管理，`swapon -a` 恢复不了，**重启 WSL 才恢复** |
+
+### 3. 卡点：FE 默认要 8 GB 堆，BE 又要求关 swap
+
+关掉 swap 之后 FE 反而起不来了：
+
+```
+OpenJDK 64-Bit Server VM warning: os::commit_memory(...) failed; error='Not enough space' (errno=12)
+Native memory allocation (mmap) failed to map 8589934592 bytes
+```
+
+镜像里的 `fe.conf` 写着 `JAVA_OPTS_FOR_JDK_17="... -Xmx8192m -Xms8192m ..."`，
+而本机总共 7.8 GB。**BE 要求关 swap + FE 要 8 GB 堆，在这台机器上不可兼得。**
+
+### 4. 结论与下一步
+
+构件、编排、注册表条目、契约都已到位；FE 能起来并响应查询端口，BE 能注册进 FE。
+差的是**把 FE 堆降下来**（2 GB 上下），这需要给编排脚本加"自定义容器命令/挂载 fe.conf"的能力——
+当前脚本还不支持覆盖镜像里的启动配置。这一步做完再继续跑冒烟。
+
+顺带记一条实验台的坑：**Doris 与 StarRocks 默认都用 9030**，"一次只起一个"的守卫按端口判定，
+会把在跑的 Doris 误判成 StarRocks。端口重叠时不能靠端口判归属，得先 `oss_lab stop` 掉另一个。

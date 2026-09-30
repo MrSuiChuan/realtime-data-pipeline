@@ -451,7 +451,7 @@
         "note": "Doris 官方发包走自己的对象存储（本机 404 或拒绝列举）、GitHub Release 不挂二进制；容器镜像是可达通道"
       },
       "start": [
-        "${plugin_root}/tools/lab/serving_cluster_up.sh up --fe-image ${fe_image} --be-image ${be_image} --prefix ${container_prefix} --network ${network} --mysql-port ${mysql_port} --fe-home /opt/apache-doris/fe --be-home /opt/apache-doris/be"
+        "${plugin_root}/tools/lab/serving_cluster_up.sh up --fe-image ${fe_image} --be-image ${be_image} --prefix ${container_prefix} --mysql-port ${mysql_port} --host-network --entrypoint-managed --be-address 127.0.0.1 --fe-env FE_SERVERS=fe1:127.0.0.1:8030,FE_ID=1 --be-env FE_SERVERS=fe1:127.0.0.1:8030,BE_ADDR=127.0.0.1:9050"
       ],
       "stop": ["docker rm -f ${container_prefix}-fe ${container_prefix}-be"],
       "skip_start_if_ready": true,
@@ -463,7 +463,16 @@
          "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
          "expect_stdout_value_equals": "${count}"}
       ],
-      "verified": {"on": null, "env": null, "capabilities": [], "gaps": []}
+      "verified": {
+        "on": null,
+        "env": null,
+        "capabilities": [],
+        "gaps": [
+          "未跑通：构件已换到容器镜像通道并拉到本地（FE 2.24GB / BE 6.06GB）——GitHub Release 不挂二进制、官方对象存储 404，容器镜像是可达通道",
+          "FE 已能起来并响应查询端口，BE 也能注册进 FE；卡在内存账：BE 要求关 swap，而 FE 默认要 8GB 堆（fe.conf 的 JDK17 配置），本机 7.8GB 不可兼得",
+          "跑通前要给编排脚本加自定义容器命令的能力，把 FE 堆降到 2GB 上下；另需 vm.max_map_count 至少 2000000（WSL 重启后要重设）"
+        ]
+      }
     },
     {
       "id": "oss_starrocks",

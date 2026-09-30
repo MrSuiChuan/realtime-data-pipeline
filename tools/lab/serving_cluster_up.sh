@@ -27,6 +27,7 @@ set -uo pipefail
 
 ACTION=""; FE_IMG=""; BE_IMG=""; PREFIX=rtd-sr; NET=rtd-sr-net; MYSQL_PORT=9030
 FE_HOME=/opt/starrocks/fe; BE_HOME=/opt/starrocks/be
+FE_ENV=""; BE_ENV=""; HOST_NET=0; ENTRYPOINT_MANAGED=0; BE_ADDR=""
 while [ $# -gt 0 ]; do
   case "$1" in
     up|down) ACTION=$1; shift;;
@@ -37,6 +38,13 @@ while [ $# -gt 0 ]; do
     --mysql-port) MYSQL_PORT=$2; shift 2;;
     --fe-home) FE_HOME=$2; shift 2;;
     --be-home) BE_HOME=$2; shift 2;;
+    --fe-env) FE_ENV=$2; shift 2;;
+    --be-env) BE_ENV=$2; shift 2;;
+    --host-network) HOST_NET=1; shift;;
+    # 有些镜像的入口脚本自己就把服务起起来了（Doris 就是），这时不能再 exec 一遍启动脚本。
+    --entrypoint-managed) ENTRYPOINT_MANAGED=1; shift;;
+    # host 网络下拿不到 BE 的容器 IP，直接给它在宿主机上的地址（通常是 127.0.0.1）。
+    --be-address) BE_ADDR=$2; shift 2;;
     *) echo "未知参数：$1" >&2; exit 64;;
   esac
 done
@@ -44,6 +52,7 @@ done
 
 FE="$PREFIX-fe"; BE="$PREFIX-be"
 wait_port() { local h=$1 p=$2 lim=$3 i=0; while [ $i -lt "$lim" ]; do (exec 3<>"/dev/tcp/$h/$p") 2>/dev/null && return 0; sleep 3; i=$((i + 3)); done; return 1; }
+env_flags() { local spec=$1 out=""; local IFS=','; for kv in $spec; do [ -n "$kv" ] && out="$out -e $kv"; done; echo "$out"; }
 
 if [ "$ACTION" = "down" ]; then
   docker rm -f "$FE" "$BE" >/dev/null 2>&1
@@ -53,29 +62,43 @@ fi
 
 [ -n "$FE_IMG" ] && [ -n "$BE_IMG" ] || { echo "[失败] 需要 --fe-image 与 --be-image" >&2; exit 64; }
 
-docker network create "$NET" >/dev/null 2>&1 || true
+if [ "$HOST_NET" = "1" ]; then NET_OPTS="--network host"; PORT_OPTS=""; else
+  docker network create "$NET" >/dev/null 2>&1 || true
+  NET_OPTS="--network $NET"; PORT_OPTS="-p $MYSQL_PORT:$MYSQL_PORT -p 8030:8030"
+fi
 docker rm -f "$FE" "$BE" >/dev/null 2>&1 || true
 
 # 镜像的默认 CMD 是 /bin/bash，不加 -it 容器会立刻退出（实测踩过）。
-docker run -itd --name "$FE" --network "$NET" -p "$MYSQL_PORT:$MYSQL_PORT" -p 8030:8030 "$FE_IMG" >/dev/null \
+# shellcheck disable=SC2086
+docker run -itd --name "$FE" $NET_OPTS $PORT_OPTS $(env_flags "$FE_ENV") "$FE_IMG" >/dev/null \
   || { echo "[失败] FE 容器起不来" >&2; exit 3; }
-docker exec "$FE" bash -lc "$FE_HOME/bin/start_fe.sh --daemon" >/dev/null 2>&1
-if ! wait_port 127.0.0.1 "$MYSQL_PORT" 120; then
+if [ "$ENTRYPOINT_MANAGED" = "0" ]; then
+  docker exec "$FE" bash -lc "$FE_HOME/bin/start_fe.sh --daemon" >/dev/null 2>&1
+fi
+# Doris 的 FE 首次启动要建元数据，实测比 StarRocks 慢，给足 5 分钟。
+if ! wait_port 127.0.0.1 "$MYSQL_PORT" 300; then
   echo "[失败] FE 的查询端口 $MYSQL_PORT 没起来" >&2
   docker exec "$FE" bash -lc "tail -15 $FE_HOME/log/fe.log" 2>&1 | tail -15
   exit 3
 fi
 
-docker run -itd --name "$BE" --network "$NET" -p 8040:8040 "$BE_IMG" >/dev/null \
+# shellcheck disable=SC2086
+docker run -itd --name "$BE" $NET_OPTS -p 8040:8040 $(env_flags "$BE_ENV") "$BE_IMG" >/dev/null \
   || { echo "[失败] BE 容器起不来" >&2; exit 3; }
 BE_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$BE")
-[ -n "$BE_IP" ] || { echo "[失败] 拿不到 BE 的容器 IP" >&2; exit 3; }
-# BE 必须知道用哪个网卡对外：容器里既有 lo 又有 eth0，不指定会注册成错地址。
-docker exec "$BE" bash -lc "echo 'priority_networks = ${BE_IP%.*}.0/24' >> $BE_HOME/conf/be.conf"
-docker exec "$BE" bash -lc "$BE_HOME/bin/start_be.sh --daemon" >/dev/null 2>&1
+if [ "$ENTRYPOINT_MANAGED" = "0" ]; then
+  [ -n "$BE_IP" ] || { echo "[失败] 拿不到 BE 的容器 IP" >&2; exit 3; }
+  # BE 必须知道用哪个网卡对外：容器里既有 lo 又有 eth0，不指定会注册成错地址。
+  docker exec "$BE" bash -lc "echo 'priority_networks = ${BE_IP%.*}.0/24' >> $BE_HOME/conf/be.conf"
+  docker exec "$BE" bash -lc "$BE_HOME/bin/start_be.sh --daemon" >/dev/null 2>&1
+fi
 
-mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot \
-  -e "ALTER SYSTEM ADD BACKEND '$BE_IP:9050';" >/dev/null 2>&1
+REGISTER_HOST="$BE_IP"
+[ -n "$REGISTER_HOST" ] || REGISTER_HOST="$BE_ADDR"
+if [ -n "$REGISTER_HOST" ]; then
+  mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot \
+    -e "ALTER SYSTEM ADD BACKEND '$REGISTER_HOST:9050';" >/dev/null 2>&1
+fi
 
 # 等心跳：Alive=true 才算真的可用，端口通不算。
 i=0

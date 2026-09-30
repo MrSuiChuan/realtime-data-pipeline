@@ -1207,7 +1207,7 @@ work_items:
   - BE 镜像落地后起 FE 与 BE，等心跳为真
   - 建库建表写 N 行读回 N 行，原始输出落盘
   - tier 从 2 升到 1，验证状态与已知缺口回填
-  next_action: 网络空闲时重跑 oss_lab 的安装步骤把 BE 镜像拉全，再起服务跑冒烟。
+  next_action: 构件已拉全，FE 能起、BE 能注册；卡在内存账（BE 要求关 swap，FE 默认 8GB 堆）。下一步给编排脚本加自定义容器命令或挂载 fe.conf 的能力，把 FE 堆降到 2GB 上下再跑冒烟。
   paths:
   - governance/oss-components.json
   - executors/contracts-oss-doris.md
