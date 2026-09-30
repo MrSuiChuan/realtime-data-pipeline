@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "work_item": "RTD-050",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）；git check-ignore 逐项核对",
+  "scope": [
+    "LICENSE",
+    "NOTICE",
+    "engine/",
+    "hooks/",
+    "tools/",
+    "tests/",
+    ".claude-plugin/plugin.json",
+    ".codex-plugin/plugin.json",
+    "tools/validate_plugin.py"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-050-7fed5e5-0",
+      "passed": true,
+      "details": "LICENSE 换成 Apache-2.0 官方文本（原为 MIT，不要求声明文件也没有专利授权条款）；新增 NOTICE，写明第三方边界与商标声明；24 个自研源文件加上短式许可头；校验器第 1 项扩成“文件树 + 必需文件 + 许可头”，新增文件漏了头会被拦。两份插件清单的许可字段同步改为 Apache-2.0。是否保留 Apache-2.0 属所有者决策，已写进 docs/apache-readiness-audit.md 第七节并给了还原方法。",
+      "criteria": [
+        "LICENSE 为 Apache-2.0 官方文本"
+      ]
+    },
+    {
+      "name": "rtd-050-7fed5e5-1",
+      "passed": true,
+      "details": "LICENSE 换成 Apache-2.0 官方文本（原为 MIT，不要求声明文件也没有专利授权条款）；新增 NOTICE，写明第三方边界与商标声明；24 个自研源文件加上短式许可头；校验器第 1 项扩成“文件树 + 必需文件 + 许可头”，新增文件漏了头会被拦。两份插件清单的许可字段同步改为 Apache-2.0。是否保留 Apache-2.0 属所有者决策，已写进 docs/apache-readiness-audit.md 第七节并给了还原方法。",
+      "criteria": [
+        "NOTICE 写明第三方边界与商标声明"
+      ]
+    },
+    {
+      "name": "rtd-050-7fed5e5-2",
+      "passed": true,
+      "details": "LICENSE 换成 Apache-2.0 官方文本（原为 MIT，不要求声明文件也没有专利授权条款）；新增 NOTICE，写明第三方边界与商标声明；24 个自研源文件加上短式许可头；校验器第 1 项扩成“文件树 + 必需文件 + 许可头”，新增文件漏了头会被拦。两份插件清单的许可字段同步改为 Apache-2.0。是否保留 Apache-2.0 属所有者决策，已写进 docs/apache-readiness-audit.md 第七节并给了还原方法。",
+      "criteria": [
+        "引擎、hook、工具、测试的每个源文件都带许可头，且校验器会拦漏"
+      ]
+    },
+    {
+      "name": "rtd-050-7fed5e5-3",
+      "passed": true,
+      "details": "LICENSE 换成 Apache-2.0 官方文本（原为 MIT，不要求声明文件也没有专利授权条款）；新增 NOTICE，写明第三方边界与商标声明；24 个自研源文件加上短式许可头；校验器第 1 项扩成“文件树 + 必需文件 + 许可头”，新增文件漏了头会被拦。两份插件清单的许可字段同步改为 Apache-2.0。是否保留 Apache-2.0 属所有者决策，已写进 docs/apache-readiness-audit.md 第七节并给了还原方法。",
+      "criteria": [
+        "两份插件清单的许可字段同步改为 Apache-2.0"
+      ]
+    }
+  ]
+}

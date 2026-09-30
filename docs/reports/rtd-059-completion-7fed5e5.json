@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "work_item": "RTD-059",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "最小账本复现 + 逐条搬入最小项目 + 块标量压平后重测；py -3 -m pytest tests -q",
+  "scope": [
+    "work-ledger.yaml",
+    "docs/awr-intake.md"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-059-7fed5e5-0",
+      "passed": true,
+      "details": "定位到根因：AWR 的 yaml-ledger-v1 改写器按行找映射冒号，处理不了 `summary: |` 块标量（续行没有冒号，被当成坏映射，报 missing YAML mapping colon / YAML marker outside source），导致整份账本任何一次写回都失败。查法：先确认最小账本能写（成功），再把真实条目逐条搬进最小项目单测，得到上面两条具体报错；把块标量压成单行后立刻变 proposal_recorded。修法：机械压平账本里的 23 处块标量（只改写法不改语义），再重新索引。修好后本轮 17 个工作项全部按代码提交 7fed5e5 绑定验收报告并置完成。另记一条流程细节：work complete 的提案必须在发起它的会话还活着时应用，先 end 会话再 apply 会报 InvalidTransition。",
+      "criteria": [
+        "用最小账本复现并二分出触发写回失败的写法"
+      ]
+    },
+    {
+      "name": "rtd-059-7fed5e5-1",
+      "passed": true,
+      "details": "定位到根因：AWR 的 yaml-ledger-v1 改写器按行找映射冒号，处理不了 `summary: |` 块标量（续行没有冒号，被当成坏映射，报 missing YAML mapping colon / YAML marker outside source），导致整份账本任何一次写回都失败。查法：先确认最小账本能写（成功），再把真实条目逐条搬进最小项目单测，得到上面两条具体报错；把块标量压成单行后立刻变 proposal_recorded。修法：机械压平账本里的 23 处块标量（只改写法不改语义），再重新索引。修好后本轮 17 个工作项全部按代码提交 7fed5e5 绑定验收报告并置完成。另记一条流程细节：work complete 的提案必须在发起它的会话还活着时应用，先 end 会话再 apply 会报 InvalidTransition。",
+      "criteria": [
+        "定位到具体原因（重点怀疑带引号键与不带引号键混用）并给出统一风格的修法"
+      ]
+    },
+    {
+      "name": "rtd-059-7fed5e5-2",
+      "passed": true,
+      "details": "定位到根因：AWR 的 yaml-ledger-v1 改写器按行找映射冒号，处理不了 `summary: |` 块标量（续行没有冒号，被当成坏映射，报 missing YAML mapping colon / YAML marker outside source），导致整份账本任何一次写回都失败。查法：先确认最小账本能写（成功），再把真实条目逐条搬进最小项目单测，得到上面两条具体报错；把块标量压成单行后立刻变 proposal_recorded。修法：机械压平账本里的 23 处块标量（只改写法不改语义），再重新索引。修好后本轮 17 个工作项全部按代码提交 7fed5e5 绑定验收报告并置完成。另记一条流程细节：work complete 的提案必须在发起它的会话还活着时应用，先 end 会话再 apply 会报 InvalidTransition。",
+      "criteria": [
+        "修好后补一轮完成校验，把 RTD-038 ~ RTD-058 的完成状态与证据按提交 SHA 绑定"
+      ]
+    }
+  ]
+}

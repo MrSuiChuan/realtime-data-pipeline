@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-043",
+  "source_sha": "c610b1dd501905eb613a5b486aca4521247dc03d",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）",
+  "scope": [
+    "docs/oss-component-ledger.md",
+    "README.md",
+    "tools/validate_plugin.py"
+  ],
+  "verified_at": 1790773378000,
+  "checks": [
+    {
+      "name": "rtd-043-c610b1d-0",
+      "passed": true,
+      "details": "新增组件台账：登记总表（角色、形态、tier、构件就绪判定键、真跑状态、证据位置）、逐个组件的现状与下一步、本轮优化与新增、口径与纪律、复现步骤。台账与注册表一致（构件就绪判定键取自注册表的 required_keys），并列入静态校验的必需文件清单。",
+      "criteria": [
+        "每个登记组件的角色、构件就绪判定键、真跑状态、下一步都能查到"
+      ]
+    },
+    {
+      "name": "rtd-043-c610b1d-1",
+      "passed": true,
+      "details": "新增组件台账：登记总表（角色、形态、tier、构件就绪判定键、真跑状态、证据位置）、逐个组件的现状与下一步、本轮优化与新增、口径与纪律、复现步骤。台账与注册表一致（构件就绪判定键取自注册表的 required_keys），并列入静态校验的必需文件清单。",
+      "criteria": [
+        "台账与注册表一致（构件就绪判定键取自注册表的 required_keys）"
+      ]
+    },
+    {
+      "name": "rtd-043-c610b1d-2",
+      "passed": true,
+      "details": "新增组件台账：登记总表（角色、形态、tier、构件就绪判定键、真跑状态、证据位置）、逐个组件的现状与下一步、本轮优化与新增、口径与纪律、复现步骤。台账与注册表一致（构件就绪判定键取自注册表的 required_keys），并列入静态校验的必需文件清单。",
+      "criteria": [
+        "“未验证”与“已验证”分列，不用推测内容填充"
+      ]
+    }
+  ]
+}

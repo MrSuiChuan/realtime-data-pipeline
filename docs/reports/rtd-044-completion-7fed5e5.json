@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-044",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/oss_lab.py smoke oss_spark --count 3；py -3 -m pytest tests -q",
+  "scope": [
+    "tools/oss_lab.py",
+    "tools/lab/spark_streaming_smoke.py",
+    "tests/test_oss_lab.py"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-044-7fed5e5-0",
+      "passed": true,
+      "details": "实验台先补四个短板：冒烟步骤支持指定工作目录（Spark 会把 Derby 元数据库写在当前目录，不指定就落到调用者的项目里）、读数与注册表声明的目标值比对（不只看有没有打印）、子进程输出固定 UTF-8（Windows 上按本地代码页解会崩）、安装先清目标目录再解包并对落点加护栏。补完跑通 Spark：rate 源 → Parquet（带 checkpoint）→ 批读回，写 3 行读回 3 行，读数 3 应等于 3。",
+      "criteria": [
+        "冒烟支持工作目录与读数比对，两者都有用例覆盖"
+      ]
+    },
+    {
+      "name": "rtd-044-7fed5e5-1",
+      "passed": true,
+      "details": "实验台先补四个短板：冒烟步骤支持指定工作目录（Spark 会把 Derby 元数据库写在当前目录，不指定就落到调用者的项目里）、读数与注册表声明的目标值比对（不只看有没有打印）、子进程输出固定 UTF-8（Windows 上按本地代码页解会崩）、安装先清目标目录再解包并对落点加护栏。补完跑通 Spark：rate 源 → Parquet（带 checkpoint）→ 批读回，写 3 行读回 3 行，读数 3 应等于 3。",
+      "criteria": [
+        "安装步骤先清目标目录，并对落点做合法性护栏"
+      ]
+    },
+    {
+      "name": "rtd-044-7fed5e5-2",
+      "passed": true,
+      "details": "实验台先补四个短板：冒烟步骤支持指定工作目录（Spark 会把 Derby 元数据库写在当前目录，不指定就落到调用者的项目里）、读数与注册表声明的目标值比对（不只看有没有打印）、子进程输出固定 UTF-8（Windows 上按本地代码页解会崩）、安装先清目标目录再解包并对落点加护栏。补完跑通 Spark：rate 源 → Parquet（带 checkpoint）→ 批读回，写 3 行读回 3 行，读数 3 应等于 3。",
+      "criteria": [
+        "Spark 流式真跑：写 3 行读回 3 行，原始输出落盘"
+      ]
+    }
+  ]
+}

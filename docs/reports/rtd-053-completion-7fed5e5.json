@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-053",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/oss_lab.py install/start/smoke oss_pulsar --count 3",
+  "scope": [
+    "governance/oss-components.json",
+    "executors/contracts-oss-pulsar.md",
+    "docs/oss-lab.md"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-053-7fed5e5-0",
+      "passed": true,
+      "details": "换分发源而不是换判据：归档站与 closer 上只有十来个 KB 每秒，云厂商镜像上的 4.0.13 实测 1.7 到 4.2 MB/s，237 MB 一分钟出头拉完（下载脚本记录的均值 4.2 MB/s）。起单机 standalone，建命名空间 → 灌 9 条 → 按最早位点读回 3 条，读数 3 应等于 3。三个坑：端口通了不等于初始化完了（命名空间未建时写入报 Namespace not found，冒烟第一步先确认命名空间）；位置参数是 --subscription-position 而不是 --subscription-initial-position；配方里的准备步骤别写带子 shell 的复合语句（经命令行层传递会被拆行，bash 报 syntax error）。",
+      "criteria": [
+        "构件来源与版本写进登记表，含实测速度"
+      ]
+    },
+    {
+      "name": "rtd-053-7fed5e5-1",
+      "passed": true,
+      "details": "换分发源而不是换判据：归档站与 closer 上只有十来个 KB 每秒，云厂商镜像上的 4.0.13 实测 1.7 到 4.2 MB/s，237 MB 一分钟出头拉完（下载脚本记录的均值 4.2 MB/s）。起单机 standalone，建命名空间 → 灌 9 条 → 按最早位点读回 3 条，读数 3 应等于 3。三个坑：端口通了不等于初始化完了（命名空间未建时写入报 Namespace not found，冒烟第一步先确认命名空间）；位置参数是 --subscription-position 而不是 --subscription-initial-position；配方里的准备步骤别写带子 shell 的复合语句（经命令行层传递会被拆行，bash 报 syntax error）。",
+      "criteria": [
+        "冒烟三步全绿，读回内容行数与预期一致，原始输出落盘"
+      ]
+    },
+    {
+      "name": "rtd-053-7fed5e5-2",
+      "passed": true,
+      "details": "换分发源而不是换判据：归档站与 closer 上只有十来个 KB 每秒，云厂商镜像上的 4.0.13 实测 1.7 到 4.2 MB/s，237 MB 一分钟出头拉完（下载脚本记录的均值 4.2 MB/s）。起单机 standalone，建命名空间 → 灌 9 条 → 按最早位点读回 3 条，读数 3 应等于 3。三个坑：端口通了不等于初始化完了（命名空间未建时写入报 Namespace not found，冒烟第一步先确认命名空间）；位置参数是 --subscription-position 而不是 --subscription-initial-position；配方里的准备步骤别写带子 shell 的复合语句（经命令行层传递会被拆行，bash 报 syntax error）。",
+      "criteria": [
+        "三个坑（就绪判定、订阅位点参数名、配方里别写复合语句）写进契约"
+      ]
+    }
+  ]
+}

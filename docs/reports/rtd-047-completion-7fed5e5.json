@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-047",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/oss_lab.py smoke oss_debezium --count 3",
+  "scope": [
+    "tools/lab/debezium_cdc_smoke.sh",
+    "executors/contracts-oss-debezium.md",
+    "governance/oss-components.json"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-047-7fed5e5-0",
+      "passed": true,
+      "details": "CDC 全链路真跑：独立实验源库（自己 initdb，wal_level 设为 logical，unix socket 目录挪到实验目录）→ Kafka Connect 上的 Debezium → Kafka topic → 读回 3 条变更事件，读数 3 应等于 3。四个坑：源库必须独立实例（不能动共享实例）；plugin.path 要给父目录（Connect 把子目录当一个类加载器，指到装 jar 的目录会逐 jar 建加载器而找不到 debezium-core）；父目录要保持干净（否则每次启动把Flink/Spark/ClickHouse 全扫一遍）；重装必须先清目标目录（混装两个版本直接起不来）。另记版本兼容：某版本与 Kafka Connect 4.1 的插件版本解析不兼容，换 3.6.x 系可用。",
+      "criteria": [
+        "实验源库起得来并开启逻辑复制"
+      ]
+    },
+    {
+      "name": "rtd-047-7fed5e5-1",
+      "passed": true,
+      "details": "CDC 全链路真跑：独立实验源库（自己 initdb，wal_level 设为 logical，unix socket 目录挪到实验目录）→ Kafka Connect 上的 Debezium → Kafka topic → 读回 3 条变更事件，读数 3 应等于 3。四个坑：源库必须独立实例（不能动共享实例）；plugin.path 要给父目录（Connect 把子目录当一个类加载器，指到装 jar 的目录会逐 jar 建加载器而找不到 debezium-core）；父目录要保持干净（否则每次启动把Flink/Spark/ClickHouse 全扫一遍）；重装必须先清目标目录（混装两个版本直接起不来）。另记版本兼容：某版本与 Kafka Connect 4.1 的插件版本解析不兼容，换 3.6.x 系可用。",
+      "criteria": [
+        "源库写 3 行、话题读回 3 条变更事件"
+      ]
+    },
+    {
+      "name": "rtd-047-7fed5e5-2",
+      "passed": true,
+      "details": "CDC 全链路真跑：独立实验源库（自己 initdb，wal_level 设为 logical，unix socket 目录挪到实验目录）→ Kafka Connect 上的 Debezium → Kafka topic → 读回 3 条变更事件，读数 3 应等于 3。四个坑：源库必须独立实例（不能动共享实例）；plugin.path 要给父目录（Connect 把子目录当一个类加载器，指到装 jar 的目录会逐 jar 建加载器而找不到 debezium-core）；父目录要保持干净（否则每次启动把Flink/Spark/ClickHouse 全扫一遍）；重装必须先清目标目录（混装两个版本直接起不来）。另记版本兼容：某版本与 Kafka Connect 4.1 的插件版本解析不兼容，换 3.6.x 系可用。",
+      "criteria": [
+        "四个坑写进契约；tier 升到 1"
+      ]
+    }
+  ]
+}

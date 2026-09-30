@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "work_item": "RTD-057",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/oss_lab.py start/smoke oss_starrocks --count 5",
+  "scope": [
+    "tools/lab/serving_cluster_up.sh",
+    "tools/lab/serving_smoke.sh",
+    "executors/contracts-oss-starrocks.md",
+    "governance/oss-components.json",
+    "governance/capability-matrix.json"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-057-7fed5e5-0",
+      "passed": true,
+      "details": "安装包这条路对 StarRocks 关闭（GitHub Release 无资产、官方 CDN 403、镜像站无此项目），换容器镜像通道：FE 与 BE 各一个容器，BE 注册进 FE，心跳为 true 后建库建表写 5 行读回 5 行（读数 5 应等于 5）。起停编排泛化成一份 tools/lab/serving_cluster_up.sh，Doris 复用同一份，只换镜像与容器内路径；冒烟同理共用 serving_smoke.sh。三个坑：镜像默认命令是 bash，普通分离方式起会立刻退出（必须交互式分离）；BE 必须显式声明对外网段，否则注册成错地址；就绪要等心跳而不是等端口。",
+      "criteria": [
+        "FE 与 BE 起得来，BE 注册后心跳为真"
+      ]
+    },
+    {
+      "name": "rtd-057-7fed5e5-1",
+      "passed": true,
+      "details": "安装包这条路对 StarRocks 关闭（GitHub Release 无资产、官方 CDN 403、镜像站无此项目），换容器镜像通道：FE 与 BE 各一个容器，BE 注册进 FE，心跳为 true 后建库建表写 5 行读回 5 行（读数 5 应等于 5）。起停编排泛化成一份 tools/lab/serving_cluster_up.sh，Doris 复用同一份，只换镜像与容器内路径；冒烟同理共用 serving_smoke.sh。三个坑：镜像默认命令是 bash，普通分离方式起会立刻退出（必须交互式分离）；BE 必须显式声明对外网段，否则注册成错地址；就绪要等心跳而不是等端口。",
+      "criteria": [
+        "建库建表写 5 行读回 5 行，读数由实验台按注册表比对"
+      ]
+    },
+    {
+      "name": "rtd-057-7fed5e5-2",
+      "passed": true,
+      "details": "安装包这条路对 StarRocks 关闭（GitHub Release 无资产、官方 CDN 403、镜像站无此项目），换容器镜像通道：FE 与 BE 各一个容器，BE 注册进 FE，心跳为 true 后建库建表写 5 行读回 5 行（读数 5 应等于 5）。起停编排泛化成一份 tools/lab/serving_cluster_up.sh，Doris 复用同一份，只换镜像与容器内路径；冒烟同理共用 serving_smoke.sh。三个坑：镜像默认命令是 bash，普通分离方式起会立刻退出（必须交互式分离）；BE 必须显式声明对外网段，否则注册成错地址；就绪要等心跳而不是等端口。",
+      "criteria": [
+        "起停编排与冒烟各只有一份，Doris 复用同一份"
+      ]
+    },
+    {
+      "name": "rtd-057-7fed5e5-3",
+      "passed": true,
+      "details": "安装包这条路对 StarRocks 关闭（GitHub Release 无资产、官方 CDN 403、镜像站无此项目），换容器镜像通道：FE 与 BE 各一个容器，BE 注册进 FE，心跳为 true 后建库建表写 5 行读回 5 行（读数 5 应等于 5）。起停编排泛化成一份 tools/lab/serving_cluster_up.sh，Doris 复用同一份，只换镜像与容器内路径；冒烟同理共用 serving_smoke.sh。三个坑：镜像默认命令是 bash，普通分离方式起会立刻退出（必须交互式分离）；BE 必须显式声明对外网段，否则注册成错地址；就绪要等心跳而不是等端口。",
+      "criteria": [
+        "三个坑写进契约"
+      ]
+    }
+  ]
+}

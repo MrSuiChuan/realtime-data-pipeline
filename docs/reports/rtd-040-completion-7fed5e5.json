@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "work_item": "RTD-040",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）；py -3 tools/oss_lab.py list",
+  "scope": [
+    "governance/oss-components.json",
+    "governance/capability-matrix.json",
+    "executors/contracts-oss-kafka.md",
+    "executors/contracts-oss-spark.md",
+    "executors/contracts-oss-lakehouse.md",
+    "templates/config.example.json"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-040-7fed5e5-0",
+      "passed": true,
+      "details": "注册表从三件扩到 13 个组件，覆盖计算引擎、消息日志、湖表目录、流存储、服务层、变更捕获六类角色，每个组件登记 id、角色、形态、tier、必需键、构件与就绪判定方式。新增 Kafka、Spark、湖表格式三份契约（湖表三件共用一份，避免同一套规则抄三遍）。能力矩阵与配置模板同步；tier 3 组件只登记角色与配置形状，校验器会拦“tier 3 却带启动配方”的自相矛盾写法。",
+      "criteria": [
+        "注册表覆盖六类角色，每个组件有 id、角色、形态、tier、必需键与就绪判定方式"
+      ]
+    },
+    {
+      "name": "rtd-040-7fed5e5-1",
+      "passed": true,
+      "details": "注册表从三件扩到 13 个组件，覆盖计算引擎、消息日志、湖表目录、流存储、服务层、变更捕获六类角色，每个组件登记 id、角色、形态、tier、必需键、构件与就绪判定方式。新增 Kafka、Spark、湖表格式三份契约（湖表三件共用一份，避免同一套规则抄三遍）。能力矩阵与配置模板同步；tier 3 组件只登记角色与配置形状，校验器会拦“tier 3 却带启动配方”的自相矛盾写法。",
+      "criteria": [
+        "tier 1/2 组件都有执行器契约，且契约不做成同一套规则抄三遍"
+      ]
+    },
+    {
+      "name": "rtd-040-7fed5e5-2",
+      "passed": true,
+      "details": "注册表从三件扩到 13 个组件，覆盖计算引擎、消息日志、湖表目录、流存储、服务层、变更捕获六类角色，每个组件登记 id、角色、形态、tier、必需键、构件与就绪判定方式。新增 Kafka、Spark、湖表格式三份契约（湖表三件共用一份，避免同一套规则抄三遍）。能力矩阵与配置模板同步；tier 3 组件只登记角色与配置形状，校验器会拦“tier 3 却带启动配方”的自相矛盾写法。",
+      "criteria": [
+        "能力矩阵登记新组件的已知缺口与验证状态，正文不内联版本号与命令串"
+      ]
+    },
+    {
+      "name": "rtd-040-7fed5e5-3",
+      "passed": true,
+      "details": "注册表从三件扩到 13 个组件，覆盖计算引擎、消息日志、湖表目录、流存储、服务层、变更捕获六类角色，每个组件登记 id、角色、形态、tier、必需键、构件与就绪判定方式。新增 Kafka、Spark、湖表格式三份契约（湖表三件共用一份，避免同一套规则抄三遍）。能力矩阵与配置模板同步；tier 3 组件只登记角色与配置形状，校验器会拦“tier 3 却带启动配方”的自相矛盾写法。",
+      "criteria": [
+        "配置模板与注册表的必需键一一对应"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-046",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/oss_lab.py start/smoke oss_clickhouse --count 7",
+  "scope": [
+    "executors/contracts-oss-clickhouse.md",
+    "governance/oss-components.json",
+    "governance/capability-matrix.json"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-046-7fed5e5-0",
+      "passed": true,
+      "details": "拉单二进制、自写最小配置、起 server，建库建表写 7 行读回 7 行（读数 7 应等于 7）。最小配置必须自带 profiles/quotas/users 三段，否则启动在 setDefaultProfileName 处直接失败，报错信息完全不提缺哪段。停止按数据目录里的 status 文件取 PID，不用进程名匹配。构件来源实测：官方源 928 KB/s，同一个包的 GitHub 直链当时 0 B/s——先测速再定源。",
+      "criteria": [
+        "服务起得来且就绪探针通过"
+      ]
+    },
+    {
+      "name": "rtd-046-7fed5e5-1",
+      "passed": true,
+      "details": "拉单二进制、自写最小配置、起 server，建库建表写 7 行读回 7 行（读数 7 应等于 7）。最小配置必须自带 profiles/quotas/users 三段，否则启动在 setDefaultProfileName 处直接失败，报错信息完全不提缺哪段。停止按数据目录里的 status 文件取 PID，不用进程名匹配。构件来源实测：官方源 928 KB/s，同一个包的 GitHub 直链当时 0 B/s——先测速再定源。",
+      "criteria": [
+        "写 7 行读回 7 行，原始输出落盘"
+      ]
+    },
+    {
+      "name": "rtd-046-7fed5e5-2",
+      "passed": true,
+      "details": "拉单二进制、自写最小配置、起 server，建库建表写 7 行读回 7 行（读数 7 应等于 7）。最小配置必须自带 profiles/quotas/users 三段，否则启动在 setDefaultProfileName 处直接失败，报错信息完全不提缺哪段。停止按数据目录里的 status 文件取 PID，不用进程名匹配。构件来源实测：官方源 928 KB/s，同一个包的 GitHub 直链当时 0 B/s——先测速再定源。",
+      "criteria": [
+        "tier 升到 1 并回填能力矩阵与契约"
+      ]
+    }
+  ]
+}

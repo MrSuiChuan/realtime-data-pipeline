@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "work_item": "RTD-039",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/oss_lab.py list / plan / start / smoke / stop；py -3 -m pytest tests -q",
+  "scope": [
+    "tools/oss_lab.py",
+    "tests/test_oss_lab.py",
+    "templates/lab.example.json"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-039-7fed5e5-0",
+      "passed": true,
+      "details": "新增本地实验台，一个入口覆盖 list、plan、status、start、stop、smoke、install。组件知识只从注册表读，本机设置从 .rtd/lab.json 读。start 前探端口拦住在跑的另一个重型组件，要换得显式 --stop-others；冒烟按配方执行，原始输出落盘，读数按注册表声明的目标值比对；没有配方的组件显式报缺口。单测覆盖以上四类行为，且不打网络、不起进程。",
+      "criteria": [
+        "一个入口覆盖 list、plan、status、start、stop、smoke、install"
+      ]
+    },
+    {
+      "name": "rtd-039-7fed5e5-1",
+      "passed": true,
+      "details": "新增本地实验台，一个入口覆盖 list、plan、status、start、stop、smoke、install。组件知识只从注册表读，本机设置从 .rtd/lab.json 读。start 前探端口拦住在跑的另一个重型组件，要换得显式 --stop-others；冒烟按配方执行，原始输出落盘，读数按注册表声明的目标值比对；没有配方的组件显式报缺口。单测覆盖以上四类行为，且不打网络、不起进程。",
+      "criteria": [
+        "已有另一个重型组件在跑时 start 会拒绝，加 --stop-others 会先停掉它再起"
+      ]
+    },
+    {
+      "name": "rtd-039-7fed5e5-2",
+      "passed": true,
+      "details": "新增本地实验台，一个入口覆盖 list、plan、status、start、stop、smoke、install。组件知识只从注册表读，本机设置从 .rtd/lab.json 读。start 前探端口拦住在跑的另一个重型组件，要换得显式 --stop-others；冒烟按配方执行，原始输出落盘，读数按注册表声明的目标值比对；没有配方的组件显式报缺口。单测覆盖以上四类行为，且不打网络、不起进程。",
+      "criteria": [
+        "冒烟输出行数少于配方预期即判失败，与进程退出码无关"
+      ]
+    },
+    {
+      "name": "rtd-039-7fed5e5-3",
+      "passed": true,
+      "details": "新增本地实验台，一个入口覆盖 list、plan、status、start、stop、smoke、install。组件知识只从注册表读，本机设置从 .rtd/lab.json 读。start 前探端口拦住在跑的另一个重型组件，要换得显式 --stop-others；冒烟按配方执行，原始输出落盘，读数按注册表声明的目标值比对；没有配方的组件显式报缺口。单测覆盖以上四类行为，且不打网络、不起进程。",
+      "criteria": [
+        "tier 3 组件没有配方时显式报“未提供本地配方”，不假装能跑"
+      ]
+    },
+    {
+      "name": "rtd-039-7fed5e5-4",
+      "passed": true,
+      "details": "新增本地实验台，一个入口覆盖 list、plan、status、start、stop、smoke、install。组件知识只从注册表读，本机设置从 .rtd/lab.json 读。start 前探端口拦住在跑的另一个重型组件，要换得显式 --stop-others；冒烟按配方执行，原始输出落盘，读数按注册表声明的目标值比对；没有配方的组件显式报缺口。单测覆盖以上四类行为，且不打网络、不起进程。",
+      "criteria": [
+        "单测覆盖以上四类行为，且不打网络、不起进程"
+      ]
+    }
+  ]
+}

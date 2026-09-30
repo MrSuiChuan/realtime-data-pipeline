@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-049",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）；py -3 tools/oss_lab.py list",
+  "scope": [
+    "docs/oss-component-ledger.md",
+    "docs/oss-lab.md",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-049-7fed5e5-0",
+      "passed": true,
+      "details": "十个（后来是十二个）通过的组件把 tier 升到 1，验证状态、能力与已知缺口回填进注册表与能力矩阵；组件台账的总表、实测读数与下一步同步更新；README 的边界表与变更记录写明这一轮覆盖到哪。未跑通的组件同样逐条写明实测原因，不用推测内容填充。",
+      "criteria": [
+        "台账总表逐行写明真跑状态与证据位置"
+      ]
+    },
+    {
+      "name": "rtd-049-7fed5e5-1",
+      "passed": true,
+      "details": "十个（后来是十二个）通过的组件把 tier 升到 1，验证状态、能力与已知缺口回填进注册表与能力矩阵；组件台账的总表、实测读数与下一步同步更新；README 的边界表与变更记录写明这一轮覆盖到哪。未跑通的组件同样逐条写明实测原因，不用推测内容填充。",
+      "criteria": [
+        "能力矩阵与注册表的验证状态一致（由静态校验把关）"
+      ]
+    },
+    {
+      "name": "rtd-049-7fed5e5-2",
+      "passed": true,
+      "details": "十个（后来是十二个）通过的组件把 tier 升到 1，验证状态、能力与已知缺口回填进注册表与能力矩阵；组件台账的总表、实测读数与下一步同步更新；README 的边界表与变更记录写明这一轮覆盖到哪。未跑通的组件同样逐条写明实测原因，不用推测内容填充。",
+      "criteria": [
+        "未跑通的三项在台账里同样逐条写明原因"
+      ]
+    }
+  ]
+}

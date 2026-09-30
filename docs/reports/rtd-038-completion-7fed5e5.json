@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "work_item": "RTD-038",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）；py -3 -m pytest tests -q（84 passed）；py -3 tools/oss_lab.py list",
+  "scope": [
+    "engine/core.py",
+    "governance/oss-components.json",
+    "tools/validate_plugin.py",
+    "tests/test_engine.py"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-038-7fed5e5-0",
+      "passed": true,
+      "details": "引擎的开源执行器清单改为从 governance/oss-components.json 的 tier 1/2 组件读取，代码里不再手写 oss_* 键；路径判定改成按“已开始的子集”——动过的组件必须配全，没动过的不算缺口，只配 Flink 与 Fluss 的人不再被误报。注册表读不出来时进缺口并写明原因，不静默退化成“没有开源执行器”。原有 env check 三条用例全部通过，仓库全量 84 个用例通过。",
+      "criteria": [
+        "引擎的执行器清单来自注册表的 tier 1/2 组件，代码里不再手写 oss_* 键"
+      ]
+    },
+    {
+      "name": "rtd-038-7fed5e5-1",
+      "passed": true,
+      "details": "引擎的开源执行器清单改为从 governance/oss-components.json 的 tier 1/2 组件读取，代码里不再手写 oss_* 键；路径判定改成按“已开始的子集”——动过的组件必须配全，没动过的不算缺口，只配 Flink 与 Fluss 的人不再被误报。注册表读不出来时进缺口并写明原因，不静默退化成“没有开源执行器”。原有 env check 三条用例全部通过，仓库全量 84 个用例通过。",
+      "criteria": [
+        "只配 Flink 与 Fluss 时 rt-env 判定为就绪，不报其它组件的缺口"
+      ]
+    },
+    {
+      "name": "rtd-038-7fed5e5-2",
+      "passed": true,
+      "details": "引擎的开源执行器清单改为从 governance/oss-components.json 的 tier 1/2 组件读取，代码里不再手写 oss_* 键；路径判定改成按“已开始的子集”——动过的组件必须配全，没动过的不算缺口，只配 Flink 与 Fluss 的人不再被误报。注册表读不出来时进缺口并写明原因，不静默退化成“没有开源执行器”。原有 env check 三条用例全部通过，仓库全量 84 个用例通过。",
+      "criteria": [
+        "注册表读不出来时进缺口并写明原因，不静默退化成“没有开源执行器”"
+      ]
+    },
+    {
+      "name": "rtd-038-7fed5e5-3",
+      "passed": true,
+      "details": "引擎的开源执行器清单改为从 governance/oss-components.json 的 tier 1/2 组件读取，代码里不再手写 oss_* 键；路径判定改成按“已开始的子集”——动过的组件必须配全，没动过的不算缺口，只配 Flink 与 Fluss 的人不再被误报。注册表读不出来时进缺口并写明原因，不静默退化成“没有开源执行器”。原有 env check 三条用例全部通过，仓库全量 84 个用例通过。",
+      "criteria": [
+        "原有 env check 的三条用例仍全部通过"
+      ]
+    }
+  ]
+}

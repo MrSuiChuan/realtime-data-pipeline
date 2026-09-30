@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "work_item": "RTD-052",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）",
+  "scope": [
+    ".github/ISSUE_TEMPLATE/",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    "docs/glossary.md",
+    "docs/README.md",
+    "README.md"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-052-7fed5e5-0",
+      "passed": true,
+      "details": "补对外来者最缺的入口：三个 issue 模板（缺陷 / 能力提案 / 配置求助）与 PR 模板，自查清单里带上“没改生成物”“没写真实平台名”“文档里的承诺可机器验证”等硬要求；术语表逐词对应到判据（门控键、证据、执行器、台账、tier 等 18 个词）；文档地图按角色分入口；README 补参与与支持表。",
+      "criteria": [
+        "issue 模板覆盖缺陷、能力提案、配置求助；PR 模板含验证与自查清单"
+      ]
+    },
+    {
+      "name": "rtd-052-7fed5e5-1",
+      "passed": true,
+      "details": "补对外来者最缺的入口：三个 issue 模板（缺陷 / 能力提案 / 配置求助）与 PR 模板，自查清单里带上“没改生成物”“没写真实平台名”“文档里的承诺可机器验证”等硬要求；术语表逐词对应到判据（门控键、证据、执行器、台账、tier 等 18 个词）；文档地图按角色分入口；README 补参与与支持表。",
+      "criteria": [
+        "术语表逐词对应到判据，不写成名词解释"
+      ]
+    },
+    {
+      "name": "rtd-052-7fed5e5-2",
+      "passed": true,
+      "details": "补对外来者最缺的入口：三个 issue 模板（缺陷 / 能力提案 / 配置求助）与 PR 模板，自查清单里带上“没改生成物”“没写真实平台名”“文档里的承诺可机器验证”等硬要求；术语表逐词对应到判据（门控键、证据、执行器、台账、tier 等 18 个词）；文档地图按角色分入口；README 补参与与支持表。",
+      "criteria": [
+        "文档地图按角色分入口；README 有求助渠道表"
+      ]
+    }
+  ]
+}

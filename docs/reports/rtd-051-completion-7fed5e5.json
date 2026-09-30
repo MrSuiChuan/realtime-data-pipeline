@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "work_item": "RTD-051",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）",
+  "scope": [
+    "GOVERNANCE.md",
+    "CODE_OF_CONDUCT.md",
+    "docs/release-process.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-051-7fed5e5-0",
+      "passed": true,
+      "details": "补上治理与流程：GOVERNANCE 写明角色、惰性共识（72 小时无实质反对且 CI 全绿）、需要更强共识的六类事项、评审与合并条件、争议升级、弃用策略；行为准则改编自 Contributor Covenant 2.1，并加了一条本项目特有的底线（不得把“未验证”说成“已验证”）；发布流程写明版本规则、发版前提、打包清单、发布动作与发布后核对；贡献指南补 DCO 做法（git commit -s）与求助渠道；安全文档补支持版本与响应预期。",
+      "criteria": [
+        "治理文件写明角色、决策方式、评审与合并条件、争议升级路径"
+      ]
+    },
+    {
+      "name": "rtd-051-7fed5e5-1",
+      "passed": true,
+      "details": "补上治理与流程：GOVERNANCE 写明角色、惰性共识（72 小时无实质反对且 CI 全绿）、需要更强共识的六类事项、评审与合并条件、争议升级、弃用策略；行为准则改编自 Contributor Covenant 2.1，并加了一条本项目特有的底线（不得把“未验证”说成“已验证”）；发布流程写明版本规则、发版前提、打包清单、发布动作与发布后核对；贡献指南补 DCO 做法（git commit -s）与求助渠道；安全文档补支持版本与响应预期。",
+      "criteria": [
+        "发布流程含版本规则、打包清单、发布动作与发布后核对"
+      ]
+    },
+    {
+      "name": "rtd-051-7fed5e5-2",
+      "passed": true,
+      "details": "补上治理与流程：GOVERNANCE 写明角色、惰性共识（72 小时无实质反对且 CI 全绿）、需要更强共识的六类事项、评审与合并条件、争议升级、弃用策略；行为准则改编自 Contributor Covenant 2.1，并加了一条本项目特有的底线（不得把“未验证”说成“已验证”）；发布流程写明版本规则、发版前提、打包清单、发布动作与发布后核对；贡献指南补 DCO 做法（git commit -s）与求助渠道；安全文档补支持版本与响应预期。",
+      "criteria": [
+        "贡献指南含 DCO 做法与求助渠道；安全文档含支持版本与响应预期"
+      ]
+    }
+  ]
+}

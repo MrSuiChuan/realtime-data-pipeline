@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "work_item": "RTD-042",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/validate_plugin.py .（八项全过）",
+  "scope": [
+    "tools/validate_plugin.py"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-042-7fed5e5-0",
+      "passed": true,
+      "details": "静态校验第 3 项从“能力矩阵的文件引用存不存在”扩成“注册表一致性”：tier 1/2 组件必须有契约、必须进能力矩阵；service 形态必须有就绪探针；tier 3 不许带本地启动配方；反向也查一遍。这条检查在本轮真实生效过四次——先后拦下 Pulsar、ClickHouse、StarRocks、Doris 缺契约或缺矩阵登记。",
+      "criteria": [
+        "组件缺契约或缺矩阵登记时校验失败并指出是哪一件"
+      ]
+    },
+    {
+      "name": "rtd-042-7fed5e5-1",
+      "passed": true,
+      "details": "静态校验第 3 项从“能力矩阵的文件引用存不存在”扩成“注册表一致性”：tier 1/2 组件必须有契约、必须进能力矩阵；service 形态必须有就绪探针；tier 3 不许带本地启动配方；反向也查一遍。这条检查在本轮真实生效过四次——先后拦下 Pulsar、ClickHouse、StarRocks、Doris 缺契约或缺矩阵登记。",
+      "criteria": [
+        "service 形态缺就绪探针时校验失败"
+      ]
+    },
+    {
+      "name": "rtd-042-7fed5e5-2",
+      "passed": true,
+      "details": "静态校验第 3 项从“能力矩阵的文件引用存不存在”扩成“注册表一致性”：tier 1/2 组件必须有契约、必须进能力矩阵；service 形态必须有就绪探针；tier 3 不许带本地启动配方；反向也查一遍。这条检查在本轮真实生效过四次——先后拦下 Pulsar、ClickHouse、StarRocks、Doris 缺契约或缺矩阵登记。",
+      "criteria": [
+        "tier 3 组件带本地启动配方时校验失败"
+      ]
+    },
+    {
+      "name": "rtd-042-7fed5e5-3",
+      "passed": true,
+      "details": "静态校验第 3 项从“能力矩阵的文件引用存不存在”扩成“注册表一致性”：tier 1/2 组件必须有契约、必须进能力矩阵；service 形态必须有就绪探针；tier 3 不许带本地启动配方；反向也查一遍。这条检查在本轮真实生效过四次——先后拦下 Pulsar、ClickHouse、StarRocks、Doris 缺契约或缺矩阵登记。",
+      "criteria": [
+        "能力矩阵里有而注册表里没有的 oss_* 也被拦下"
+      ]
+    }
+  ]
+}

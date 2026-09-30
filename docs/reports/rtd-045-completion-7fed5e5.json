@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-045",
+  "source_sha": "7fed5e5829b038f43cad855aff5587b060914d20",
+  "command": "py -3 tools/oss_lab.py smoke oss_iceberg / oss_hudi / oss_delta --count 5",
+  "scope": [
+    "tools/lab/spark_lakehouse_smoke.py",
+    "executors/contracts-oss-lakehouse.md",
+    "governance/oss-components.json"
+  ],
+  "verified_at": 1790767531000,
+  "checks": [
+    {
+      "name": "rtd-045-7fed5e5-0",
+      "passed": true,
+      "details": "三种湖表格式在宿主的 Spark 上各建一张表、写 5 行、批模式读回 5 行，三件读数都是 5 应等于 5。差异集中在一处：Iceberg 要 catalog 的 type 与 impl 成对；Hudi 的 SQL DDL 必须同时挂 session extension 与 HoodieCatalog，且不支持 SQL DELETE 清表；Delta 的连接器不是 fat jar，只 --jars 一个会缺 delta-storage（实测 NoClassDefFoundError），改用 --packages 解析依赖闭包。三件 tier 升到 1，坑全部写进契约。",
+      "criteria": [
+        "三件各自写 5 行读回 5 行，读数由实验台按注册表比对"
+      ]
+    },
+    {
+      "name": "rtd-045-7fed5e5-1",
+      "passed": true,
+      "details": "三种湖表格式在宿主的 Spark 上各建一张表、写 5 行、批模式读回 5 行，三件读数都是 5 应等于 5。差异集中在一处：Iceberg 要 catalog 的 type 与 impl 成对；Hudi 的 SQL DDL 必须同时挂 session extension 与 HoodieCatalog，且不支持 SQL DELETE 清表；Delta 的连接器不是 fat jar，只 --jars 一个会缺 delta-storage（实测 NoClassDefFoundError），改用 --packages 解析依赖闭包。三件 tier 升到 1，坑全部写进契约。",
+      "criteria": [
+        "每件踩到的坑写进对应契约的已知缺口"
+      ]
+    },
+    {
+      "name": "rtd-045-7fed5e5-2",
+      "passed": true,
+      "details": "三种湖表格式在宿主的 Spark 上各建一张表、写 5 行、批模式读回 5 行，三件读数都是 5 应等于 5。差异集中在一处：Iceberg 要 catalog 的 type 与 impl 成对；Hudi 的 SQL DDL 必须同时挂 session extension 与 HoodieCatalog，且不支持 SQL DELETE 清表；Delta 的连接器不是 fat jar，只 --jars 一个会缺 delta-storage（实测 NoClassDefFoundError），改用 --packages 解析依赖闭包。三件 tier 升到 1，坑全部写进契约。",
+      "criteria": [
+        "三件 tier 升到 1 并回填能力矩阵"
+      ]
+    }
+  ]
+}

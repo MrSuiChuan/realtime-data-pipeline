@@ -179,11 +179,32 @@ $ awr proposal apply <proposal_id> --actor codex --reason ... --expected-revisio
 先 `session end` 再 `proposal apply` 会报 `InvalidTransition: session ... is ended`——
 这不是缓存问题，重开会话也救不回来，只能重做一次 `work complete` 生成新提案。
 
-### 下一步怎么查（留给之后的一轮）
+### 根因与修法（2026-10-01 查清并修复）
 
-1. 用最小账本复现：只留一个 `- id: X / title / status: in_progress / acceptance` 的条目，
-   跑一次 `work progress`。若能通过，说明是文件里某处的写法；再做二分。
-2. 重点怀疑对象：旧条目里 AWR 自己写的**带引号键**（`"evidence"`、`"verification"`、`"blocker"`）
-   与后来手写的**不带引号键**混在同一份文件里——写回时的引号标记可能对不上。
-3. 若确认是混用风格导致，修法是统一风格（一次性机械改写）后重新 `source reindex`，
-   再补一轮完成校验；那之前不要手写 `completed`（会把自己锁死，见上文）。
+**根因是块标量，不是引号风格。** AWR 的 `yaml-ledger-v1` 改写器**按行找映射冒号**，
+而 `key: |` 块标量的**续行没有冒号**，被它当成坏映射 → 整份账本任何一次写回都失败。
+
+定位过程（每一步都可复现）：
+
+1. **最小账本能写**：一个只有 `id/title/status/acceptance` 的账本，`work progress` 直接成功
+   → 排除"环境不通"；
+2. **带引号键也能写**：把旧条目那种 `"evidence"` / `"verification"` / `"blocker"` 搬进最小项目，
+   同样成功 → 排除引号风格；
+3. **逐条搬入最小项目单测**，报错变具体：
+   * `RTD-038` → `YAML marker outside source`
+   * `RTD-043` → `missing YAML mapping colon`
+   两条都指向同一个写法：它们的 `summary` 用的是多行块标量；
+4. **压成单行后立刻变 `proposal_recorded`** → 根因确认。
+
+修法：机械压平账本里的 **23 处**块标量（续行用空格连接，只改写法不改语义），
+重新 `source reindex`。修完当场验证：本轮 18 个工作项按代码提交 `7fed5e5` 绑定验收报告并置完成，
+`awr intake inspect --source-sha 7fed5e5` 从 `verified_completed = 0` 变成 **19**。
+
+**纪律**：以后往账本里写 `summary`/`next_action` 等字段，**一律用单行标量**，
+不要用 `|` 块标量——这不是风格偏好，是写回通道的硬约束。
+
+### 另一个坑：claim 会被测试会话占住
+
+调试期间起的会话如果没有 `session end`，会一直持有该工作项的 claim，
+下一次写回报 `ClaimConflict: another session holds this work`。
+处置：`awr session list` 找出 `active` 的会话，逐个 `session end --outcome interrupted` 释放后再重试。
