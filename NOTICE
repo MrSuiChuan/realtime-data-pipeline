@@ -1,0 +1,19 @@
+realtime-data-plugin
+Copyright 2026 AI实战技能圈
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+第三方组件说明
+--------------
+本仓库**不包含**任何第三方二进制或源码。运行时只用 Python 标准库。
+本地实验台（tools/oss_lab.py）在**使用者自己的机器上**按治理层的组件注册表下载并运行第三方组件，
+这些组件不在本仓库内分发，各自的许可与声明归各自所有者。明细与边界见
+docs/third-party-dependencies.md。
+
+名称与商标
+----------
+本项目的名称与标识归项目所有者所有。
+文档中出现的第三方项目名称（例如 Apache Flink、Apache Kafka、Apache Pulsar、Apache Doris、
+Apache Iceberg、Apache Hudi、Apache Fluss、Apache Paimon、ClickHouse、Debezium、Delta Lake、
+PostgreSQL、StarRocks）仅用于**说明兼容对象与实测事实**，不表示这些项目对本项目的赞助、
+背书或任何形式的关联。相关名称与商标归各自所有者。

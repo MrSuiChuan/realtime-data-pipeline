@@ -1,3 +1,16 @@
+# Copyright 2026 AI实战技能圈
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """引擎行为测试：门控、证据、阶段、执行记录、续跑对账。
 
 只用标准库，`py -3 tests/test_engine.py` 直接可跑（CI 里同样被 pytest 收集）。

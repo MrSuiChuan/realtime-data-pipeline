@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "note": "执行器能力与已知缺口的外部化数据。真实命令名与服务名不在此处，写在项目级 .rtd/config.json。任何正文都不得内联命令行或版本号——要改能力认知，改本文件。",
-  "verified_on": null,
-  "verified_by": null,
+  "note": "执行器能力与已知缺口的外部化数据。真实命令名与服务名不在此处，写在项目级 .rtd/config.json；开源执行器的构件、端口与本地配方在 governance/oss-components.json（那份是登记表，本文件是已经验过什么）。任何正文都不得内联命令行或版本号——要改能力认知，改这两份文件。",
+  "verified_on": "2026-09-29",
+  "verified_by": "维护者按 governance/oss-components.json 逐项核对；tier 1/2 的执行器契约与注册表一致性由 tools/validate_plugin.py 第 3 项把关。",
   "executors": {
     "cli": {
       "configured_name_ref": "executors.cli.cmd",
@@ -87,6 +87,141 @@
       "known_gaps": [
         {"capability": "sql-console", "status": "gotcha", "note": "发行版没有 SQL 控制台；fluss-console.sh 只用于起服务，建库建表必须走 Flink SQL 或客户端 SDK"},
         {"capability": "artifact-mirror", "status": "operational", "note": "archive.apache.org 直连实测 6.7 KB/s，换国内镜像 11.4 MB/s；拉 Fluss 包优先用镜像（镜像上可能没有 .sha512，校验文件回到 archive 取）"}
+      ]
+    },
+    "oss_kafka": {
+      "configured_name_ref": "executors.oss_kafka",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-kafka.md",
+      "verified_on": "2026-09-29",
+      "verified_env": "WSL2 Debian 13 + OpenJDK 21 + Kafka 4.1.2 单机 KRaft（见 docs/oss-lab.md 第十三节）",
+      "verified_capabilities": [
+        "单机 KRaft 格式化后 broker 起得来，9092 可连接",
+        "建 topic、灌 5 行、从头读回 5 行，行数与灌入一致",
+        "跨会话存活：脱离会话启动 + 启动器多活几秒"
+      ],
+      "known_gaps": [
+        {"capability": "kraft-storage-format", "status": "requirement", "note": "单机 KRaft 模式首次启动前必须先格式化存储目录，否则 broker 直接退出"},
+        {"capability": "config-path-drift", "status": "gotcha", "note": "KRaft 配置文件路径随大版本变化，换版本时必须按实际发行包核对，不照抄旧路径"},
+        {"capability": "consumer-idle-timeout", "status": "gotcha", "note": "读回工具的 --timeout-ms 是空闲超时而不是总时长；读回必须配合最大条数，否则行数不稳定"}
+      ]
+    },
+    "oss_clickhouse": {
+      "configured_name_ref": "executors.oss_clickhouse",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-clickhouse.md",
+      "verified_on": "2026-09-29",
+      "verified_env": "WSL2 Debian 13 + ClickHouse 24.8.14.39 单二进制（见 docs/oss-lab.md 第十四节）",
+      "verified_capabilities": [
+        "自写最小配置起 server，9000 端口可连",
+        "建库建表 MergeTree，写 7 行读回 7 行"
+      ],
+      "known_gaps": [
+        {"capability": "minimal-config-sections", "status": "requirement", "note": "最小配置必须自带 profiles/quotas/users 三段，否则启动在 setDefaultProfileName 处直接失败"},
+        {"capability": "stop-by-pid-file", "status": "gotcha", "note": "停止从数据目录的 status 文件取 PID，不要用进程名匹配"}
+      ]
+    },
+    "oss_pulsar": {
+      "configured_name_ref": "executors.oss_pulsar",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-pulsar.md",
+      "verified_on": "2026-09-30",
+      "verified_env": "WSL2 Debian 13 + Pulsar 4.0.13 单机 standalone（见 docs/oss-lab.md 第十五节）",
+      "verified_capabilities": [
+        "standalone 起得来，二进制端口可连",
+        "建命名空间、灌消息、按最早位点读回，行数一致"
+      ],
+      "known_gaps": [
+        {"capability": "readiness-not-just-port", "status": "gotcha", "note": "端口先于命名空间就绪；写入会报 Namespace not found，冒烟须先确认命名空间存在"},
+        {"capability": "subscription-position", "status": "requirement", "note": "订阅位点只在创建订阅时生效；重跑要换订阅名或先删订阅"},
+        {"capability": "artifact-mirror", "status": "operational", "note": "归档版与官方分发链路上只有十来个 KB 每秒；换到云厂商镜像后实测 1.7-4.2 MB/s"}
+      ]
+    },
+    "oss_debezium": {
+      "configured_name_ref": "executors.oss_debezium",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-debezium.md",
+      "verified_on": "2026-09-29",
+      "verified_env": "WSL2 Debian 13 + PostgreSQL 17.9 实验实例（wal_level=logical）+ Kafka 4.1.2 Connect + debezium-connector-postgres 3.6.3.Final",
+      "verified_capabilities": [
+        "独立实验源库开逻辑复制起得来（不动共享实例）",
+        "源库写 3 行 → Debezium 捕获 → Kafka topic 读回 3 条 CDC 事件"
+      ],
+      "known_gaps": [
+        {"capability": "plugin-path-parent", "status": "requirement", "note": "plugin.path 要给父目录：Connect 把子目录当一个插件（一个类加载器），指到装 jar 的目录会逐 jar 建加载器而找不到 debezium-core"},
+        {"capability": "plugin-path-clean", "status": "gotcha", "note": "父目录里放别的组件会让 worker 每次启动都扫一遍"},
+        {"capability": "reinstall-clean-target", "status": "requirement", "note": "重装必须先清目标目录，混装两个版本会让 worker 起不来"},
+        {"capability": "version-alignment", "status": "gotcha", "note": "连接器版本与 Kafka Connect 大版本要真起一次 worker 才算对齐"}
+      ]
+    },
+    "oss_spark": {
+      "configured_name_ref": "executors.oss_spark",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-spark.md",
+      "verified_on": null,
+      "verified_capabilities": [],
+      "known_gaps": [
+        {"capability": "scala-binary-alignment", "status": "requirement", "note": "连接器与湖表 runtime jar 的构件名同时编着宿主大版本与 Scala 版本，两者都对上才加载得起来"},
+        {"capability": "connector-not-bundled", "status": "requirement", "note": "发行包不含消息队列连接器，必须显式带包并把坐标写进项目配置"},
+        {"capability": "checkpoint-required", "status": "requirement", "note": "流作业必须设 checkpoint 目录，否则不算可恢复"}
+      ]
+    },
+    "oss_iceberg": {
+      "configured_name_ref": "executors.oss_iceberg",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-lakehouse.md",
+      "verified_on": null,
+      "verified_capabilities": [],
+      "known_gaps": [
+        {"capability": "catalog-type-and-impl", "status": "requirement", "note": "catalog 的 type 与 impl 必须成对配置，只配一半会静默退化成普通表"}
+      ]
+    },
+    "oss_hudi": {
+      "configured_name_ref": "executors.oss_hudi",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-lakehouse.md",
+      "verified_on": null,
+      "verified_capabilities": [],
+      "known_gaps": [
+        {"capability": "table-type-explicit", "status": "requirement", "note": "表类型（COW / MOR）与索引策略要显式声明，默认值可能与预期不同"}
+      ]
+    },
+    "oss_delta": {
+      "configured_name_ref": "executors.oss_delta",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-lakehouse.md",
+      "verified_on": null,
+      "verified_capabilities": [],
+      "known_gaps": [
+        {"capability": "extension-registration", "status": "requirement", "note": "未注册扩展时建表会成功，读写阶段才报错"}
+      ]
+    },
+    "oss_starrocks": {
+      "configured_name_ref": "executors.oss_starrocks",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-starrocks.md",
+      "verified_on": "2026-09-30",
+      "verified_env": "WSL2 Debian 13 + StarRocks 3.3.9（FE 与 BE 各一个容器，见 docs/oss-lab.md 第十六节）",
+      "verified_capabilities": [
+        "FE 与 BE 起得来，BE 注册后心跳为 true",
+        "建库建表（DUPLICATE KEY）写 5 行读回 5 行"
+      ],
+      "known_gaps": [
+        {"capability": "distribution-channel", "status": "operational", "note": "官方不放 GitHub Release、官方 CDN 403；可达通道是容器镜像"},
+        {"capability": "container-cmd-bash", "status": "gotcha", "note": "镜像默认命令是 bash，容器必须用交互式分离方式起，否则立刻退出"},
+        {"capability": "be-priority-networks", "status": "requirement", "note": "BE 必须显式声明对外网段，否则注册成错地址，FE 一直显示没有可用 BE"},
+        {"capability": "readiness-needs-heartbeat", "status": "gotcha", "note": "查询端口先于 BE 心跳就绪；只看端口就建表会因为没有可用 BE 而失败"}
+      ]
+    },
+    "oss_doris": {
+      "configured_name_ref": "executors.oss_doris",
+      "registered_in": "governance/oss-components.json",
+      "contract": "executors/contracts-oss-doris.md",
+      "verified_on": null,
+      "verified_capabilities": [],
+      "known_gaps": [
+        {"capability": "distribution-channel", "status": "operational", "note": "官方对象存储直链 404 且拒绝列举，归档站直链 404，镜像站对老版本 403；可达通道是容器镜像"},
+        {"capability": "be-image-pull-time", "status": "environment", "note": "本机镜像源对 BE 镜像明显慢于 FE，多次拉取被超时截断；未跑通的原因在这里，不在配方"}
       ]
     }
   },

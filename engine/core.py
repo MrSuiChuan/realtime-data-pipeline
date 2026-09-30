@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2026 AI实战技能圈
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """实时数开引擎（runtime core）。
 
 职责只有四件：**运行时目录**、**阶段门控**、**证据账本**、**执行记录**。
@@ -134,20 +147,60 @@ DEFAULT_LIMITS = {
 
 # 执行器登记表：路径（平台 / 开源）+ 判定"已配置"所需的关键键。
 # keys 为空表示该执行器的值本身就是命令名/服务名（字符串或 {name, cmd} 形态）。
+# 平台那半是平台无关的常量，写在代码里；开源那半是**注册表驱动的**（见下）。
 EXECUTOR_SPECS: Dict[str, Dict[str, Any]] = {
     "cli": {"path": "platform", "keys": ["cmd"]},
     "mcp_dev": {"path": "platform", "keys": []},
     "mcp_ops": {"path": "platform", "keys": []},
     "mcp_asset": {"path": "platform", "keys": []},
     "mcp_engine": {"path": "platform", "keys": []},
-    "oss_flink": {"path": "oss", "keys": ["home", "rest_endpoint"]},
-    "oss_paimon": {"path": "oss", "keys": ["connector_jar", "warehouse"]},
-    "oss_fluss": {"path": "oss", "keys": ["home", "bootstrap_servers"]},
 }
+
+OSS_REGISTRY_PATH = Path(__file__).resolve().parent.parent / "governance" / "oss-components.json"
+# 注册表读不出来时不能静默变成"没有开源执行器"——那是把配置错误伪装成"没配"。
+OSS_REGISTRY_ERROR = ""
+
+
+def _oss_executor_specs(path: Optional[Path] = None) -> Dict[str, Dict[str, Any]]:
+    """开源执行器的登记**单一来源**：governance/oss-components.json 里 tier 1/2 的组件。
+
+    以前这里是手写的一份副本（oss_flink / oss_paimon / oss_fluss）。加一个组件要同时改
+    引擎、执行器契约、能力矩阵、配置模板四处，且没有任何检查把它们绑在一起——注册表一扩，
+    这四处必然漂移（RTD-038）。tier 3 的组件只登记角色与配置形状、没有本地配方，
+    不参与"两条路选一条配全"的判定，否则开源路径永远判不成"配全"。
+    """
+    global OSS_REGISTRY_ERROR
+    target = path or OSS_REGISTRY_PATH
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except OSError as err:
+        OSS_REGISTRY_ERROR = f"读不到开源组件注册表：{target}（{type(err).__name__}）"
+        return {}
+    except json.JSONDecodeError as err:
+        OSS_REGISTRY_ERROR = f"开源组件注册表不是合法 JSON：{target}（{err}）"
+        return {}
+    OSS_REGISTRY_ERROR = ""
+    specs: Dict[str, Dict[str, Any]] = {}
+    for item in data.get("components", []):
+        if not isinstance(item, dict) or item.get("tier") == 3:
+            continue
+        name = item.get("id")
+        if not isinstance(name, str) or not name:
+            continue
+        specs[name] = {
+            "path": "oss",
+            "keys": [str(key) for key in item.get("required_keys") or []],
+            "role": item.get("role"),
+            "display": item.get("display"),
+        }
+    return specs
+
+
+EXECUTOR_SPECS.update(_oss_executor_specs())
 
 PATH_HINTS = {
     "platform": "平台路径：至少把 executors.cli.cmd（或某个 mcp_* 服务名）填上",
-    "oss": "开源路径：oss_flink.home/rest_endpoint、oss_paimon.connector_jar/warehouse、oss_fluss.home/bootstrap_servers 三段都要填",
+    "oss": "开源路径：按 governance/oss-components.json 里 tier 1/2 组件的 required_keys 配（动过哪个就必须配全哪个，没动过的不算缺口）",
 }
 
 # 证据类型登记表：payload 必填字段 + 通过条件。
@@ -747,6 +800,7 @@ def env_status(runtime: Runtime) -> Dict[str, Any]:
         rows.append({
             "executor": name,
             "path": spec["path"],
+            "role": spec.get("role"),
             "configured": not missing and bool(filled),
             "started": started,
             "missing": missing,
@@ -764,20 +818,25 @@ def env_status(runtime: Runtime) -> Dict[str, Any]:
     path_state: Dict[str, Dict[str, Any]] = {}
     for path in ("platform", "oss"):
         path_rows = [row for row in rows if row["path"] == path]
-        started = any(row["started"] for row in path_rows)
-        complete = (
-            any(row["configured"] for row in path_rows)
-            if path == "platform"
-            else all(row["configured"] for row in path_rows)
-        )
-        path_state[path] = {"started": started, "complete": complete,
-                            "missing": [f"executors.{row['executor']}.{key}"
-                                        for row in path_rows for key in row["missing"]]}
-        if started and not complete:
-            gaps.append(f"{path} 路径配了一半：缺 " + "、".join(path_state[path]["missing"]))
+        # 判定看**已开始的子集**：动过的组件必须配全，没动过的不算缺口。
+        # 旧写法对开源路径用 all(...)，注册表一扩（Kafka / Spark / 湖表…）就会把
+        # "只配 Flink + Fluss"的人误报成没配齐——注册表越大越不准（RTD-038）。
+        started_rows = [row for row in path_rows if row["started"]]
+        missing = [f"executors.{row['executor']}.{key}"
+                   for row in started_rows for key in row["missing"]]
+        path_state[path] = {
+            "started": bool(started_rows),
+            "complete": bool(started_rows) and not missing,
+            "started_components": [row["executor"] for row in started_rows],
+            "missing": missing,
+        }
+        if missing:
+            gaps.append(f"{path} 路径配了一半：缺 " + "、".join(missing))
 
     if not any(item["started"] for item in path_state.values()):
         gaps.append("两条路都没配置 —— " + PATH_HINTS["platform"] + "；或 " + PATH_HINTS["oss"])
+    if OSS_REGISTRY_ERROR:
+        gaps.append(OSS_REGISTRY_ERROR + "；开源路径的执行器清单因此是空的")
 
     limits, limit_gaps = runtime.limits()
     gaps.extend(limit_gaps)

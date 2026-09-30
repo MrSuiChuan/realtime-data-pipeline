@@ -348,3 +348,256 @@ Flink SQL>
 | Gateway 通道 | 保留为 `--via gateway`，但取结果在 Flink 2.2 上不可靠（见第十节），**不当默认** |
 | 运行位置 | CLI 必须跑在能连到集群的机器上；本地是"在 WSL 里跑"（Windows 侧直连被代理拦） |
 | 未验证 | 跨机器 / 容器内 / 生产集群的连通性没测；工具覆盖 Flink 与 Fluss，Paimon 通过 Flink catalog 间接覆盖 |
+
+## 十三、Kafka 真跑与本地实验台（2026-09-29，RTD-039 / RTD-041）
+
+这一节的组件、路径与版本**不在文档里定**，只在 `governance/oss-components.json` 里登记；
+起停与冒烟由 `tools/oss_lab.py` 读那份登记表执行。文档只记结论与现场。
+
+### 1. 版本选型：先看快镜像上有没有
+
+原定 3.9.2，实测只有归档站上有，**13.8 KB/s**，127 MB 要拉两个多小时，不可用。改选快镜像上还在的 4.1.2：
+
+| 源 | HTTP | 实测速率 |
+| --- | --- | --- |
+| 国内某 apache 镜像（3.9.2） | 404 | — |
+| 两个高校镜像（3.9.2） | 403 | — |
+| 归档站（3.9.2） | 206 | 13.8 KB/s |
+| 镜像（4.1.2） | 206 | **2.7 MB/s** |
+
+结论：**选版本之前先确认镜像上还在**。归档站是最后手段，不是备选方案。
+
+### 2. 起：单机 KRaft 的三件事
+
+```
+# 1) 把 log.dirs 指到实验目录（生成一份 lab-server.properties，不动发行包自带的配置）
+# 2) 第一次启动前格式化存储（存在 meta.properties 就跳过）
+kafka-storage.sh format -t <随机 uuid> -c lab-server.properties --standalone
+# 3) 脱离会话启动，且启动器不能立刻退出
+setsid nohup kafka-server-start.sh lab-server.properties > logs/server.out 2>&1 < /dev/null & sleep 8
+```
+
+第 3 条是这一轮最难的一步，踩了两层：
+
+* `kafka-server-start.sh -daemon` 起的进程**随启动它的那个会话被杀**（与 Flink / Fluss 同一个坑）；
+* 改成 `setsid nohup … &` 之后仍然起不来——因为启动器**立刻退出**，刚 fork 出来的进程还没 exec 就被会话回收带走了。
+  给它 `sleep 8` 之后才稳定。判据是：日志文件被创建、端口能连上，两样都看得到才算数。
+
+另外两处判定错误也记在这里，都不是 Kafka 的问题，是**方法论**的问题：
+
+* **进程存活判定会"自己匹配自己"**：`pgrep -f kafka.Kafka` 会匹配到执行这条命令的启动器自己的命令行，
+  于是永远判定"已经在跑"，服务根本没起。改成探端口。
+* **启动到可用之间有延迟**：broker 进程起来后还要注册完才接受连接。就绪探针必须按超时窗口反复探，
+  一次探不通就判失败会把正常启动误报成故障。
+
+### 3. 冒烟：建 topic → 灌 5 行 → 从头上读回 5 行
+
+```
+$ py -3 tools/oss_lab.py smoke oss_kafka --topic rtd_lab_smoke2 --count 5 --out .tmp/lab/kafka2
+[通过] topic-create —— rc 0，输出 2 行
+[通过] produce —— rc 0，输出 0 行
+[通过] consume-back —— rc 0，输出 5 行，预期 ≥ 5 行
+原始输出：.tmp\lab\kafka2
+```
+
+**这里修掉了一个会让判据失真的点**：console consumer 读完会自己打印一行
+`Processed a total of N messages`。按总行数判的话，读到 2 条 + 1 行汇总也能凑够"3 行"从而判通过。
+所以配方里多了一条"数据行长什么样"的正则，只数匹配的行——这一条是读原始输出时发现的，不是推出来的。
+
+### 4. 停与状态
+
+停止脚本可用，端口随之下线，状态文件同步清空。`status` 会逐个组件探一次：
+库形态（Paimon 这类）显示"不适用"，按需提交型引擎（Spark）显示"可提交"而不是"在跑"——
+它没有常驻进程，"在跑"会把状态说成另一回事。
+
+### 5. 未覆盖
+
+多节点集群、跨机器连通性（Windows 侧直连 WSL 端口）、认证与 ACL、以及 Kafka 与计算引擎连接器的联动，
+都还没做。这些在台账 `docs/oss-component-ledger.md` 的第七节列成了下一步。
+
+## 十四、逐个真跑：Spark / 湖表 / ClickHouse / Debezium（2026-09-29，RTD-044–RTD-050）
+
+这一轮把注册表里能拿到的组件**逐个起、逐个跑**，判据统一是"写进去多少行、读回来多少行"。
+配方全部在 `governance/oss-components.json`，执行入口是 `tools/oss_lab.py smoke <组件>`，
+原始输出落在 `.tmp/lab/<组件>/`（不进仓库）。
+
+### 1. Spark：Structured Streaming
+
+```
+[通过] structured-streaming-run —— rc 0，输出 1 行，预期 ≥ 1 行，读数 3 应等于 3
+```
+
+rate 源 → Parquet（带 checkpoint）→ 批读回 3 行。两个必须写进配方的点：
+
+* **工作目录**：Spark 会在当前目录建 Derby 元数据库（`metastore_db/`、`derby.log`）。
+  不指定工作目录的话，这些残渣会落在调用者的项目里——实测踩过一次。配方里加了 `cwd` 字段。
+* **行数要对得上**：rate 源每批不止一行，直接"来多少写多少"就没法按行数对账。
+  写法是按还差几行 `limit` 后再写，这样读回的数是确定的。
+
+### 2. 湖表三件：Iceberg / Hudi / Delta
+
+都是宿主引擎里的 catalog，冒烟统一为：建命名空间 → 建表 → 写 5 行 → 批模式读回 5 行。
+
+| 格式 | 结果 | 踩到的坑 |
+| --- | --- | --- |
+| Iceberg | 通过（5 读 5） | catalog 的 type 与 impl 要成对配置 |
+| Hudi | 通过（5 读 5） | SQL DDL 必须同时挂 session extension 与 HoodieCatalog；且不支持 SQL DELETE 清表，重跑先 DROP |
+| Delta | 通过（5 读 5） | **delta-spark 不是 fat jar**：只 `--jars` 一个 jar 会缺 `delta-storage`（实测 `NoClassDefFoundError: io/delta/storage/commit/actions/AbstractProtocol`），改成 `--packages` 让 Maven 解析闭包才对 |
+
+### 3. ClickHouse：服务层
+
+```
+[通过] roundtrip —— rc 0，输出 1 行，预期 ≥ 1 行，读数 7 应等于 7
+```
+
+单二进制起 server：自写一份最小配置（数据/临时目录、端口、内存上限都在里面）。
+**最小配置必须自带 `profiles` / `quotas` / `users` 三段**——只给路径和端口的话，
+启动在 `setDefaultProfileName` 处直接失败，报错信息完全不提"缺哪段"。
+停止按数据目录里的 `status` 文件取 PID，不用进程名匹配。
+
+构件：从官方源取到 138 MB 的包，实测 928 KB/s；同一个包的 GitHub 直链实测**完全拉不动**（0 B/s）。
+这条与 Kafka 那条是同一个教训：**先测速再定源**。
+
+### 4. Debezium：CDC 全链路
+
+这是本仓库唯一的复合形态组件，也是最费劲的一条：
+
+```
+Postgres 实验实例（wal_level=logical）→ Kafka Connect + Debezium → Kafka topic → 读回事件
+[通过] postgres-to-kafka —— rc 0，输出 1 行，预期 ≥ 1 行，读数 3 应等于 3
+```
+
+四个坑，每个都花了时间：
+
+1. **源库要独立**：逻辑复制要改 `wal_level`，不能动共享实例。脚本自己 `initdb` 一个实验实例，
+   并顺手把 unix socket 目录挪到自己的目录（`/var/run/postgresql` 没权限，否则起不来）。
+2. **`plugin.path` 要给父目录**：Connect 把该目录下的**每个子目录**当作一个插件（一个类加载器）。
+   指到装 jar 的那个目录，它会逐个 jar 建类加载器，连接器就找不到同目录的 `debezium-core`。
+3. **父目录要保持干净**：把 `plugin.path` 指到 `~/oss` 之后，worker 每次启动都要把
+   Flink、Spark、ClickHouse 全扫一遍，几十秒都起不来。给插件单独一个父目录。
+4. **重装要先清目标目录**：清之前混装了连接器的两个版本，worker 在插件扫描阶段就失败。
+   顺带把这条做进了实验台的安装步骤（`rm -rf` 目标目录再解包），并加了路径合法性护栏。
+
+另外记录一条版本兼容：连接器某一版与 Kafka Connect 4.1 的插件版本解析不兼容
+（`Failed to get plugin version`），换到 3.6.x 系可用。**换版本必须真起一次 worker**，
+下载成功不等于能用。
+
+### 5. 三个没跑通的：Pulsar / Doris / StarRocks
+
+这三个**不是配方没写，是构件拿不到**。留现场：
+
+| 组件 | 实测 | 结论 |
+| --- | --- | --- |
+| Pulsar | closer 上的 3.3.9 是 9.6 KB/s；归档站 3.3.1 是 11 KB/s；国内镜像没有这个目录 | 按这个速度要几小时，未跑通 |
+| Doris | 加速地址与归档站上的版本都是 404，镜像站对归档版本返回 403，下载页是 JS 渲染拿不到直链 | 构件来源没找到，未跑通 |
+| StarRocks | `releases.starrocks.io` 对列表与直链都返回 403，归档站没有这个项目 | 它不是 ASF 项目，绕不过去，未跑通 |
+
+还有一条与速度无关的前置：Doris 单机 FE+BE 要 4 GB 上下内存，
+本机总共 7.8 G、常驻服务已占 2.8 G，**就算拿到构件也要先评估内存**。
+这三项在注册表里保持"未验证"，不写推测结论。
+
+## 十五、Pulsar 真跑与"从 GitHub 下载"的结论（2026-09-30）
+
+### 1. 先纠正上一条结论：GitHub 是通的
+
+上一轮测得 ClickHouse 的 GitHub 直链 0 B/s，当时的结论是"GitHub 拉不动"。这一轮复测：
+**同一个直链 744 KB/s**。所以上一轮那个数是瞬时现象，不是通道问题——**测速要复测，一次采样不能当结论**。
+
+### 2. 但 GitHub Release 上确实没有这三个项目的二进制
+
+按用户要求改用 GitHub 渠道，先把三个项目的 Release 资产查了一遍（`/releases/tags/<tag>` 的 `assets`）：
+
+| 项目 | GitHub Release 资产 |
+| --- | --- |
+| `apache/pulsar`（v4.0.13） | 无 |
+| `apache/doris`（4.1.4） | 无 |
+| `StarRocks/starrocks`（4.1.3） | 无 |
+
+它们的二进制本来就不挂 GitHub，所以"从 GitHub 下载"这条路对这三个组件不成立。
+**这不是通道问题，是上游的分发选择。**
+
+### 3. 换云厂商镜像：Pulsar 通了
+
+换到云厂商的 Apache 镜像后：
+
+| 源 | 实测 |
+| --- | --- |
+| 归档站 3.3.1 | 11 KB/s |
+| closer 上的 3.3.9 | 9.6 KB/s |
+| 云厂商镜像上的 4.0.13 | **1.7 MB/s（实测下载全程均值 4.2 MB/s）** |
+
+237 MB 的包一分钟出头拉完。起停与冒烟：
+
+```
+[通过] ensure-namespace —— rc 0，输出 1 行
+[通过] produce —— rc 0，输出 12 行
+[通过] consume-back —— rc 0，输出 3 行，预期 ≥ 3 行
+```
+
+三个坑记进了 `executors/contracts-oss-pulsar.md`：
+
+1. **端口通了不等于初始化完了**：二进制端口先开，命名空间还没建，写入报 `Namespace not found`。
+   冒烟的第一步改成"确认 `public/default` 存在"（GET 不通就 PUT 建）。
+2. **位置参数名易错**：是 `--subscription-position`，不是 `--subscription-initial-position`。
+   写错时客户端会把值当多出来的参数，报 `Unknown options`。
+3. **配方里的准备步骤别写复合语句**：带子 shell 的 `for` 循环经命令行层传递后被拆行，
+   bash 报 `syntax error near unexpected token`。改成两条 `curl` 的短路写法就好了。
+
+### 4. Doris 与 StarRocks：这一轮仍然没跑通
+
+| 组件 | 这一轮试过的 | 结果 |
+| --- | --- | --- |
+| Doris | GitHub Release 资产；云厂商镜像上的 2.1.8 / 3.0.3 直链 | 资产为空；两个直链都是 **404**（镜像站把老版本撤了） |
+| StarRocks | GitHub Release 资产；云厂商镜像上的直链 | 资产为空；镜像站直链返回的是**网页**（200 但内容是 SPA 首页，不是文件），官方 CDN 仍是 403 |
+
+结论保持"未跑通"，原因写清楚：**上游没有把二进制放到我们能取到的地方**。
+要推进需要一条新的分发入口（内网仓库、对象存储镜像，或官方提供的新地址）。
+
+## 十六、GitHub 到底有没有：把结论查实（2026-09-30）
+
+上一轮说"这两个项目的 GitHub Release 没有二进制"，但那个结论是用 `grep` 过滤接口返回得出的——
+**接口被限流或返回错误时，过滤结果同样是空**，等于把"没查到"当成了"没有"。这一轮用 JSON 正经解析复验：
+
+```
+限流：剩余 60/60
+apache/doris      4.1.4.1 / 4.1.4 / 4.0.8 / 4.1.3 …  每个版本 assets 都是空的
+StarRocks/starrocks 3.5.21 / 4.0.14 / 3.5.20 …        每个版本 assets 都是空的
+```
+
+限流没被消耗、HTTP 200、列表正常返回——**结论成立：这两个项目确实不把二进制挂在 GitHub Release 上**。
+要分清两件事：**开源**指的是源码与许可证公开（两个项目都是），**二进制分发**是各自的选择
+（Doris 走自己的对象存储，StarRocks 走官方 CDN）。它们 GitHub 上给的是源码，不是安装包。
+
+## 十七、换一条通道：容器镜像（StarRocks 跑通）
+
+既然安装包拿不到，就换分发通道。本机 Docker 配了国内镜像源，容器镜像这条路是通的——
+而且**本机早就有 StarRocks 3.3.9 的 FE 与 BE 镜像**（别人早前拉过）：
+
+```
+docker.1ms.run/starrocks/fe-ubuntu:3.3.9   1.97GB
+docker.1ms.run/starrocks/be-ubuntu:3.3.9   3.03GB
+```
+
+起停编排落成 `tools/lab/serving_cluster_up.sh`（Doris 与 StarRocks 共用一份，用参数区分路径）。
+三个坑：
+
+1. **镜像默认命令是 `bash`**：用普通分离方式起容器会立刻退出（`Exited (0)`），必须用交互式分离；
+2. **BE 要显式声明对外网段**：容器里既有回环又有网卡，不指定就注册成错地址，
+   FE 一直报 "No alive backend"；
+3. **就绪要等心跳**：查询端口先开，此时 BE 还没注册，建表会因为"没有可用 BE"而失败。
+   判据是 `Alive = true`，不是端口通。
+
+结果：
+
+```
+rtd_backend_alive=true
+[通过] roundtrip —— rc 0，输出 1 行，预期 ≥ 1 行，读数 5 应等于 5
+```
+
+**StarRocks 真跑通过**：建库建表（DUPLICATE KEY）写 5 行、读回 5 行。
+
+## 十八、Doris：同一条通道
+
+Doris 与 StarRocks 是同一个架构血统，容器布局几乎一致，所以直接复用同一份编排脚本
+（只换镜像与容器内路径）。FE 镜像 `apache/doris:fe-3.0.3` 已从同一个镜像源拉到（2.24GB）；
+BE 镜像体积更大，拉取仍在进行。这一节按实际结果补写，不预填结论。

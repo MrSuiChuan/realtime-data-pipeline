@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2026 AI实战技能圈
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """八项静态校验（plan.md 第十章的落地实现）。
 
     py -3 tools/validate_plugin.py .        # Windows
@@ -72,6 +85,7 @@ REQUIRED_PATHS = [
     "governance/anti-patterns.md",
     "governance/mcp-setup.md",
     "governance/capability-matrix.json",
+    "governance/oss-components.json",
     "workflows/runbook-discovery.md",
     "workflows/runbook-dev.md",
     "workflows/runbook-migration.md",
@@ -91,6 +105,14 @@ REQUIRED_PATHS = [
     "executors/contracts-oss-flink.md",
     "executors/contracts-oss-paimon.md",
     "executors/contracts-oss-fluss.md",
+    "executors/contracts-oss-kafka.md",
+    "executors/contracts-oss-spark.md",
+    "executors/contracts-oss-lakehouse.md",
+    "executors/contracts-oss-clickhouse.md",
+    "executors/contracts-oss-debezium.md",
+    "executors/contracts-oss-pulsar.md",
+    "executors/contracts-oss-starrocks.md",
+    "executors/contracts-oss-doris.md",
     "datasources/metatable-lifecycle.md",
     "datasources/metatable-types.md",
     "knowledge/faq-troubleshooting.md",
@@ -105,6 +127,7 @@ REQUIRED_PATHS = [
     "tests/test_hooks.py",
     "tests/test_repo_invariants.py",
     "templates/config.example.json",
+    "templates/lab.example.json",
     "docs/validation-report.md",
     "tools/desensitize_terms.example.txt",
     "tools/adapt_hooks.py",
@@ -113,11 +136,31 @@ REQUIRED_PATHS = [
     "tools/score_inspection.py",
     "tools/awr_reports.py",
     "tools/oss_cli.py",
+    "tools/oss_lab.py",
+    "tools/lab/spark_lakehouse_smoke.py",
+    "tools/lab/spark_streaming_smoke.py",
+    "tools/lab/debezium_cdc_smoke.sh",
+    "tools/lab/serving_cluster_up.sh",
+    "tools/lab/serving_smoke.sh",
+    "tests/test_oss_lab.py",
     "tests/fixtures/inspection-snapshot.json",
     "tests/test_score_inspection.py",
     "tests/test_oss_cli.py",
     "docs/reports/README.md",
     "docs/host-hooks.md",
+    "docs/oss-component-ledger.md",
+    "docs/apache-readiness-audit.md",
+    "docs/release-process.md",
+    "docs/glossary.md",
+    "docs/README.md",
+    "docs/third-party-dependencies.md",
+    "NOTICE",
+    "GOVERNANCE.md",
+    "CODE_OF_CONDUCT.md",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/ISSUE_TEMPLATE/bug.md",
+    ".github/ISSUE_TEMPLATE/feature.md",
+    ".github/ISSUE_TEMPLATE/config-help.md",
 ]
 
 # 第 4 项：执行器契约里不许出现业务叙事词；工作流里不许内联命令串
@@ -186,6 +229,31 @@ def check_structure() -> list[str]:
         if script not in ci:
             errors.append(f"CI 没有跑 {script}")
     errors.extend(check_hooks_files())
+    errors.extend(check_license_headers())
+    return errors
+
+
+LICENSE_HEADER_MARK = "Apache License, Version 2.0"
+
+
+def check_license_headers() -> list[str]:
+    """第 1 项的另一半：自研源码逐文件带 Apache-2.0 许可头。
+
+    只管**本仓库自己写的**代码（引擎、hook、工具、测试）。生成物 `skills/` 由 `commands/`
+    生成，加了头会被生成器覆盖；第三方文本有自己的声明，见 `NOTICE` 与
+    `docs/third-party-dependencies.md`。
+    """
+    errors: list[str] = []
+    for folder, suffixes in (("engine", (".py",)), ("hooks", (".py",)),
+                             ("tools", (".py", ".sh")), ("tests", (".py",))):
+        base = ROOT / folder
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*")):
+            if not path.is_file() or path.suffix not in suffixes:
+                continue
+            if LICENSE_HEADER_MARK not in read_text(path)[:1500]:
+                errors.append(f"{rel(path)} 缺 Apache-2.0 许可头（自研源码逐文件声明）")
     return errors
 
 
@@ -268,6 +336,74 @@ def check_capability_matrix() -> list[str]:
             continue
         if not (ROOT / ref).exists():
             errors.append(f"capability-matrix 引用了不存在的文件：{ref}")
+    errors.extend(check_registry_consistency())
+    return errors
+
+
+def check_registry_consistency() -> list[str]:
+    """第 3 项的另一半：组件注册表 ↔ 执行器契约 ↔ 能力矩阵必须一一对上。
+
+    RTD-038 之前，开源执行器的清单一共有三份：引擎里手写的一份、契约文档、能力矩阵。
+    加一个组件要同时改四处，且没有任何检查把它们绑在一起——注册表一扩必然漂移。
+    这条检查把三份绑死：tier 1/2 的组件必须有契约、必须在能力矩阵里；反过来，
+    能力矩阵里的 oss_* 也必须在注册表里，不许出现在一边、缺在另一边。
+    """
+    registry_path = ROOT / "governance" / "oss-components.json"
+    if not registry_path.is_file():
+        return ["缺 governance/oss-components.json"]
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as err:
+        return [f"oss-components.json 不是合法 JSON：{err}"]
+    components = registry.get("components")
+    if not isinstance(components, list) or not components:
+        return ["oss-components.json 里没有 components 列表"]
+
+    try:
+        matrix = json.loads((ROOT / "governance" / "capability-matrix.json").read_text(encoding="utf-8"))
+        matrix_executors = matrix.get("executors") if isinstance(matrix.get("executors"), dict) else {}
+    except (OSError, json.JSONDecodeError):
+        matrix_executors = {}
+
+    errors: list[str] = []
+    seen: set[str] = set()
+    for item in components:
+        if not isinstance(item, dict):
+            errors.append("oss-components.json 里有不是对象的组件条目")
+            continue
+        name = item.get("id")
+        if not isinstance(name, str) or not name:
+            errors.append("oss-components.json 里有组件缺 id")
+            continue
+        if name in seen:
+            errors.append(f"组件 id 重复：{name}")
+        seen.add(name)
+        tier = item.get("tier")
+        if tier not in {1, 2, 3}:
+            errors.append(f"{name} 的 tier 不是 1/2/3：{tier!r}")
+        if item.get("launch_mode") not in {"service", "library"}:
+            errors.append(f"{name} 的 launch_mode 不是 service/library：{item.get('launch_mode')!r}")
+        if item.get("config_ref") != f"executors.{name}":
+            errors.append(f"{name} 的 config_ref 与 id 对不上：{item.get('config_ref')!r}")
+        if tier in {1, 2}:
+            keys = item.get("required_keys")
+            if not isinstance(keys, list) or not keys:
+                errors.append(f"{name} 是 tier {tier}，required_keys 不能为空（“已配置”的判定靠它）")
+            contract = item.get("contract_ref") or f"executors/contracts-{name.replace('_', '-')}.md"
+            if not (ROOT / str(contract)).exists():
+                errors.append(f"{name} 缺执行器契约：{contract}")
+            if name not in matrix_executors:
+                errors.append(f"{name} 没有登记进 capability-matrix.json 的 executors")
+            if item.get("launch_mode") == "service":
+                ready = item.get("ready") or {}
+                if not (ready.get("tcp") or ready.get("http") or ready.get("probe_argv")):
+                    errors.append(f"{name} 是 service 形态但没有就绪探针（会起成“不知道好没好”）")
+        if tier == 3 and item.get("start"):
+            errors.append(f"{name} 是 tier 3（只登记角色与配置形状），不该带本地启动配方")
+
+    for name in matrix_executors:
+        if str(name).startswith("oss_") and name not in seen:
+            errors.append(f"capability-matrix.json 里的 {name} 没登记进 oss-components.json")
     return errors
 
 

@@ -11,6 +11,38 @@ goals:
   - 执行器与限额全部来自项目级配置，缺项时报缺口并停
   - 验证记录区分已验证与未验证，不用推测内容填充
 
+- id: goal-rtd-realtime-matrix
+  title: 主流实时组件兼容矩阵：登记、本地起、逐个真跑
+  status: active
+  summary: 把“兼容主流实时处理组件”从一句话变成可复核的台账：组件注册表登记角色、构件与本地生命周期配方；本地实验台负责装、起、停、探、冒烟，并拦住“同时起两个重型组件”；逐个真跑、原始输出留档。没配方或跑不动的组件如实标“未验证”，不做含糊结论。
+  success_criteria:
+  - 注册表覆盖计算引擎、消息日志、湖表目录、流存储、服务层、变更捕获六类角色，并按 tier 1/2/3 标注验证程度
+  - 实验台能装、起、停、探、冒烟，且拦住“同时起两个重型组件”
+  - 冒烟判据是读回行数：读回 0 行与命令失败分开记，两者都不算通过
+  - tier 1/2 组件都有执行器契约、都进能力矩阵，三份由静态校验绑死
+  - 未验证的组件在台账里写“未验证”，不用推测内容填充
+
+- id: goal-rtd-all-components-run
+  title: 注册表里的组件逐个真跑通过
+  status: active
+  summary: 把“兼容主流实时组件”从登记与框架推进到逐个真跑：每个组件在本地起来、写进去、读回来，行数对得上才记通过；拿不到构件或起不来的，留下实测现场并如实写“未跑通”，不改判据。目标是让台账上每一行都有对应的原始输出。
+  success_criteria:
+  - 每个登记组件要么有“真跑通过”的读数与原始输出，要么有“未跑通”的实测原因（速度、来源、内存、权限）
+  - 通过的组件 tier 升到 1，能力矩阵与注册表同步验证状态与已知缺口
+  - 冒烟判据统一为“写进去多少行、读回来多少行”，读数由实验台按注册表比对，不看进程退出码
+  - 新踩到的坑写进对应执行器契约，不留在会话里
+
+- id: goal-rtd-open-source-ready
+  title: 按 Apache 标准做开源就绪排查与优化
+  status: active
+  summary: 在公开之前，按 Apache 项目的通行标准把项目自查一遍，分三个维度：流程完整性（贡献、评审、发布、安全披露）、合理性（判据可机器验、事实只有一份、诚实标注）、友好性（上手、文档、示例、报错）。查出缺口就当场补上，补不了的写成需要所有者决策的条目，不留在会话里。
+  success_criteria:
+  - 许可与声明合规：许可证、声明文件、逐文件许可头齐备，且由静态校验把关
+  - 流程完整：治理、行为准则、发布流程、贡献者条款、安全披露、issue 与 PR 模板齐备
+  - 合理性可验：文档里的承诺要么有机器校验，要么标注未验证；事实源不重复
+  - 友好性：陌生人能从文档地图找到入口，术语有表，求助渠道写清楚
+  - 审计台账逐条记录现状、证据、处置，未完成项写明为什么需要决策
+
 work_items:
 - id: RTD-000
   title: 设计源优化与脱敏（Q0）
@@ -768,3 +800,467 @@ work_items:
   "evidence": ["docs/validation-report.md","docs/oss-lab.md"]
   "verification": {"evidence_level":"locally_verified"}
   "blocker": null
+
+# ── 2026-09-29 新目标：面向主流实时处理组件（登记 / 本地起 / 逐个真跑）────────
+
+- id: RTD-038
+  title: 开源执行器登记收敛成一份
+  kind: fix
+  status: in_progress
+  goal: goal-rtd-realtime-matrix
+  priority: P0
+  required: true
+  summary: |
+    开源执行器的清单原先有三份副本：engine/core.py 里手写的一份、executors/ 的契约文档、
+    governance/capability-matrix.json。加一个组件要同时改四处且没有任何检查把它们绑在一起。
+    另外开源路径的“配全”用 all(...) 判定，注册表一扩就会把“只配了 Flink 与 Fluss”的人
+    误报成没配齐。本轮把清单收敛到 governance/oss-components.json 单一来源，并把判定改成
+    “已开始的子集”：动过的组件必须配全，没动过的不算缺口。
+  acceptance:
+  - 引擎的执行器清单来自注册表的 tier 1/2 组件，代码里不再手写 oss_* 键
+  - 只配 Flink 与 Fluss 时 rt-env 判定为就绪，不报其它组件的缺口
+  - 注册表读不出来时进缺口并写明原因，不静默退化成“没有开源执行器”
+  - 原有 env check 的三条用例仍全部通过
+  next_action: 已改完并通过静态校验；补一条“只配两个开源组件也算就绪”的用例后提交完成。
+  paths:
+  - engine/core.py
+  - governance/oss-components.json
+  - tools/validate_plugin.py
+  - tests/test_engine.py
+
+- id: RTD-039
+  title: 本地实验台：装、起、停、探、冒烟
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-realtime-matrix
+  priority: P0
+  required: true
+  summary: |
+    原先“装组件、起组件、跑冒烟、停掉再上下一个”全靠人照文档做，没有可执行入口，
+    也没有任何机制拦住同时起两个重型组件。新增 tools/oss_lab.py：组件知识只从注册表读，
+    本机设置从 .rtd/lab.json 读；start 前先探在跑的重型组件并拒绝，冒烟按配方执行且
+    原始输出落盘。
+  acceptance:
+  - 一个入口覆盖 list、plan、status、start、stop、smoke、install
+  - 已有另一个重型组件在跑时 start 会拒绝，加 --stop-others 会先停掉它再起
+  - 冒烟输出行数少于配方预期即判失败，与进程退出码无关
+  - tier 3 组件没有配方时显式报“未提供本地配方”，不假装能跑
+  - 单测覆盖以上四类行为，且不打网络、不起进程
+  next_action: 单测已通过；用真组件（Kafka）跑一遍端到端后提交完成。
+  paths:
+  - tools/oss_lab.py
+  - tests/test_oss_lab.py
+  - templates/lab.example.json
+
+- id: RTD-040
+  title: 组件注册表扩到 13 个 + 三份执行器契约
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-realtime-matrix
+  priority: P0
+  required: true
+  summary: |
+    原先开源执行器只有 Flink、Paimon、Fluss 三件，离“主流实时处理组件”还差消息日志层、
+    Structured Streaming、以及主流湖表格式。本轮把注册表扩到 13 个组件（六类角色），
+    新增 Kafka、Spark、湖表格式三份契约，并把能力矩阵与配置模板同步；tier 3 的组件
+    只登记角色与配置形状，明确不提供本地配方。
+  acceptance:
+  - 注册表覆盖六类角色，每个组件有 id、角色、形态、tier、必需键与就绪判定方式
+  - tier 1/2 组件都有执行器契约，且契约不做成同一套规则抄三遍
+  - 能力矩阵登记新组件的已知缺口与验证状态，正文不内联版本号与命令串
+  - 配置模板与注册表的必需键一一对应
+  next_action: 注册表与契约已落地；等真跑结果回填验证状态后提交完成。
+  paths:
+  - governance/oss-components.json
+  - governance/capability-matrix.json
+  - executors/contracts-oss-kafka.md
+  - executors/contracts-oss-spark.md
+  - executors/contracts-oss-lakehouse.md
+  - templates/config.example.json
+
+- id: RTD-041
+  title: Kafka 本地真跑（建 topic 到读回）
+  kind: delivery
+  status: ready
+  goal: goal-rtd-realtime-matrix
+  priority: P0
+  required: true
+  summary: |
+    用实验台在本地起一个单机 Kafka（KRaft 模式），建 topic、灌入 N 行、从头读回 N 行，
+    把原始输出留档。这是“消息日志层真的能用”的唯一硬证明；跑不通就留现场写“未验证”。
+  acceptance:
+  - 构件来源与版本与注册表登记一致
+  - 冒烟读回的行数与灌入的行数一致，原始输出落盘可复核
+  - 结论写进 docs/oss-lab.md 与 docs/oss-component-ledger.md
+  - 跑不通时保留镜像、端口、报错原文，结论写“未验证”而不改判据
+  next_action: 装构件后按 rtd_lab_smoke 走一遍建 topic、灌 3 行、读回 3 行。
+  depends_on:
+  - RTD-039
+  paths:
+  - docs/oss-lab.md
+  - docs/oss-component-ledger.md
+
+- id: RTD-042
+  title: 校验器把注册表、契约与能力矩阵绑死
+  kind: fix
+  status: in_progress
+  goal: goal-rtd-realtime-matrix
+  priority: P1
+  required: true
+  summary: |
+    静态校验第 3 项原先只查能力矩阵里的文件引用存不存在，不查注册表与契约、矩阵是否对得上。
+    加组件因此是“改一处、忘三处”。本轮把第 3 项扩成注册表一致性：tier 1/2 组件必须有契约、
+    必须进能力矩阵，service 形态必须有就绪探针，tier 3 不许带本地启动配方，反向也查一遍。
+  acceptance:
+  - 组件缺契约或缺矩阵登记时校验失败并指出是哪一件
+  - service 形态缺就绪探针时校验失败
+  - tier 3 组件带本地启动配方时校验失败
+  - 能力矩阵里有而注册表里没有的 oss_* 也被拦下
+  next_action: 已实现且八项校验全绿；补一条注入坏注册表的用例后提交完成。
+  paths:
+  - tools/validate_plugin.py
+
+- id: RTD-043
+  title: 组件台账文档
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-realtime-matrix
+  priority: P1
+  required: false
+  summary: |
+    组件维度的现状原先散在实验记录与契约里，没有一个地方能一眼看到“每个组件现在到哪一步”。
+    新增 docs/oss-component-ledger.md：登记总表、逐个组件的现状与下一步、本轮的优化与新增、
+    口径与纪律、复现步骤。
+  acceptance:
+  - 每个登记组件的角色、构件就绪判定键、真跑状态、下一步都能查到
+  - 台账与注册表一致（构件就绪判定键取自注册表的 required_keys）
+  - “未验证”与“已验证”分列，不用推测内容填充
+  next_action: 文档已落地；等 Kafka 真跑结果回填后提交完成。
+  paths:
+  - docs/oss-component-ledger.md
+  - README.md
+
+# ── 2026-09-29 第二轮：注册表里的组件逐个真跑 ────────────────────────────────
+
+- id: RTD-044
+  title: 实验台补强与 Spark 真跑
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-all-components-run
+  priority: P0
+  required: true
+  summary: |
+    实验台先补四个短板再上强度：冒烟步骤要能指定工作目录（Spark 会把 Derby 元数据库
+    留在当前目录）、读数要跟注册表里声明的目标值比对（不能只看有没有打印）、读子进程输出
+    要固定 UTF-8（Windows 上按本地代码页解会崩）、安装要先清目标目录再解包（混装两个版本
+    会让插件扫描直接失败）。补完之后跑通 Spark 的 Structured Streaming。
+  acceptance:
+  - 冒烟支持工作目录与读数比对，两者都有用例覆盖
+  - 安装步骤先清目标目录，并对落点做合法性护栏
+  - Spark 流式真跑：写 3 行读回 3 行，原始输出落盘
+  next_action: 四项补强与 Spark 真跑都已完成，等提交后走完成校验。
+  paths:
+  - tools/oss_lab.py
+  - tools/lab/spark_streaming_smoke.py
+  - tests/test_oss_lab.py
+
+- id: RTD-045
+  title: 湖表三件真跑：Iceberg / Hudi / Delta
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-all-components-run
+  priority: P0
+  required: true
+  summary: |
+    三种湖表格式在宿主的 Spark 上各建一张表、写 5 行、批模式读回 5 行。三者的差异集中
+    在一处：Iceberg 要 type 与 impl 成对、Hudi 要 session extension 加 HoodieCatalog、
+    Delta 的连接器不是 fat jar 必须让依赖解析器补闭包。
+  acceptance:
+  - 三件各自写 5 行读回 5 行，读数由实验台按注册表比对
+  - 每件踩到的坑写进对应契约的已知缺口
+  - 三件 tier 升到 1 并回填能力矩阵
+  next_action: 三件均已通过，等提交后走完成校验。
+  paths:
+  - tools/lab/spark_lakehouse_smoke.py
+  - executors/contracts-oss-lakehouse.md
+  - governance/oss-components.json
+
+- id: RTD-046
+  title: ClickHouse 真跑
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-all-components-run
+  priority: P1
+  required: true
+  summary: |
+    拉单二进制、自写最小配置、起 server，再建库建表写 7 行读回 7 行。最小配置必须自带
+    profiles / quotas / users 三段，否则启动在一个完全不提示“缺哪段”的地方失败。
+  acceptance:
+  - 服务起得来且就绪探针通过
+  - 写 7 行读回 7 行，原始输出落盘
+  - tier 升到 1 并回填能力矩阵与契约
+  next_action: 已通过，等提交后走完成校验。
+  paths:
+  - executors/contracts-oss-clickhouse.md
+  - governance/oss-components.json
+
+- id: RTD-047
+  title: Debezium CDC 全链路真跑
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-all-components-run
+  priority: P0
+  required: true
+  summary: |
+    这是唯一的复合形态组件：实验源库、消息队列、连接器 worker、连接器四样都要在位。
+    源库用独立实例（不碰共享实例，逻辑复制要改它的参数），worker 的插件目录必须是
+    “父目录只放这一个插件”的形状。真跑判据是话题里读回的变更事件条数与源库写入行数一致。
+  acceptance:
+  - 实验源库起得来并开启逻辑复制
+  - 源库写 3 行、话题读回 3 条变更事件
+  - 四个坑写进契约；tier 升到 1
+  next_action: 已通过，等提交后走完成校验。
+  paths:
+  - tools/lab/debezium_cdc_smoke.sh
+  - executors/contracts-oss-debezium.md
+
+- id: RTD-048
+  title: 三个未跑通组件的构件来源
+  kind: investigation
+  status: blocked
+  goal: goal-rtd-all-components-run
+  priority: P1
+  required: true
+  summary: |
+    Pulsar、Doris、StarRocks 三项没跑通，原因都不是配方：Pulsar 的构件在能拿到的源上只有
+    十来个 KB 每秒，Doris 的版本在加速地址与归档站都是四百零四、镜像站对归档版本返回四百零三，
+    StarRocks 的分发入口对列表与直链都返回四百零三。实测数据与试过的地址都记在实验记录里，
+    避免下一个人重复找一遍。
+  acceptance:
+  - 三项各自的实测原因（速度、状态码、来源）写进实验记录与台账
+  - 注册表里如实保持“未跑通”，不写推测结论
+  - 找到可用源后再补配方与真跑，本项才算完成
+  next_action: 需要一个新的构件来源信息（镜像、内网仓库或本地已有包），否则无法推进。
+  paths:
+  - docs/oss-lab.md
+  - docs/oss-component-ledger.md
+
+- id: RTD-049
+  title: 全量真跑结果回填台账
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-all-components-run
+  priority: P1
+  required: true
+  summary: |
+    十个通过的组件把 tier 升到 1，验证状态、能力与已知缺口回填进注册表与能力矩阵；
+    组件台账的总表、实测读数与下一步同步更新；README 与变更记录写明这一轮覆盖到哪。
+  acceptance:
+  - 台账总表逐行写明真跑状态与证据位置
+  - 能力矩阵与注册表的验证状态一致（由静态校验把关）
+  - 未跑通的三项在台账里同样逐条写明原因
+  next_action: 文档与数据已回填，等提交后走完成校验。
+  paths:
+  - docs/oss-component-ledger.md
+  - docs/oss-lab.md
+  - README.md
+  - CHANGELOG.md
+
+# ── 2026-09-30 开源就绪：按 Apache 标准排查与优化 ────────────────────────────
+
+- id: RTD-050
+  title: 许可与声明合规（Apache-2.0）
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: |
+    原许可证是 MIT，与“按 Apache 标准开源”的意图不符：MIT 不要求声明文件，也没有专利授权条款。
+    本轮换成 Apache-2.0 官方文本，补 NOTICE（含第三方与商标边界），给全部自研源码加短式许可头，
+    并把“逐文件许可头”加进静态校验——否则下次新增文件又会漏。
+  acceptance:
+  - LICENSE 为 Apache-2.0 官方文本
+  - NOTICE 写明第三方边界与商标声明
+  - 引擎、hook、工具、测试的每个源文件都带许可头，且校验器会拦漏
+  - 两份插件清单的许可字段同步改为 Apache-2.0
+  next_action: 已落地并通过校验；是否保留 Apache-2.0 属于所有者决策，已写进审计台账第七节。
+  paths:
+  - LICENSE
+  - NOTICE
+  - engine/
+  - hooks/
+  - tools/
+  - tests/
+
+- id: RTD-051
+  title: 治理与流程文档
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: |
+    原先没有治理文件、行为准则与发布流程：谁能合并、怎么定争议、发版要跑什么，全凭默契。
+    本轮补上治理（角色、惰性共识、需更强共识的事项、争议升级、弃用策略）、行为准则，
+    以及发布流程（版本规则、发版前提、打包内容、发布动作、发布后核对），
+    并把贡献者条款定为 DCO。
+  acceptance:
+  - 治理文件写明角色、决策方式、评审与合并条件、争议升级路径
+  - 发布流程含版本规则、打包清单、发布动作与发布后核对
+  - 贡献指南含 DCO 做法与求助渠道；安全文档含支持版本与响应预期
+  next_action: 已完成；等待提交后走完成校验。
+  paths:
+  - GOVERNANCE.md
+  - CODE_OF_CONDUCT.md
+  - docs/release-process.md
+  - CONTRIBUTING.md
+  - SECURITY.md
+
+- id: RTD-052
+  title: 贡献入口与社区友好性
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-open-source-ready
+  priority: P1
+  required: true
+  summary: |
+    对外来者最缺的是入口：没有 issue 与 PR 模板，没有术语表，没有文档地图，也不知道有问题该找谁。
+    本轮补上三类 issue 模板与 PR 模板（自查清单里带上“没改生成物”“没写真实平台名”等硬要求），
+    补术语表与文档地图，README 补参与与支持一节。
+  acceptance:
+  - issue 模板覆盖缺陷、能力提案、配置求助；PR 模板含验证与自查清单
+  - 术语表逐词对应到判据，不写成名词解释
+  - 文档地图按角色分入口；README 有求助渠道表
+  next_action: 已完成；等待提交后走完成校验。
+  paths:
+  - .github/
+  - docs/glossary.md
+  - docs/README.md
+  - README.md
+
+- id: RTD-053
+  title: Pulsar 真跑（换分发源）
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: |
+    Pulsar 上一轮卡在构件速度（归档站十来 KB 每秒）。本轮按“换源而不是换判据”的思路，
+    在云厂商镜像上找到 4.0.13（实测 1.7 到 4.2 MB 每秒），起单机 standalone 并跑通
+    建命名空间、灌消息、按最早位点读回。
+  acceptance:
+  - 构件来源与版本写进登记表，含实测速度
+  - 冒烟三步全绿，读回内容行数与预期一致，原始输出落盘
+  - 三个坑（就绪判定、订阅位点参数名、配方里别写复合语句）写进契约
+  next_action: 已通过；等待提交后走完成校验。
+  paths:
+  - governance/oss-components.json
+  - executors/contracts-oss-pulsar.md
+  - docs/oss-lab.md
+
+- id: RTD-054
+  title: Doris 与 StarRocks 的构件来源
+  kind: investigation
+  status: blocked
+  goal: goal-rtd-open-source-ready
+  priority: P1
+  required: true
+  summary: |
+    按“从 GitHub 下载”的要求实测：这两个项目的 GitHub Release 都没有二进制资产（逐个查过 assets），
+    云厂商镜像上的直链一个是 404、另一个返回的是网页而不是文件，官方 CDN 仍是 403。
+    结论是上游没把二进制放在我们能取到的地方，与配方无关。
+  acceptance:
+  - GitHub 资产为空、镜像直链 404 与返回网页、官方 CDN 403 这三组实测都写进实验记录
+  - 登记表保持未跑通，不写推测结论
+  - 找到新分发入口后再补配方与真跑，本项才算完成
+  next_action: StarRocks 已走容器镜像通道跑通（见 RTD-056）；本项只剩 Doris，卡在 BE 镜像拉取时间。
+  paths:
+  - docs/oss-lab.md
+  - docs/oss-component-ledger.md
+
+- id: RTD-056
+  title: 查实 GitHub 分发通道并更正错误结论
+  kind: investigation
+  status: in_progress
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: |
+    上一轮两个结论都不可靠：说“GitHub 拉不动”，复测同一地址是 744 KB/s；说“GitHub 上没有二进制”，
+    当时是用 grep 过滤接口返回得出的——接口被限流或报错时过滤结果同样是空，等于把“没查到”当成“没有”。
+    本轮改用 JSON 解析并先查限流余量，才确认这两个项目的 Release 确实不挂二进制。
+  acceptance:
+  - 复核方式能证明查询本身没问题（先查限流余量、HTTP 状态、解析 assets 字段）
+  - 结论与更正写进实验记录与变更记录
+  - 这条方法论写进审计台账：凡是“查不到”的结论，先证明查询有效
+  next_action: 已完成并落地；等待提交后走完成校验。
+  paths:
+  - docs/oss-lab.md
+  - docs/apache-readiness-audit.md
+  - CHANGELOG.md
+
+- id: RTD-057
+  title: StarRocks 真跑（容器镜像通道）
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: |
+    安装包这条路对 StarRocks 关闭，换容器镜像：FE 与 BE 各一个容器，BE 注册进 FE。
+    起停编排落成一份通用脚本（Doris 与 StarRocks 共用，用参数区分路径），
+    冒烟复用同一份 MySQL 协议脚本。三个坑：镜像默认命令是 bash 必须交互式分离起、
+    BE 要显式声明对外网段、就绪要等心跳而不是等端口。
+  acceptance:
+  - FE 与 BE 起得来，BE 注册后心跳为真
+  - 建库建表写 5 行读回 5 行，读数由实验台按注册表比对
+  - 起停编排与冒烟各只有一份，Doris 复用同一份
+  - 三个坑写进契约
+  next_action: 已通过；等待提交后走完成校验。
+  paths:
+  - tools/lab/serving_cluster_up.sh
+  - tools/lab/serving_smoke.sh
+  - executors/contracts-oss-starrocks.md
+  - governance/oss-components.json
+
+- id: RTD-058
+  title: Doris 真跑（容器镜像通道）
+  kind: delivery
+  status: blocked
+  goal: goal-rtd-open-source-ready
+  priority: P1
+  required: true
+  summary: |
+    Doris 与 StarRocks 复用同一份编排脚本，注册表条目与契约都已写好，FE 镜像也已从本机镜像源拉到。
+    卡点是 BE 镜像：体积大，本机镜像源对它明显更慢，三次拉取分别在 22 分钟、30 分钟上下被超时截断。
+    这是环境与镜像源的问题，不是配方问题。
+  acceptance:
+  - BE 镜像落地后起 FE 与 BE，等心跳为真
+  - 建库建表写 N 行读回 N 行，原始输出落盘
+  - tier 从 2 升到 1，验证状态与已知缺口回填
+  next_action: 网络空闲时重跑 oss_lab 的安装步骤把 BE 镜像拉全，再起服务跑冒烟。
+  paths:
+  - governance/oss-components.json
+  - executors/contracts-oss-doris.md
+
+- id: RTD-055
+  title: 开源就绪审计台账
+  kind: delivery
+  status: in_progress
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: |
+    把这次排查固化成一份可复核的台账：按许可与法律、流程完整性、合理性、友好性四个维度逐条列
+    现状、证据、状态与处置；未完成项写明为什么需要所有者决策。台账本身也进静态校验的必需文件清单，
+    防止它被删掉或改名后无人发现。
+  acceptance:
+  - 四个维度逐条有记录，状态记号一致，未完成项写清决策点
+  - 台账与治理、发布、贡献、安全等文件互相引用，不重复规则
+  - 台账列入必需文件，校验器会拦缺失
+  next_action: 已完成；等待提交后走完成校验。
+  paths:
+  - docs/apache-readiness-audit.md
+  - tools/validate_plugin.py

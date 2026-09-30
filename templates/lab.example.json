@@ -1,0 +1,7 @@
+{
+  "_README": "把本文件复制成项目里的 .rtd/lab.json。它描述**本机**的实验台设置（哪台机器、装在哪、用什么壳跑），不是组件知识——组件知识在 governance/oss-components.json。该文件不进任何仓库。",
+  "root": "~/oss",
+  "runner": "<空 = 就在当前 shell 里跑；Windows 上可填 `wsl -d Debian -- bash -lc`>",
+  "python": "python3",
+  "state_file": ".rtd/lab-state.json"
+}

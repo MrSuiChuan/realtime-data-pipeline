@@ -1,0 +1,559 @@
+{
+  "schema_version": 1,
+  "note": "开源实时组件注册表：角色、构件、端口、内存占用与本地生命周期配方的唯一来源。安装路径与连接地址不在这里——它们来自项目级 .rtd/config.json 的 executors.* 与 .rtd/lab.json 的 lab.*。任何正文（README / 工作流 / 执行器契约）只引用本文件，不复制版本号与命令串。要改“支持哪些组件、怎么起”就改这里。",
+  "lab": {
+    "root_default": "~/oss",
+    "runner_default": "bash",
+    "runner_hint": "每条配方都在一个 shell 里按顺序执行；Windows 上把 lab.runner 配成 `wsl -d <发行版> -- bash -lc`（见 docs/oss-lab.md 第二节）。",
+    "state_file": ".rtd/lab-state.json",
+    "single_heavy_at_a_time": true,
+    "note": "本机 7.7G 内存：标记 heavy 的组件一次只起一个，起第二个前先 stop 掉前一个，否则失败现场分不清是谁的问题（用户 2026-09-29 的指令）。"
+  },
+  "roles": {
+    "compute": "流计算引擎",
+    "log": "消息 / 日志存储",
+    "lake": "湖表目录（连接器 / 运行时 jar，不是独立服务）",
+    "stream_storage": "流存储（日志表语义）",
+    "serving": "实时分析 / 服务层",
+    "cdc": "变更数据捕获"
+  },
+  "launch_modes": {
+    "service": "独立进程，有起停与就绪探针",
+    "library": "不是独立服务，靠宿主引擎加载；注册表只登记构件与对齐规则"
+  },
+  "tiers": {
+    "1": "已在本机真跑过（证据见 docs/oss-lab.md 与台账）",
+    "2": "已登记且构件可获取，但还没在本机跑通——状态就写“未验证”",
+    "3": "只登记角色与配置形状，没给本地配方（不假装支持）"
+  },
+  "components": [
+    {
+      "id": "oss_flink",
+      "display": "Apache Flink",
+      "role": "compute",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": true,
+      "mem_mb": 2500,
+      "ports": [8081],
+      "config_ref": "executors.oss_flink",
+      "required_keys": ["home", "rest_endpoint"],
+      "artifact": {
+        "kind": "tgz",
+        "pin": "2.2.0",
+        "url": "https://archive.apache.org/dist/flink/flink-2.2.0/flink-2.2.0-bin-scala_2.12.tgz",
+        "mirror": "https://mirrors.aliyun.com/apache/flink/flink-2.2.0/flink-2.2.0-bin-scala_2.12.tgz",
+        "sha512_url": "https://archive.apache.org/dist/flink/flink-2.2.0/flink-2.2.0-bin-scala_2.12.tgz.sha512",
+        "unpack_to": "${root}/flink-2.2.0"
+      },
+      "start": ["${home}/bin/start-cluster.sh"],
+      "stop": ["${home}/bin/stop-cluster.sh"],
+      "ready": {"http": "${rest_endpoint}/overview", "timeout_s": 120},
+      "smoke": [
+        {"name": "batch-count", "kind": "sql", "sql": "SELECT 1 AS rtd_smoke",
+         "desc": "SQL 客户端跑一条批查询并把结果行数当作证据"}
+      ],
+      "verified": {
+        "on": "2026-09-22",
+        "env": "WSL2 Debian 13 + OpenJDK 21",
+        "capabilities": ["SQL 客户端批作业出结果", "流作业提交到 REST 可查的 Job ID", "SQL Gateway REST 可作为备选取证通道"],
+        "gaps": ["start-cluster.sh 随会话 SIGHUP 被带走", "非交互模式必须显式设置结果模式", "SQL 会话默认 UTC"]
+      }
+    },
+    {
+      "id": "oss_kafka",
+      "display": "Apache Kafka",
+      "role": "log",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": true,
+      "mem_mb": 1200,
+      "ports": [9092],
+      "config_ref": "executors.oss_kafka",
+      "required_keys": ["home", "bootstrap_servers"],
+      "artifact": {
+        "kind": "tgz",
+        "pin": "4.1.2",
+        "url": "https://dlcdn.apache.org/kafka/4.1.2/kafka_2.13-4.1.2.tgz",
+        "mirror": "https://mirrors.aliyun.com/apache/kafka/4.1.2/kafka_2.13-4.1.2.tgz",
+        "unpack_to": "${root}/kafka_2.13-4.1.2"
+      },
+      "start": [
+        "mkdir -p ${home}/lab-data ${home}/logs",
+        "sed 's|^log.dirs=.*|log.dirs=${home}/lab-data|' ${home}/config/server.properties > ${home}/lab-server.properties",
+        "test -f ${home}/lab-data/meta.properties || ${home}/bin/kafka-storage.sh format -t $(${home}/bin/kafka-storage.sh random-uuid) -c ${home}/lab-server.properties --standalone",
+        "setsid nohup ${home}/bin/kafka-server-start.sh ${home}/lab-server.properties > ${home}/logs/server.out 2>&1 < /dev/null & sleep 8"
+      ],
+      "stop": ["${home}/bin/kafka-server-stop.sh"],
+      "skip_start_if_ready": true,
+      "ready": {"tcp": ["${bootstrap_servers}"], "timeout_s": 120},
+      "smoke": [
+        {"name": "topic-create", "kind": "cli", "desc": "建一个实验 topic",
+         "argv": ["${home}/bin/kafka-topics.sh", "--bootstrap-server", "${bootstrap_servers}",
+                  "--create", "--if-not-exists", "--topic", "${topic}", "--partitions", "1", "--replication-factor", "1"]},
+        {"name": "produce", "kind": "shell", "desc": "灌 ${count} 行到 topic（走 console producer，标准输入喂行）",
+         "script": "seq 1 ${count} | ${home}/bin/kafka-console-producer.sh --bootstrap-server ${bootstrap_servers} --topic ${topic}"},
+        {"name": "consume-back", "kind": "cli", "desc": "用 --from-beginning 读回，读到的行数就是证据（读到 0 行不算通过）",
+         "argv": ["${home}/bin/kafka-console-consumer.sh", "--bootstrap-server", "${bootstrap_servers}",
+                  "--topic", "${topic}", "--from-beginning", "--max-messages", "${count}", "--timeout-ms", "20000"],
+         "expect_stdout_lines": "${count}", "expect_stdout_matches": "^[0-9]+$"}
+      ],
+      "verified": {
+        "on": "2026-09-29",
+        "env": "WSL2 Debian 13 + OpenJDK 21 + Kafka 4.1.2 单机 KRaft",
+        "capabilities": [
+          "存储格式化后单机 broker 起得来，9092 可连接（就绪探针经 runner 判定）",
+          "建 topic → 灌 5 行 → 从头上读回 5 行，行数与灌入一致，原始输出落盘",
+          "拆会话的启动方式（setsid + 让启动器多活几秒）能让 broker 跨会话存活"
+        ],
+        "gaps": [
+          "自带守护模式在外部会话里活不下来，必须 setsid 且启动器不能立刻退出",
+          "进程存活判定不能用会匹配到启动器自身命令行的模式",
+          "3.9.2 只在归档站上，实测 13.8 KB/s，拉不动；选版本时先看快镜像有没有"
+        ]
+      }
+    },
+    {
+      "id": "oss_spark",
+      "display": "Apache Spark（Structured Streaming）",
+      "role": "compute",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": true,
+      "mem_mb": 3000,
+      "ports": [4040],
+      "config_ref": "executors.oss_spark",
+      "required_keys": ["home"],
+      "artifact": {
+        "kind": "tgz",
+        "pin": "4.1.3",
+        "url": "https://archive.apache.org/dist/spark/spark-4.1.3/spark-4.1.3-bin-hadoop3.tgz",
+        "mirror": "https://mirrors.aliyun.com/apache/spark/spark-4.1.3/spark-4.1.3-bin-hadoop3.tgz",
+        "sha512_url": "https://archive.apache.org/dist/spark/spark-4.1.3/spark-4.1.3-bin-hadoop3.tgz.sha512",
+        "unpack_to": "${root}/spark-4.1.3-bin-hadoop3"
+      },
+      "start": [],
+      "stop": [],
+      "ready": {"probe_argv": ["${home}/bin/spark-submit", "--version"], "timeout_s": 60},
+      "smoke": [
+        {"name": "structured-streaming-run", "kind": "cli",
+         "desc": "rate 源 → Parquet（带 checkpoint）→ 批读回，行数按刻意的目标值对账",
+         "cwd": "${root}/lab/spark",
+         "argv": ["${home}/bin/spark-submit", "--master", "${master}",
+                  "${plugin_root}/tools/lab/spark_streaming_smoke.py",
+                  "--warehouse", "${root}/lab/spark/warehouse",
+                  "--rows", "${count}", "--seconds", "60"],
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "library_jars_ref": "executors.oss_spark.lake_jars",
+      "verified": {
+        "on": "2026-09-29",
+        "env": "WSL2 Debian 13 + OpenJDK 21 + Spark 4.1.3（Scala 2.13, hadoop3）",
+        "capabilities": [
+          "spark-submit 可提交（--version 探针 rc 0）",
+          "Structured Streaming：rate 源 → Parquet 落地（带 checkpoint）→ 批读回，行数与目标一致"
+        ],
+        "gaps": [
+          "Spark 会在当前目录写 Derby 元数据库，配方必须显式指定工作目录，否则残渣落在调用者的项目里",
+          "连接器与湖表 runtime jar 的构件名同时编着宿主大版本与 Scala 版本"
+        ]
+      }
+    },
+    {
+      "id": "oss_paimon",
+      "display": "Apache Paimon",
+      "role": "lake",
+      "launch_mode": "library",
+      "tier": 1,
+      "contract_ref": "executors/contracts-oss-paimon.md",
+      "heavy": false,
+      "ports": [],
+      "config_ref": "executors.oss_paimon",
+      "required_keys": ["connector_jar", "warehouse"],
+      "artifact": {
+        "kind": "maven",
+        "pin": "1.4.1",
+        "coordinate": "org.apache.paimon:paimon-flink-2.2:1.4.1",
+        "unpack_to": "${root}/paimon-flink-2.2-1.4.1.jar"
+      },
+      "host_engine": "oss_flink",
+      "verified": {
+        "on": "2026-09-22",
+        "env": "WSL2 Debian 13 + OpenJDK 21 + Flink 2.2.0",
+        "capabilities": ["建 catalog / 主键分区表 / 流式写入 10 行", "批模式读回 COUNT=10 且明细正确", "warehouse 落盘 snapshot/manifest/parquet"],
+        "gaps": ["filesystem catalog 需要 flink-shaded-hadoop-2-uber 放进 Flink lib/", "流式写入必须开检查点"]
+      }
+    },
+    {
+      "id": "oss_fluss",
+      "display": "Apache Fluss",
+      "role": "stream_storage",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": true,
+      "mem_mb": 1800,
+      "ports": [9123, 2181],
+      "config_ref": "executors.oss_fluss",
+      "required_keys": ["home", "bootstrap_servers"],
+      "artifact": {
+        "kind": "tgz",
+        "pin": "1.0.0",
+        "url": "https://archive.apache.org/dist/fluss/fluss-1.0.0/fluss-1.0.0-bin.tgz",
+        "mirror": "https://mirrors.aliyun.com/apache/fluss/fluss-1.0.0/fluss-1.0.0-bin.tgz",
+        "sha512_url": "https://archive.apache.org/dist/fluss/fluss-1.0.0/fluss-1.0.0-bin.tgz.sha512",
+        "unpack_to": "${root}/fluss-1.0.0"
+      },
+      "start": ["${home}/bin/local-cluster.sh start"],
+      "stop": ["${home}/bin/local-cluster.sh stop"],
+      "ready": {"tcp": ["${bootstrap_servers}"], "timeout_s": 120},
+      "connector_jar_ref": "executors.oss_fluss.connector_jar",
+      "verified": {
+        "on": "2026-09-22",
+        "env": "WSL2 Debian 13 + OpenJDK 21 + Fluss 1.0.0 + fluss-flink-2.2-1.0.0.jar",
+        "capabilities": ["local-cluster.sh 一次起 zookeeper/coordinator/tablet", "Flink SQL 建 catalog/库/日志表并流式写入 10 行", "批模式读回 COUNT=10"],
+        "gaps": ["发行版没有 SQL 控制台，建库建表必须走 Flink SQL", "连接器构件按 Flink 版本分发，必须对齐", "archive.apache.org 直连很慢，优先国内镜像"]
+      }
+    },
+    {
+      "id": "oss_iceberg",
+      "display": "Apache Iceberg",
+      "role": "lake",
+      "launch_mode": "library",
+      "tier": 1,
+      "contract_ref": "executors/contracts-oss-lakehouse.md",
+      "heavy": false,
+      "ports": [],
+      "config_ref": "executors.oss_iceberg",
+      "required_keys": ["runtime_jar"],
+      "artifact": {
+        "kind": "maven",
+        "pin": "1.11.0",
+        "coordinate": "org.apache.iceberg:iceberg-spark-runtime-4.1_2.13:1.11.0",
+        "unpack_to": "${root}/jars/iceberg-spark-runtime-4.1_2.13-1.11.0.jar"
+      },
+      "host_engine": "oss_spark",
+      "smoke": [
+        {"name": "lakehouse-roundtrip", "kind": "cli",
+         "desc": "建命名空间 → 建 Iceberg 表 → 写 N 行 → 批模式读回 N 行",
+         "cwd": "${root}/lab/iceberg",
+         "argv": ["${oss_spark.home}/bin/spark-submit", "--master", "${oss_spark.master}",
+                  "--jars", "${runtime_jar}",
+                  "--conf", "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+                  "--conf", "spark.sql.catalog.iceberg=org.apache.iceberg.spark.SparkCatalog",
+                  "--conf", "spark.sql.catalog.iceberg.type=hadoop",
+                  "--conf", "spark.sql.catalog.iceberg.warehouse=${warehouse}",
+                  "${plugin_root}/tools/lab/spark_lakehouse_smoke.py",
+                  "--format", "iceberg", "--warehouse", "${warehouse}", "--rows", "${count}"],
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "verified": {
+        "on": "2026-09-29",
+        "env": "WSL2 Debian 13 + Spark 4.1.3 + iceberg-spark-runtime-4.1_2.13-1.11.0",
+        "capabilities": ["hadoop catalog 下建命名空间/建表/写 5 行/批模式读回 5 行"],
+        "gaps": ["catalog 的 type 与 impl 要成对配置，只配一半会静默退化"]
+      }
+    },
+    {
+      "id": "oss_hudi",
+      "display": "Apache Hudi",
+      "role": "lake",
+      "launch_mode": "library",
+      "tier": 1,
+      "contract_ref": "executors/contracts-oss-lakehouse.md",
+      "heavy": false,
+      "ports": [],
+      "config_ref": "executors.oss_hudi",
+      "required_keys": ["runtime_jar"],
+      "artifact": {
+        "kind": "maven",
+        "pin": "1.2.0",
+        "coordinate": "org.apache.hudi:hudi-spark4.1-bundle_2.13:1.2.0",
+        "unpack_to": "${root}/jars/hudi-spark4.1-bundle_2.13-1.2.0.jar"
+      },
+      "host_engine": "oss_spark",
+      "smoke": [
+        {"name": "lakehouse-roundtrip", "kind": "cli",
+         "desc": "建命名空间 → 建 Hudi 表（COW）→ 写 N 行 → 批模式读回 N 行",
+         "cwd": "${root}/lab/hudi",
+         "argv": ["${oss_spark.home}/bin/spark-submit", "--master", "${oss_spark.master}",
+                  "--jars", "${runtime_jar}",
+                  "--conf", "spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension",
+                  "--conf", "spark.sql.catalog.spark_catalog=org.apache.spark.sql.hudi.catalog.HoodieCatalog",
+                  "--conf", "spark.serializer=org.apache.spark.serializer.KryoSerializer",
+                  "${plugin_root}/tools/lab/spark_lakehouse_smoke.py",
+                  "--format", "hudi", "--warehouse", "${warehouse}", "--rows", "${count}"],
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "verified": {
+        "on": "2026-09-29",
+        "env": "WSL2 Debian 13 + Spark 4.1.3 + hudi-spark4.1-bundle_2.13-1.2.0",
+        "capabilities": ["COW 主键表建表/写 5 行/批模式读回 5 行"],
+        "gaps": [
+          "SQL DDL 必须同时挂 Hudi 的 session extension 与 HoodieCatalog，否则建表报路径缺失",
+          "不支持用 SQL DELETE 清表，重跑要先 DROP TABLE"
+        ]
+      }
+    },
+    {
+      "id": "oss_delta",
+      "display": "Delta Lake",
+      "role": "lake",
+      "launch_mode": "library",
+      "tier": 1,
+      "contract_ref": "executors/contracts-oss-lakehouse.md",
+      "heavy": false,
+      "ports": [],
+      "config_ref": "executors.oss_delta",
+      "required_keys": ["packages", "warehouse"],
+      "artifact": {
+        "kind": "maven",
+        "pin": "4.4.0",
+        "coordinate": "io.delta:delta-spark_4.1_2.13:4.4.0",
+        "unpack_to": "${root}/jars/delta-spark_4.1_2.13-4.4.0.jar"
+      },
+      "host_engine": "oss_spark",
+      "smoke": [
+        {"name": "lakehouse-roundtrip", "kind": "cli",
+         "desc": "建命名空间 → 建 Delta 表 → 写 N 行 → 批模式读回 N 行",
+         "cwd": "${root}/lab/delta",
+         "argv": ["${oss_spark.home}/bin/spark-submit", "--master", "${oss_spark.master}",
+                  "--packages", "${packages}",
+                  "--repositories", "https://repo1.maven.org/maven2",
+                  "--conf", "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
+                  "--conf", "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                  "${plugin_root}/tools/lab/spark_lakehouse_smoke.py",
+                  "--format", "delta", "--warehouse", "${warehouse}", "--rows", "${count}"],
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "verified": {
+        "on": "2026-09-29",
+        "env": "WSL2 Debian 13 + Spark 4.1.3 + delta-spark_4.1_2.13-4.4.0（依赖由 Maven 解析）",
+        "capabilities": ["建库建表/写 5 行/批模式读回 5 行"],
+        "gaps": [
+          "delta-spark 不是 fat jar：只挂单个 jar 会缺 delta-storage 等类（实测 NoClassDefFoundError: io/delta/storage/commit/actions/AbstractProtocol），必须用 --packages 解析闭包"
+        ]
+      }
+    },
+    {
+      "id": "oss_pulsar",
+      "display": "Apache Pulsar",
+      "role": "log",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": true,
+      "mem_mb": 2500,
+      "ports": [6650, 8080],
+      "config_ref": "executors.oss_pulsar",
+      "required_keys": ["home", "service_url"],
+      "artifact": {
+        "kind": "tgz",
+        "pin": "4.0.13",
+        "url": "https://downloads.apache.org/pulsar/pulsar-4.0.13/apache-pulsar-4.0.13-bin.tar.gz",
+        "mirror": "https://mirrors.huaweicloud.com/apache/pulsar/pulsar-4.0.13/apache-pulsar-4.0.13-bin.tar.gz",
+        "unpack_to": "${root}/apache-pulsar-4.0.13"
+      },
+      "start": [
+        "mkdir -p ${home}/lab-logs",
+        "setsid nohup ${home}/bin/pulsar-daemon start standalone > ${home}/lab-logs/start.out 2>&1 < /dev/null & sleep 8"
+      ],
+      "stop": ["${home}/bin/pulsar-daemon stop standalone"],
+      "skip_start_if_ready": true,
+      "ready": {"tcp": ["${service_url}"], "timeout_s": 240},
+      "smoke": [
+        {"name": "ensure-namespace", "kind": "shell",
+         "desc": "端口通了不等于 broker 初始化完了：等 public/default 命名空间真的存在",
+         "script": "curl -sf ${admin_url}/admin/v2/namespaces/public/default || curl -s -X PUT ${admin_url}/admin/v2/namespaces/public/default"},
+        {"name": "produce", "kind": "cli",
+         "desc": "往一个实验 topic 灌 ${count} 条消息",
+         "argv": ["${home}/bin/pulsar-client", "produce", "persistent://public/default/rtd_smoke",
+                  "-m", "1,2,3,4,5,6,7,8,9"]},
+        {"name": "consume-back", "kind": "cli",
+         "desc": "从最早位置读回，读到几条内容行就是几行证据",
+         "argv": ["${home}/bin/pulsar-client", "consume", "persistent://public/default/rtd_smoke",
+                  "-s", "rtd-smoke-sub", "-n", "${count}", "--subscription-position", "Earliest"],
+         "expect_stdout_lines": "${count}", "expect_stdout_matches": "content:[0-9]"}
+      ],
+      "verified": {
+        "on": "2026-09-30",
+        "env": "WSL2 Debian 13 + OpenJDK 21 + Pulsar 4.0.13 单机 standalone",
+        "capabilities": [
+          "standalone 起得来，二进制端口可连（就绪探针经 runner 判定）",
+          "建命名空间 → 灌 9 条消息 → 按最早位点读回 3 条，内容行数与预期一致"
+        ],
+        "gaps": [
+          "端口通了不等于初始化完了：命名空间未建好时写入报 Namespace not found，冒烟里要先确认命名空间",
+          "客户端位置参数是 --subscription-position，不是 --subscription-initial-position",
+          "订阅位点只在创建订阅时生效，重跑要换订阅名或先删订阅"
+        ]
+      }
+    },
+    {
+      "id": "oss_debezium",
+      "display": "Debezium（CDC）",
+      "role": "cdc",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": false,
+      "ports": [8083],
+      "config_ref": "executors.oss_debezium",
+      "required_keys": ["home", "plugin_dir", "connect_url"],
+      "artifact": {
+        "kind": "tgz",
+        "pin": "3.6.3.Final",
+        "url": "https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.6.3.Final/debezium-connector-postgres-3.6.3.Final-plugin.tar.gz",
+        "mirror": "",
+        "unpack_to": "${root}/plugins/debezium-connector-postgres"
+      },
+      "note": "CDC 是复合形态：连接器本身不是进程，它跑在 Connect worker 上，源头是数据库、落点是 Kafka。start 只探 Connect 的就绪端口；真正把四样拉到位的动作在冒烟脚本里，因为它有固定顺序。",
+      "start": [],
+      "stop": [],
+      "ready": {"tcp": ["127.0.0.1:8083"], "timeout_s": 120},
+      "smoke": [
+        {"name": "postgres-to-kafka", "kind": "shell",
+         "desc": "实验源库写入 → Debezium 捕获 → Kafka topic 读回事件数",
+         "script": "${plugin_root}/tools/lab/debezium_cdc_smoke.sh --kafka-home ${oss_kafka.home} --connect-url ${connect_url} --plugin-dir ${plugin_dir} --pg-port ${pg_port} --pg-data ${pg_data} --rows ${count} --topic rtd_cdc_smoke --work-dir ${root}/lab/debezium",
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "verified": {
+        "on": "2026-09-29",
+        "env": "WSL2 Debian 13 + PostgreSQL 17.9（实验实例，wal_level=logical）+ Kafka 4.1.2 Connect + debezium-connector-postgres 3.6.3.Final",
+        "capabilities": [
+          "实验源库（独立实例，不动共享的那个）开逻辑复制起得来",
+          "Postgres 写 3 行 → Debezium 捕获 → Kafka topic 读回 3 条 CDC 事件"
+        ],
+        "gaps": [
+          "plugin.path 要给父目录：Connect 把子目录当一个插件（一个类加载器），直接指到装 jar 的目录会逐 jar 建加载器，连接器找不到同目录的 debezium-core",
+          "父目录里不要放别的组件，否则每次启动都要把 Flink/Spark/ClickHouse 扫一遍",
+          "重装必须先清目标目录：混装两个版本会让 Connect 直接起不来",
+          "Debezium 3.0.8 与 Kafka Connect 4.1 的插件版本解析不兼容，3.6.3 可用"
+        ]
+      }
+    },
+    {
+      "id": "oss_doris",
+      "display": "Apache Doris",
+      "role": "serving",
+      "launch_mode": "service",
+      "tier": 2,
+      "heavy": true,
+      "mem_mb": 4500,
+      "ports": [8030, 9030],
+      "config_ref": "executors.oss_doris",
+      "required_keys": ["fe_image", "be_image", "mysql_endpoint"],
+      "artifact": {
+        "kind": "docker",
+        "images": ["${fe_image}", "${be_image}"],
+        "note": "Doris 官方发包走自己的对象存储（本机 404 或拒绝列举）、GitHub Release 不挂二进制；容器镜像是可达通道"
+      },
+      "start": [
+        "${plugin_root}/tools/lab/serving_cluster_up.sh up --fe-image ${fe_image} --be-image ${be_image} --prefix ${container_prefix} --network ${network} --mysql-port ${mysql_port} --fe-home /opt/apache-doris/fe --be-home /opt/apache-doris/be"
+      ],
+      "stop": ["docker rm -f ${container_prefix}-fe ${container_prefix}-be"],
+      "skip_start_if_ready": true,
+      "ready": {"tcp": ["${mysql_endpoint}"], "timeout_s": 300},
+      "smoke": [
+        {"name": "roundtrip", "kind": "shell",
+         "desc": "建库建表（DUPLICATE KEY）→ 写 ${count} 行 → 读回行数",
+         "script": "${plugin_root}/tools/lab/serving_smoke.sh --host ${mysql_host} --port ${mysql_port} --user ${mysql_user} --rows ${count}",
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "verified": {"on": null, "env": null, "capabilities": [], "gaps": []}
+    },
+    {
+      "id": "oss_starrocks",
+      "display": "StarRocks",
+      "role": "serving",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": true,
+      "mem_mb": 4500,
+      "ports": [8030, 9030],
+      "config_ref": "executors.oss_starrocks",
+      "required_keys": ["fe_image", "be_image", "mysql_endpoint"],
+      "artifact": {
+        "kind": "docker",
+        "images": ["${fe_image}", "${be_image}"],
+        "note": "StarRocks 官方不放 GitHub Release，官方 CDN对本机 403；容器镜像是可达的分发通道"
+      },
+      "start": [
+        "${plugin_root}/tools/lab/serving_cluster_up.sh up --fe-image ${fe_image} --be-image ${be_image} --prefix ${container_prefix} --network ${network} --mysql-port ${mysql_port} --fe-home /opt/starrocks/fe --be-home /opt/starrocks/be"
+      ],
+      "stop": ["docker rm -f ${container_prefix}-fe ${container_prefix}-be"],
+      "skip_start_if_ready": true,
+      "ready": {"tcp": ["${mysql_endpoint}"], "timeout_s": 300},
+      "smoke": [
+        {"name": "roundtrip", "kind": "shell",
+         "desc": "建库建表（DUPLICATE KEY）→ 写 ${count} 行 → 读回行数",
+         "script": "${plugin_root}/tools/lab/serving_smoke.sh --host ${mysql_host} --port ${mysql_port} --user ${mysql_user} --rows ${count}",
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^rtd_rows=",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "verified": {
+        "on": "2026-09-30",
+        "env": "WSL2 Debian 13 + StarRocks 3.3.9（FE 与 BE 各一个容器，用本机已有镜像）",
+        "capabilities": [
+          "FE 与 BE 起得来，BE 注册后心跳为 true",
+          "建库建表（DUPLICATE KEY）写 5 行读回 5 行"
+        ],
+        "gaps": [
+          "官方发行包不在 GitHub Release，官方 CDN 对本机 403；可达通道是容器镜像",
+          "镜像默认命令是 bash，容器必须用交互式分离方式起，否则立刻退出",
+          "BE 必须显式声明对外网段，否则注册成错地址"
+        ]
+      }
+    },
+    {
+      "id": "oss_clickhouse",
+      "display": "ClickHouse",
+      "role": "serving",
+      "launch_mode": "service",
+      "tier": 1,
+      "heavy": true,
+      "mem_mb": 1500,
+      "ports": [8123, 9000],
+      "config_ref": "executors.oss_clickhouse",
+      "required_keys": ["home", "tcp_endpoint"],
+      "artifact": {
+        "kind": "tgz",
+        "pin": "24.8.14.39",
+        "url": "https://github.com/ClickHouse/ClickHouse/releases/download/v24.8.14.39-lts/clickhouse-common-static-24.8.14.39-amd64.tgz",
+        "mirror": "https://packages.clickhouse.com/tgz/stable/clickhouse-common-static-24.8.14.39-amd64.tgz",
+        "unpack_to": "${root}/clickhouse-common-static-24.8.14.39"
+      },
+      "start": [
+        "mkdir -p ${home}/lab-data ${home}/lab-tmp ${home}/lab-logs",
+        "printf '%s\\n' '<clickhouse>' '<logger><level>warning</level><console>1</console></logger>' '<path>${home}/lab-data/</path>' '<tmp_path>${home}/lab-tmp/</tmp_path>' '<user_files_path>${home}/lab-data/user_files/</user_files_path>' '<listen_host>127.0.0.1</listen_host>' '<http_port>8123</http_port>' '<tcp_port>9000</tcp_port>' '<max_server_memory_usage>1500000000</max_server_memory_usage>' '<mark_cache_size>268435456</mark_cache_size>' '<default_profile>default</default_profile>' '<default_database>default</default_database>' '<profiles><default></default></profiles>' '<quotas><default></default></quotas>' '<users><default><password></password><networks><ip>::/0</ip></networks><profile>default</profile><quota>default</quota><access_management>1</access_management></default></users>' '</clickhouse>' > ${home}/lab-config.xml",
+        "setsid nohup ${home}/usr/bin/clickhouse server --config-file=${home}/lab-config.xml > ${home}/lab-logs/server.out 2>&1 < /dev/null & sleep 8"
+      ],
+      "stop": [
+        "test -f ${home}/lab-data/status && kill $(cat ${home}/lab-data/status) || true"
+      ],
+      "skip_start_if_ready": true,
+      "ready": {"tcp": ["${tcp_endpoint}"], "timeout_s": 120},
+      "smoke": [
+        {"name": "roundtrip", "kind": "cli",
+         "desc": "建库建表 → 写 ${count} 行 → 读回行数，读数按目标值对账",
+         "argv": ["${home}/usr/bin/clickhouse", "client", "--host", "127.0.0.1", "--port", "9000",
+                  "--query", "CREATE DATABASE IF NOT EXISTS rtd_lab; DROP TABLE IF EXISTS rtd_lab.t_roundtrip; CREATE TABLE rtd_lab.t_roundtrip (id Int32, name String) ENGINE = MergeTree ORDER BY id; INSERT INTO rtd_lab.t_roundtrip SELECT number, concat('n', toString(number)) FROM numbers(1, ${count}); SELECT count() FROM rtd_lab.t_roundtrip"],
+         "expect_stdout_lines": 1, "expect_stdout_matches": "^[0-9]+$",
+         "expect_stdout_value_equals": "${count}"}
+      ],
+      "verified": {
+        "on": "2026-09-29",
+        "env": "WSL2 Debian 13 + ClickHouse 24.8.14.39（单二进制 server + client）",
+        "capabilities": ["自写最小配置起 server，9000 端口可连", "建库建表 MergeTree，写 7 行读回 7 行"],
+        "gaps": [
+          "最小配置必须自带 profiles/quotas/users 三段，否则启动在 setDefaultProfileName 处直接失败",
+          "停止用数据目录下的 status 文件取 PID，不要用进程名匹配"
+        ]
+      }
+    }
+  ],
+  "maintenance": "改完本文件跑 tools/validate_plugin.py：它检查每个 tier 1/2 组件都有执行器契约、都是能力矩阵里的登记项，且 executors.* 的键与 here 的 required_keys 对得上。版本演进后由维护者重新核实并记录谁、何时、用什么方法核实（docs/validation-report.md）。"
+}
