@@ -149,3 +149,41 @@ awr intake inspect --project . --source-sha <代码提交> --json
 - **锚点策略**：验证锚定在代码提交；只写台账/报告的提交不重新锚定。核对方式固定为带 `--source-sha` 的 inspect（README 与 `docs/reports/README.md` 都写了）。
 - **保留策略**：报告全量保留，不做轮次收缩——单份约 2 KB，删掉会让历史提交的验证失去可复核性。目录结构保持扁平，命名 `<工作项>-completion-<短SHA>.json`。
 - **可维护性**：新增 `tools/awr_reports.py`，一条命令看每个工作项最新一轮是哪个提交（`--json` 给机器读，`--limit N` 只看最近几轮）。
+
+## 2026-09-30：完成通道再次被卡住（quoted scalar marker mismatch）
+
+这一轮想把 RTD-038 ~ RTD-058 按流程置完成，**卡在写回这一步**。现场如下（可复现）：
+
+```
+$ awr work progress RTD-011 --session <sid> --reason ... --expected-revision <rev> --json
+{"code":"proposal_required",
+ "error":{"details":{"proposal_id":"01M3S61MEC10B8DP0955QPY7BN",
+                     "reason":"quoted scalar marker mismatch"}}}
+
+$ awr proposal apply <proposal_id> --actor codex --reason ... --expected-revision <rev> --json
+（同样的 proposal_required / quoted scalar marker mismatch）
+```
+
+要点：
+
+* **不是某个条目的问题**：`RTD-011` 是完全没动过的旧条目，一样报同一个错；
+* **不是生命周期动作的问题**：连 `work progress` 这种最简单的写回也走同一条路；
+* **不是行尾的问题**：实测 `work-ledger.yaml` 是纯 LF（CRLF 计数 0）；
+* **证据侧是好的**：`evidence add` 与 `work prepare-completion` 都能通过，验收报告也照常落到
+  `docs/reports/`——**卡住的只有"把 status 写回 YAML"这一步**。
+
+所以流程是：**证据能登记，状态写不回。** 结果是工作项停在 `in_progress`，
+而它对应的验收报告与证据记录已经在账上（按提交 SHA 绑定）。
+
+顺带记住一条流程细节：`work complete` 生成的提案**必须在发起它的会话还活着的时候应用**。
+先 `session end` 再 `proposal apply` 会报 `InvalidTransition: session ... is ended`——
+这不是缓存问题，重开会话也救不回来，只能重做一次 `work complete` 生成新提案。
+
+### 下一步怎么查（留给之后的一轮）
+
+1. 用最小账本复现：只留一个 `- id: X / title / status: in_progress / acceptance` 的条目，
+   跑一次 `work progress`。若能通过，说明是文件里某处的写法；再做二分。
+2. 重点怀疑对象：旧条目里 AWR 自己写的**带引号键**（`"evidence"`、`"verification"`、`"blocker"`）
+   与后来手写的**不带引号键**混在同一份文件里——写回时的引号标记可能对不上。
+3. 若确认是混用风格导致，修法是统一风格（一次性机械改写）后重新 `source reindex`，
+   再补一轮完成校验；那之前不要手写 `completed`（会把自己锁死，见上文）。

@@ -1264,3 +1264,27 @@ work_items:
   paths:
   - docs/apache-readiness-audit.md
   - tools/validate_plugin.py
+
+# ── 2026-09-30 收口时发现的工具限制 ──────────────────────────────────────────
+
+- id: RTD-059
+  title: AWR 写不回账本：quoted scalar marker mismatch
+  kind: fix
+  status: blocked
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: |
+    本轮按流程给 RTD-038 ~ RTD-058 置完成时卡在写回：work progress 与 work complete 都返回
+    proposal_required，提案的 apply 一律以 quoted scalar marker mismatch 失败。
+    已排除三种可能：换条目（没动过的 RTD-011 同样报错）、换动作（最简单的 progress 也走同一条路）、
+    换行尾（账本实测是纯 LF）。证据侧正常：evidence add 与 prepare-completion 都能通过，
+    验收报告照常写到 docs/reports/。结论是「证据能登记，状态写不回」。
+  acceptance:
+  - 用最小账本复现并二分出触发写回失败的写法
+  - 定位到具体原因（重点怀疑带引号键与不带引号键混用）并给出统一风格的修法
+  - 修好后补一轮完成校验，把 RTD-038 ~ RTD-058 的完成状态与证据按提交 SHA 绑定
+  next_action: 先用最小账本复现，再做二分定位；那之前不要手写 completed（会把自己锁死）。
+  paths:
+  - work-ledger.yaml
+  - docs/awr-intake.md
