@@ -140,6 +140,56 @@
 
 补充：`plan.raw.md` **从未进过仓库**（旧提交的树里也查过），这条没有风险。
 
+### 已选定 (a)：请求 GitHub 清理不可达对象
+
+要交给 GitHub Support 的清单（实测枚举，不是估计）：
+
+| 项 | 值 |
+| --- | --- |
+| 仓库 | `MrSuiChuan/realtime-data-plugin`（私有） |
+| 敏感 blob | `aac14e3471c7b499939fbc31bd5e2f160523781a`（路径 `tools/desensitize_terms.txt`） |
+| 引入它的提交 | `51f48bbaad35beb0c08281ca34377a7d49388f65` |
+| 重写前那条线的顶端 | `efc70c88da8db60baf04ddb7ba66326395500f98`（**26 个提交**，全部不可从当前 main 到达） |
+| 当前 main | 不含该文件（`git log -- tools/desensitize_terms.txt` 为空） |
+
+可直接投递的请求正文：
+
+```text
+Subject: Request to purge unreachable objects containing sensitive data (force-pushed history)
+
+Repository: MrSuiChuan/realtime-data-plugin (currently private)
+
+Hello,
+
+I am preparing to make this repository public. During a history rewrite I removed a file that must not
+be published: tools/desensitize_terms.txt (a list of internal codenames).
+
+The file is gone from the current default branch, and the pre-rewrite commits are no longer reachable
+from any branch. However, the objects are still served by SHA: from a fresh empty clone,
+`git fetch origin 51f48bbaad35beb0c08281ca34377a7d49388f65` still succeeds, and the fetched tree
+contains tools/desensitize_terms.txt.
+
+Please purge the following so they are not served after the repository becomes public:
+
+* blob            aac14e3471c7b499939fbc31bd5e2f160523781a   (path: tools/desensitize_terms.txt)
+* initial commit  51f48bbaad35beb0c08281ca34377a7d49388f65   (introduced the file)
+* pre-rewrite tip efc70c88da8db60baf04ddb7ba66326395500f98   (26 commits reachable from it, all
+                                                              unreachable from the current main)
+
+The current default branch (main) does not contain the file.
+
+Please confirm once the objects have been removed, so I can verify and then make the repository public.
+
+Thanks!
+```
+
+**清理完成后怎么验证**：再用一个空仓库跑
+`git fetch origin 51f48bbaad35beb0c08281ca34377a7d49388f65`——**取不到**才算成功
+（现在这条命令是会成功的，这正是阻塞所在）。
+
+本地那两条备份 ref（`backup-before-history-rewrite`、`original/refs/heads/main`）保留与否由你定：
+它们只在本地、不影响远端；删掉就没有回看旧历史的手段了，所以我没有动它们。
+
 ## 九、怎么用这份台账
 
 * 评审时按第四节看：**能机器验的才写进文档**；
