@@ -208,3 +208,21 @@ $ awr proposal apply <proposal_id> --actor codex --reason ... --expected-revisio
 调试期间起的会话如果没有 `session end`，会一直持有该工作项的 claim，
 下一次写回报 `ClaimConflict: another session holds this work`。
 处置：`awr session list` 找出 `active` 的会话，逐个 `session end --outcome interrupted` 释放后再重试。
+
+## 2026-10-07：收口"无法验证"的工作项（用 cancel，不用 complete）
+
+本机没有平台环境，RTD-011 与挂在它下面的四个项永远拿不到证据。收口方式选了 `work cancel` 而不是
+`work complete`——**complete 的语义是"做完了、证据齐"，这五项没有证据**，用 complete 等于把没做的事说成做完了。
+cancel 是终止态，写清原因即可；`awr work reopen <id>` 可以随时重新打开。
+
+三条实测出来的限制，下次直接用：
+
+1. **`cancel` 只认 `--reason` 与 `--next-action`**：带 `--blocker` 会报
+   `field blocker is not authorized by this work action`，带 `--summary` 报同类的 summary 版本——
+   阻塞与现状只能并进 `--reason` 里，别指望有专门的字段。
+2. **`cancel` 和 `complete` 一样走提案通道**：直接调用返回的是 `proposal_required` + `proposal_id`，
+   还要 `proposal submit → approve → apply` 三步，而且**必须在发起它的会话还活着时应用**
+   （会话先结束会报 `InvalidTransition: session ... is ended`）。
+3. **重复收口是幂等的**：已经 cancelled 的项再取消一次会报
+   `InvalidTransition: cannot Cancel work with source state Cancelled`——
+   看到这条说明**已经是目标状态**，不是失败。
