@@ -228,6 +228,26 @@ API contents 取旧对象    : 200   ← 匿名可读
 后事不忘：**公开之前就该跑匿名复检**。上一轮我用的探测带的是本机 SSH key（所有者身份），
 它只能回答"所有者拿得到吗"，回答不了"陌生人拿得到吗"——这个错我犯过一次，记在这里。
 
+#### 本地已清干净（2026-10-07，已验）
+
+本机是除 GitHub 之外唯一还存着那份对象的地方，已彻底清掉：
+
+```
+删除 refs/heads/backup-before-history-rewrite（→ 0f88ef5）
+删除 refs/original/refs/heads/main（→ efc70c8）
+git reflog expire --expire=now --expire-unreachable=now --all
+git gc --prune=now
+
+剩余 ref：refs/heads/main → 87a40ea、refs/remotes/origin/main → 87a40ea
+git cat-file -e aac14e3471c7… → 退出码 1（取不到）
+git log --all -- tools/desensitize_terms.txt → 空
+```
+
+注意 `tools/desensitize_terms.txt`（词表本体）**仍然留在本机**——它是 gitignore 的，
+静态校验第 7 项靠它工作，删了这项检查就退化成 SKIP。要清的是**进过仓库的那份**，不是本地词表。
+
+服务端那份只能由仓库所有者处理：改回 Private（几秒止血）、请 Support 清、或删库重建。
+
 ## 九、怎么用这份台账
 
 * 评审时按第四节看：**能机器验的才写进文档**；
