@@ -27,7 +27,7 @@ set -uo pipefail
 
 ACTION=""; FE_IMG=""; BE_IMG=""; PREFIX=rtd-sr; NET=rtd-sr-net; MYSQL_PORT=9030
 FE_HOME=/opt/starrocks/fe; BE_HOME=/opt/starrocks/be
-FE_ENV=""; BE_ENV=""; HOST_NET=0; ENTRYPOINT_MANAGED=0; BE_ADDR=""
+FE_ENV=""; BE_ENV=""; HOST_NET=0; ENTRYPOINT_MANAGED=0; BE_ADDR=""; FE_CMD=""; BE_CMD=""
 while [ $# -gt 0 ]; do
   case "$1" in
     up|down) ACTION=$1; shift;;
@@ -45,6 +45,9 @@ while [ $# -gt 0 ]; do
     --entrypoint-managed) ENTRYPOINT_MANAGED=1; shift;;
     # host 网络下拿不到 BE 的容器 IP，直接给它在宿主机上的地址（通常是 127.0.0.1）。
     --be-address) BE_ADDR=$2; shift 2;;
+    # 需要先改镜像里的配置再启动时用（例如把 Doris FE 默认的 8GB 堆降下来）。
+    --fe-cmd) FE_CMD=$2; shift 2;;
+    --be-cmd) BE_CMD=$2; shift 2;;
     *) echo "未知参数：$1" >&2; exit 64;;
   esac
 done
@@ -70,8 +73,12 @@ docker rm -f "$FE" "$BE" >/dev/null 2>&1 || true
 
 # 镜像的默认 CMD 是 /bin/bash，不加 -it 容器会立刻退出（实测踩过）。
 # shellcheck disable=SC2086
-docker run -itd --name "$FE" $NET_OPTS $PORT_OPTS $(env_flags "$FE_ENV") "$FE_IMG" >/dev/null \
-  || { echo "[失败] FE 容器起不来" >&2; exit 3; }
+if [ -n "$FE_CMD" ]; then
+  docker run -itd --name "$FE" $NET_OPTS $PORT_OPTS $(env_flags "$FE_ENV") \
+    --entrypoint bash "$FE_IMG" -lc "$FE_CMD" >/dev/null
+else
+  docker run -itd --name "$FE" $NET_OPTS $PORT_OPTS $(env_flags "$FE_ENV") "$FE_IMG" >/dev/null
+fi || { echo "[失败] FE 容器起不来" >&2; exit 3; }
 if [ "$ENTRYPOINT_MANAGED" = "0" ]; then
   docker exec "$FE" bash -lc "$FE_HOME/bin/start_fe.sh --daemon" >/dev/null 2>&1
 fi
@@ -83,8 +90,12 @@ if ! wait_port 127.0.0.1 "$MYSQL_PORT" 300; then
 fi
 
 # shellcheck disable=SC2086
-docker run -itd --name "$BE" $NET_OPTS -p 8040:8040 $(env_flags "$BE_ENV") "$BE_IMG" >/dev/null \
-  || { echo "[失败] BE 容器起不来" >&2; exit 3; }
+if [ -n "$BE_CMD" ]; then
+  docker run -itd --name "$BE" $NET_OPTS -p 8040:8040 $(env_flags "$BE_ENV") \
+    --entrypoint bash "$BE_IMG" -lc "$BE_CMD" >/dev/null
+else
+  docker run -itd --name "$BE" $NET_OPTS -p 8040:8040 $(env_flags "$BE_ENV") "$BE_IMG" >/dev/null
+fi || { echo "[失败] BE 容器起不来" >&2; exit 3; }
 BE_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$BE")
 if [ "$ENTRYPOINT_MANAGED" = "0" ]; then
   [ -n "$BE_IP" ] || { echo "[失败] 拿不到 BE 的容器 IP" >&2; exit 3; }
@@ -100,9 +111,9 @@ if [ -n "$REGISTER_HOST" ]; then
     -e "ALTER SYSTEM ADD BACKEND '$REGISTER_HOST:9050';" >/dev/null 2>&1
 fi
 
-# 等心跳：Alive=true 才算真的可用，端口通不算。
+# 等心跳：Alive=true 才算真的可用，端口通不算。Doris 的 BE 首次心跳实测要十几秒到一两分钟。
 i=0
-while [ $i -lt 120 ]; do
+while [ $i -lt 300 ]; do
   alive=$(mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -N -B \
     -e "SHOW BACKENDS" 2>/dev/null | awk -F'\t' '{print $9}' | head -1)
   [ "$alive" = "true" ] && { echo "rtd_backend_alive=true"; exit 0; }

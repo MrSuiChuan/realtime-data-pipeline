@@ -439,7 +439,7 @@
       "display": "Apache Doris",
       "role": "serving",
       "launch_mode": "service",
-      "tier": 2,
+      "tier": 1,
       "heavy": true,
       "mem_mb": 4500,
       "ports": [8030, 9030],
@@ -451,7 +451,7 @@
         "note": "Doris 官方发包走自己的对象存储（本机 404 或拒绝列举）、GitHub Release 不挂二进制；容器镜像是可达通道"
       },
       "start": [
-        "${plugin_root}/tools/lab/serving_cluster_up.sh up --fe-image ${fe_image} --be-image ${be_image} --prefix ${container_prefix} --mysql-port ${mysql_port} --host-network --entrypoint-managed --be-address 127.0.0.1 --fe-env FE_SERVERS=fe1:127.0.0.1:8030,FE_ID=1 --be-env FE_SERVERS=fe1:127.0.0.1:8030,BE_ADDR=127.0.0.1:9050"
+        "${plugin_root}/tools/lab/serving_cluster_up.sh up --fe-image ${fe_image} --be-image ${be_image} --prefix ${container_prefix} --mysql-port ${mysql_port} --host-network --entrypoint-managed --be-address 127.0.0.1 --fe-env FE_SERVERS=fe1:127.0.0.1:8030,FE_ID=1 --be-env FE_SERVERS=fe1:127.0.0.1:8030,BE_ADDR=127.0.0.1:9050 --fe-cmd \"sed -i 's/-Xmx8192m -Xms8192m/-Xmx2g -Xms2g/' /opt/apache-doris/fe/conf/fe.conf; exec bash /usr/local/bin/init_fe.sh\""
       ],
       "stop": ["docker rm -f ${container_prefix}-fe ${container_prefix}-be"],
       "skip_start_if_ready": true,
@@ -464,13 +464,16 @@
          "expect_stdout_value_equals": "${count}"}
       ],
       "verified": {
-        "on": null,
-        "env": null,
-        "capabilities": [],
+        "on": "2026-10-07",
+        "env": "WSL2 Debian 13 + Doris 3.0.3（FE 与 BE 各一个容器，host 网络）",
+        "capabilities": [
+          "FE 与 BE 起得来，BE 注册后心跳为 true",
+          "建库建表（DUPLICATE KEY）写 5 行读回 5 行，连跑两次结果一致"
+        ],
         "gaps": [
-          "未跑通：构件已换到容器镜像通道并拉到本地（FE 2.24GB / BE 6.06GB）——GitHub Release 不挂二进制、官方对象存储 404，容器镜像是可达通道",
-          "FE 已能起来并响应查询端口，BE 也能注册进 FE；卡在内存账：BE 要求关 swap，而 FE 默认要 8GB 堆（fe.conf 的 JDK17 配置），本机 7.8GB 不可兼得",
-          "跑通前要给编排脚本加自定义容器命令的能力，把 FE 堆降到 2GB 上下；另需 vm.max_map_count 至少 2000000（WSL 重启后要重设）"
+          "跑通靠四个前置，缺一个就起不来：镜像入口要环境变量（BE_ADDR 必须是 IP:心跳端口）；vm.max_map_count 必须严格大于 2000000（设成等于也不行）；必须关 swap；FE 默认 8GB 堆要降到 2GB",
+          "四个前置里有三个是内核级（max_map_count、swap、容器可见性），跨 wsl.exe 调用时同一参数会读到不同值——实测必须把前置与启动放在同一个 WSL 会话里做",
+          "容器随发起会话结束被回收，所以本地验证必须在一个存活的会话里跑完（与 Flink/Fluss/Kafka 同类问题）"
         ]
       }
     },

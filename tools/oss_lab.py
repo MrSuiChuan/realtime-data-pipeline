@@ -440,16 +440,39 @@ def cmd_plan(args) -> int:
     return 0
 
 
-def _heavy_running(ctx: Context, skip: str) -> list[str]:
-    """哪些重型组件看起来还在跑：状态文件 + 端口探针两路核对。"""
+def _target_ports(ctx: Context, spec: dict) -> set[str]:
+    """一条组件用来判就绪的 tcp 端点（解析后的）。"""
+    extra = _executor_extra(ctx, spec)
+    ports: set[str] = set()
+    for target in (spec.get("ready") or {}).get("tcp") or []:
+        resolved = ctx.resolve(str(target), extra)
+        if resolved and "${" not in resolved:
+            ports.add(resolved)
+    return ports
+
+
+def _heavy_running(ctx: Context, skip: str, own_ports: set[str] | None = None) -> list[str]:
+    """哪些重型组件看起来还在跑：状态文件 + 端口探针两路核对。
+
+    **端口重叠时两路都不可信**：Doris 与 StarRocks 默认都用 9030，探到端口开着也说不清是谁的，
+    只看端口会把正在跑的 Doris 误判成 StarRocks（实测踩过）。重叠就跳过这条候选。
+    """
+    own = own_ports or set()
     found: list[str] = []
     state = ctx.read_state()
     up = state.get("up")
     if isinstance(up, str) and up and up != skip:
-        found.append(up)
+        try:
+            up_ports = _target_ports(ctx, component(ctx.registry, up))
+        except LabError:
+            up_ports = set()
+        if not (up_ports & own):
+            found.append(up)
     for spec in ctx.registry["components"]:
         name = str(spec.get("id"))
         if name == skip or not spec.get("heavy"):
+            continue
+        if _target_ports(ctx, spec) & own:
             continue
         extra = _executor_extra(ctx, spec)
         for target in (spec.get("ready") or {}).get("tcp") or []:
@@ -472,7 +495,7 @@ def cmd_start(args) -> int:
         raise LabError("构件路径还没配全：" + "、".join(gaps),
                        "先填 .rtd/config.json；确认这条组件的 required_keys 是否写对再起")
 
-    running = _heavy_running(ctx, str(spec.get("id")))
+    running = _heavy_running(ctx, str(spec.get("id")), _target_ports(ctx, spec))
     if spec.get("heavy") and running:
         if not args.stop_others:
             raise Refused(

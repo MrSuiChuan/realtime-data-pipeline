@@ -160,3 +160,38 @@
 **本仓库当前选择**：保留 `hooks`（去掉它等于放弃 PreToolUse 硬门；合并前先确认宿主真的读了它）。
 
 **需要用户裁决**：若确认宿主不读该字段，则改为"hooks 只在 Claude Code 侧生效"，并把 Codex 侧的门禁降级为提示词层，同时在 README 与 SECURITY 里如实写明强度差异。
+
+## 2026-10-07：Claude Code 侧清单字段实测（RTD-020，已裁决并修掉）
+
+**结论：`.claude-plugin/plugin.json` 的 `hooks` 字段是自伤的，已删除。**
+
+实测（Claude Code 2.1.231，`claude plugin list`）：
+
+```
+> realtime-data-plugin@realtime-data-plugin
+  Version: 0.1.0
+  Scope: user
+  Status: × failed to load
+  Error: Hook load failed: Duplicate hooks file detected: ./hooks/hooks.json resolves to
+         already-loaded file C:\Users\...\realtime-data-plugin\hooks\hooks.json.
+         The standard hooks/hooks.json is loaded automatically, so manifest.hooks should
+         only reference additional hook files.
+```
+
+**宿主是自动加载 `hooks/hooks.json` 的**；清单里再指一次同一个文件就被判为重复，
+结果是**整个插件加载失败**（不是"hooks 不生效"，是插件都用不了）。
+
+处置：删掉 `.claude-plugin/plugin.json` 的 `"hooks": "./hooks/hooks.json"`（保留 `commands`），
+重新 `claude plugin list`：
+
+```
+> realtime-data-plugin@realtime-data-plugin
+  Status: √ enabled
+```
+
+于是上面那节"需要用户裁决"的问题有了答案，而且是更好的答案：
+**不用降级，也不用改 Codex 侧**——Codex 清单里指向 `hooks/codex-hooks.json`（非标准文件名，必须显式指）
+与 Claude 侧自动加载 `hooks/hooks.json` 两者并不冲突，冲突只出在"Claude 侧多指了一次自己"。
+
+**回归保护**：`tools/validate_plugin.py` 第 1 项会检查两个 hook 配置文件存在且结构正确；
+这条清单字段的坑没有机器检查（宿主行为，本地无法离线判定），所以写在这里，改清单前先读一遍。
