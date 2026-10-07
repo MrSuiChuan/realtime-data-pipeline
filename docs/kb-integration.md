@@ -26,7 +26,7 @@
 | 消费侧索引客户端（`KnowledgeIndex`：search / read / status） | `engine/core.py` |
 | 命令行入口 | `engine/rtd.py` 的 `knowledge status / search / read` |
 | 铁律：只认受管前缀下的知识源 | `KnowledgeIndex.read` 越界直接拒 |
-| 跨插件契约测试（8 条） | `tests/test_kb_contract.py` |
+| 跨插件契约测试（9 条） | `tests/test_kb_contract.py` |
 | 契约文档 + 出站路由补一条写回路径 | `knowledge/kb-index-contract.md`、`knowledge/routing-outbound.md` |
 | 定位工作流里"消歧前先查知识库" | `workflows/runbook-discovery.md` |
 
@@ -43,11 +43,35 @@
 这里刻意**没有**去改生产端：那是一个被两个消费方共用的仓库，为了一边方便去动它，风险大于收益。
 消费侧按顺序探测，**今天就能接上**；等生产端支持 `.rtd/` 时第一顺位自然生效，消费侧不用再改。
 
-## 四、验收：真跑了一遍
+## 四、验收：真跑了两个插件端到端
+
+不是拿手写的索引对契约，是**真的调知识库插件的发布流程写索引**，再用实时插件的
+`knowledge` 子命令读回来（2026-10-07，本机跑通）。步骤：
+
+```
+$ kbp.py setup --root <kb> --mode mock --domain order          # 生产方项目
+$ kbp.py audit --root <kb> --domain order --mode publish        # publish 门控要求 publish 模式审计
+$ kbp.py publish --root <kb> --domain order --consumer-root <项目> --reason 实时侧联调
+{"ok": true, "version": "kb-v1", "uris": [
+   "viking://resources/domains/order/index.md",
+   "viking://resources/domains/order/tables/dwd_order_rt.md"],
+ "consumer_sync": {"ok": true,
+   "added": ["viking://resources/domains/order/tables/dwd_order_rt.md"]}}
+```
+
+生产方写下的索引（节选，真文件内容）：
+
+```json
+{"documents": [{"uri": "viking://resources/domains/order/tables/dwd_order_rt.md",
+                "domain": "order", "layer": "dwd", "tables": ["dwd_order_rt"],
+                "abstract": "订单实时口径：**支付成功才计入**；主键 order_id 唯一。"}]}
+```
+
+消费方用真实 CLI 读回：
 
 ```
 $ .rtd/engine/rtd.py knowledge status
-知识索引：<项目>/.rtd/mock/kb/index.json（存在）
+知识索引：<项目>/.data-dev/mock/kb/index.json（存在）
   受管前缀：viking://resources/
   文档数：1
   探测顺序：<项目>/.rtd/mock/kb/index.json、<项目>/.data-dev/mock/kb/index.json
@@ -55,25 +79,33 @@ $ .rtd/engine/rtd.py knowledge status
 $ .rtd/engine/rtd.py knowledge search --query dwd_order_rt
 查询：dwd_order_rt；命中 1 条
   - viking://resources/domains/order/tables/dwd_order_rt.md
-    订单实时口径：支付成功才计入；主键 order_id 唯一。
+    订单实时口径：**支付成功才计入**；主键 order_id 唯一。
 
 $ .rtd/engine/rtd.py knowledge read --uri viking://resources/domains/order/tables/dwd_order_rt.md
-订单实时口径：支付成功才计入；主键 order_id 唯一。
+订单实时口径：**支付成功才计入**；主键 order_id 唯一。
 
 $ .rtd/engine/rtd.py knowledge read --uri file:///etc/passwd
 [拒绝] 知识源不在受管前缀下：file:///etc/passwd（只认 viking://resources/ 开头的 uri）
        用 knowledge search 返回的 uri；本插件不读受管前缀之外的任何知识源
 ```
 
-契约测试 8 条全过：按表名搜到、read 返回摘要、越界 uri 被拒、消费侧读的字段生产侧都在、
-退到 `.data-dev` 也能读、自己那份优先、`index_path` 能覆盖、**没有索引时如实说没有（不编内容）**。
+顺带抓到并修掉一个真 bug：`rtd.py setup` 会把 `templates/config.example.json` 原样拷成
+`.rtd/config.json`，而 `knowledge.index_path` 的默认值是一句 `<…>` 提示文案。
+`KnowledgeIndex` 原来只把空串当"未配置"，于是把那句文案当成了真实路径——索引明明躺在
+`.data-dev/` 候选位置，`status` 却报 0 篇、`search` 命中 0。修法沿用本仓库既有约定
+`_real_value()`：`<…>` 一律按未配置处理（`index_path` 和 `uri_prefix` 都走这条规则），
+回归用例 `test_config_placeholders_are_treated_as_unset` 钉住。
+
+契约测试 9 条全过：按表名搜到、read 返回摘要、越界 uri 被拒、消费侧读的字段生产侧都在、
+退到 `.data-dev` 也能读、自己那份优先、`index_path` 能覆盖、**占位符不算配置**、
+**没有索引时如实说没有（不编内容）**。
 
 ## 五、还差什么（写给之后的一轮）
 
 | 事项 | 现状 | 触发条件 |
 | --- | --- | --- |
 | 生产端支持 `.rtd/` | 未做（它只写 `.data-dev/`） | 知识库插件那边排期；消费侧已留好第一顺位 |
-| 真实知识库联调 | 未做 | 需要一个装了知识库插件、且发布过域知识的项目；本轮的验证用的是按契约造的索引 |
+| 真实知识库联调 | **已做**（2026-10-07）：生产方真 publish → 消费方真读回 | — |
 | 口径回写实时域 | 只做了**路由**（`kbp-publish`） | 需要实时域的表文档在知识库仓库里成型 |
 | 引用口径的证据化 | 未做 | 目前知识只进上下文；若要"口径引用"也进证据账本，得先定 payload 形状 |
 

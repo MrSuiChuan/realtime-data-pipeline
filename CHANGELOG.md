@@ -44,7 +44,7 @@
 - 引擎新增消费侧知识索引客户端 `KnowledgeIndex`（search / read / status），
   **铁律**：`uri` 不在 `knowledge.uri_prefix` 下的一律拒绝；
 - 命令行入口 `rtd.py knowledge status|search|read`；
-- 跨插件契约测试 `tests/test_kb_contract.py`（8 条），与生产端
+- 跨插件契约测试 `tests/test_kb_contract.py`（9 条），与生产端
   `knowledge-base-plugin/tests/test_engine.py::ConsumerContractTests` 对着同一份 schema 断言；
 - 索引按顺序探测两处：本插件 `.rtd/mock/kb/index.json` 优先，退到离线插件的
   `.data-dev/mock/kb/index.json`（生产端目前只写后者，且不认 `.rtd`）；
@@ -52,6 +52,24 @@
   定位工作流加"消歧前先查知识库"。
 
 台账见 `docs/kb-integration.md`（含真跑输出与还差什么）。
+
+### 真实联调：知识库插件真发布 → 实时插件真读回（2026-10-07）
+
+不是拿按契约手写的索引对断言，是真调知识库插件的发布流程写索引，再用本插件的
+`knowledge` 子命令读回来：
+
+- 生产方 `kbp.py setup → audit --mode publish → publish --consumer-root <实时项目>`，
+  `publish` 回执 `consumer_sync.added` 里真有那条表文档；索引文件真落在
+  `<项目>/.data-dev/mock/kb/index.json`；
+- 消费方 `knowledge status` 报"存在 / 1 篇"、`search --query dwd_order_rt` 命中 1 条、
+  `read` 返回摘要——就是生产方写下的那份内容；
+- 顺带修掉一个真 bug：`templates/config.example.json` 里 `knowledge.index_path` 的默认值
+  是一句 `<…>` 提示文案，`rtd.py setup` 会把它原样拷进 `.rtd/config.json`，而
+  `KnowledgeIndex` 原来只把空串当"未配置"，于是把文案当成了真实路径，索引明明在候选
+  位置也报 0 篇。改成沿用本仓库既有的 `_real_value()`（`<…>` 一律按未配置处理，
+  `uri_prefix` / `index_path` 都走这条规则），回归用例
+  `test_config_placeholders_are_treated_as_unset` 钉住；
+- 全量 96 用例 + 八项静态校验 + 三个生成物/钩子/evals 检查全绿。
 
 ### 开源就绪（2026-09-30）
 

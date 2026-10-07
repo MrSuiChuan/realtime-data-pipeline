@@ -131,6 +131,27 @@ class KnowledgeConsumerContractTests(unittest.TestCase):
             encoding="utf-8")
         self.assertEqual(self._index().path, elsewhere)
 
+    def test_config_placeholders_are_treated_as_unset(self) -> None:
+        """模板占位符（<…>）不算配置。
+
+        setup 会把 templates/config.example.json 原样拷成 .rtd/config.json，里面
+        index_path 的默认值是一句提示文案；只把空串当"未配置"的话，那句文案会被
+        当成真实路径，索引明明在候选位置上也会报找不到（真跑联调时踩到过）。
+        """
+        self._publish([PUBLISHED_DOC], where=".data-dev")
+        (self.root / ".rtd" / "config.json").write_text(json.dumps({
+            "knowledge": {
+                "uri_prefix": "<可选：留空则用默认 viking://resources/>",
+                "index_path": "<可选：覆盖知识索引路径；留空则按候选顺序探测>",
+            }
+        }, ensure_ascii=False), encoding="utf-8")
+        index = self._index()
+        self.assertEqual(index.uri_prefix, "viking://resources/",
+                         "占位符的 uri_prefix 应当退回默认值")
+        self.assertEqual(index.path, self.root / ".data-dev" / "mock" / "kb" / "index.json",
+                         "占位符的 index_path 应当退回候选探测")
+        self.assertEqual(index.search("dwd_order_rt")[0]["uri"], PUBLISHED_DOC["uri"])
+
     def test_missing_index_is_reported_not_invented(self) -> None:
         """没有索引就如实说没有：search 返回空、status 标不存在，不编内容。"""
         index = self._index()

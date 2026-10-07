@@ -905,9 +905,13 @@ class KnowledgeIndex:
     def __init__(self, runtime: "Runtime") -> None:
         config = runtime.load_config()
         knowledge = config.get("knowledge") if isinstance(config.get("knowledge"), dict) else {}
-        prefix = str(knowledge.get("uri_prefix") or DEFAULT_URI_PREFIX).rstrip("/")
+        # <…> 占位符不算配置：templates/config.example.json 里 index_path 的默认值
+        # 就是一句提示文案，setup 会原样拷进 .rtd/config.json。只判空串的话，
+        # 索引明明躺在候选位置，也会被那句文案顶掉、报"找不到"。
+        raw_prefix = knowledge.get("uri_prefix")
+        prefix = (str(raw_prefix).strip() if _real_value(raw_prefix) else DEFAULT_URI_PREFIX).rstrip("/")
         self.uri_prefix = prefix + "/"
-        configured = str(knowledge.get("index_path") or "").strip()
+        configured = str(knowledge.get("index_path") or "").strip() if _real_value(knowledge.get("index_path")) else ""
         self.candidates = ([Path(configured)] if configured
                            else [runtime.root / item for item in KB_INDEX_CANDIDATES])
         self.path = next((item for item in self.candidates if item.is_file()), self.candidates[0])
