@@ -36,6 +36,23 @@
 - 实验台补了四个短板：冒烟支持工作目录与读数比对、子进程输出固定 UTF-8、安装先清目标目录、
   落点合法性护栏。现场与踩坑见 `docs/oss-lab.md` 第十四节。
 
+### 与知识库（记忆）插件融合（2026-10-07）
+
+对齐离线数开插件那套做法：**共享数据契约，不共享代码**。
+
+- 新增 `knowledge` 配置段（`uri_prefix` + 可选 `index_path`）；
+- 引擎新增消费侧知识索引客户端 `KnowledgeIndex`（search / read / status），
+  **铁律**：`uri` 不在 `knowledge.uri_prefix` 下的一律拒绝；
+- 命令行入口 `rtd.py knowledge status|search|read`；
+- 跨插件契约测试 `tests/test_kb_contract.py`（8 条），与生产端
+  `knowledge-base-plugin/tests/test_engine.py::ConsumerContractTests` 对着同一份 schema 断言；
+- 索引按顺序探测两处：本插件 `.rtd/mock/kb/index.json` 优先，退到离线插件的
+  `.data-dev/mock/kb/index.json`（生产端目前只写后者，且不认 `.rtd`）；
+- 契约文档 `knowledge/kb-index-contract.md`、出站路由补 `kbp-publish` 写回路径、
+  定位工作流加"消歧前先查知识库"。
+
+台账见 `docs/kb-integration.md`（含真跑输出与还差什么）。
+
 ### 开源就绪（2026-09-30）
 
 按 Apache 项目的通行标准自查并补齐缺口，审计台账在 `docs/apache-readiness-audit.md`。

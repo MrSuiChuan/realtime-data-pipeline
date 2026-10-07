@@ -26,6 +26,19 @@ py -3 .rtd/engine/rtd.py object set --name "<对象名>" --source "ops search"
 - 数字短 ID **不是**文件级 ID（`governance/identity-and-time.md`）；
 - 同名不自动合并。
 
+### 消歧前先查知识库（记忆层）
+
+涉及表名/域时，先看知识库里有没有这张表的口径——**它比问用户快，也比猜准**：
+
+```
+py -3 .rtd/engine/rtd.py knowledge search --query "<表名或域>"
+py -3 .rtd/engine/rtd.py knowledge read   --uri "<search 返回的 uri>"
+```
+
+- 命中了就把口径**原文**带进上下文，并注明来源 `uri`；
+- 只认受管前缀（`knowledge.uri_prefix`）下的知识源，越界的 uri 会被引擎直接拒；
+- 没命中就说"知识库里没有"，**不要凭印象补口径**——契约见 `knowledge/kb-index-contract.md`。
+
 ## 步骤 3 · 结构展开
 
 - 拓扑查询拿到实例与任务 DAG；任务详情简式查询（有批量上限，超限分批）；只有需要 SQL / 执行计划 / 近期错误时才用详式；

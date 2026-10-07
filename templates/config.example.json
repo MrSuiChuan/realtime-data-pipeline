@@ -53,6 +53,10 @@
       "warehouse": "file:///tmp/delta-warehouse"
     }
   },
+  "knowledge": {
+    "uri_prefix": "viking://resources/",
+    "index_path": "<可选：覆盖知识索引路径；留空则按 .rtd/mock/kb/index.json → .data-dev/mock/kb/index.json 的顺序探测>"
+  },
   "limits": {
     "scan_budget_s": 120,
     "tool_calls": 60,

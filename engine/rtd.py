@@ -273,6 +273,45 @@ def cmd_env_check(args) -> int:
     return 0
 
 
+def cmd_knowledge_status(args) -> int:
+    """看知识索引在哪、有几条、受管前缀是什么。"""
+    runtime = resolve_runtime(args)
+    state = core.KnowledgeIndex(runtime).status()
+    human = (
+        f"知识索引：{state['index']}（{'存在' if state['index_exists'] else '不存在'}）\n"
+        f"  受管前缀：{state['uri_prefix']}\n"
+        f"  文档数：{state['document_count']}\n"
+        f"  探测顺序：" + "、".join(state["candidates"])
+    )
+    emit(state, args.json, human)
+    return 0
+
+
+def cmd_knowledge_search(args) -> int:
+    """按域、表名或摘要查知识索引。"""
+    runtime = resolve_runtime(args)
+    hits = core.KnowledgeIndex(runtime).search(args.query, args.limit)
+    payload = {"query": args.query, "count": len(hits), "hits": hits}
+    if args.json:
+        emit(payload, True, "")
+        return 0
+    lines = [f"查询：{args.query}；命中 {len(hits)} 条"]
+    for doc in hits:
+        lines.append(f"  - {doc.get('uri')}")
+        lines.append(f"    {str(doc.get('abstract') or '')[:110]}")
+    emit(payload, False, "\n".join(lines))
+    return 0
+
+
+def cmd_knowledge_read(args) -> int:
+    """读一条知识源的摘要；uri 不在受管前缀下会被拒。"""
+    runtime = resolve_runtime(args)
+    abstract = core.KnowledgeIndex(runtime).read(args.uri)
+    payload = {"uri": args.uri, "abstract": abstract, "found": bool(abstract)}
+    emit(payload, args.json, abstract or "（索引里没有这条 uri）")
+    return 0
+
+
 def cmd_resume(args) -> int:
     runtime = resolve_runtime(args)
     state = runtime.load_state()
@@ -399,6 +438,19 @@ def build_parser() -> argparse.ArgumentParser:
     env_sub = env.add_subparsers(dest="action", required=True)
     env_check = env_sub.add_parser("check", parents=[common])
     env_check.set_defaults(func=cmd_env_check)
+
+    kb = sub.add_parser("knowledge", parents=[common],
+                        help="知识库（记忆）索引：查域知识与口径")
+    kb_sub = kb.add_subparsers(dest="action", required=True)
+    kb_status = kb_sub.add_parser("status", parents=[common])
+    kb_status.set_defaults(func=cmd_knowledge_status)
+    kb_search = kb_sub.add_parser("search", parents=[common])
+    kb_search.add_argument("--query", required=True)
+    kb_search.add_argument("--limit", type=int, default=10)
+    kb_search.set_defaults(func=cmd_knowledge_search)
+    kb_read = kb_sub.add_parser("read", parents=[common])
+    kb_read.add_argument("--uri", required=True)
+    kb_read.set_defaults(func=cmd_knowledge_read)
 
     resume = sub.add_parser("resume", parents=[common], help="跨会话续跑对账")
     resume.add_argument("--observed", required=True, help="平台回读结果（JSON 文件或字面量）")

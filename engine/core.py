@@ -875,3 +875,86 @@ def _real_value(value: Any) -> bool:
 def _is_high_risk_run(kind: str) -> bool:
     lowered = (kind or "").lower()
     return any(token in lowered for token in HIGH_RISK_RUN_TOKENS)
+
+
+# ── 跨插件契约：知识库（记忆）插件的知识索引 ────────────────────────────────
+#
+# 生产端 = knowledge-base-plugin 的发布流程；两侧各自对着同一份 schema 断言
+# （本仓库的断言在 tests/test_kb_contract.py，生产端在它自己的 ConsumerContractTests）。
+#
+# 索引形状：{"documents": [{"uri", "domain", "layer", "tables", "abstract"}]}
+# 消费侧只强制 uri 以 knowledge.uri_prefix 开头，不断言路径形状——
+# 生产端目前写 domains/、消费侧种子数据写 domain/，这个差异两侧都知情，不在这里纠正。
+KB_INDEX_CANDIDATES: Tuple[Path, ...] = (
+    Path(".rtd") / "mock" / "kb" / "index.json",        # 本插件的运行目录（生产端支持后优先）
+    Path(".data-dev") / "mock" / "kb" / "index.json",   # 离线插件的运行目录（生产端当前实际写这里）
+)
+DEFAULT_URI_PREFIX = "viking://resources/"
+
+# 消费侧真正会读的字段；生产端改字段名时这条契约会红。
+KB_DOCUMENT_FIELDS: Tuple[str, ...] = ("uri", "domain", "layer", "tables", "abstract")
+
+
+class KnowledgeIndex:
+    """只读知识索引：按域/表查口径，且**只认受管前缀下的知识源**。
+
+    为什么要有前缀这条铁律：索引是外部插件写进来的，若不加限制，
+    `read` 就变成一个"随便读什么 uri 都行"的接口——那就等于把知识来源交给写入方任意决定。
+    """
+
+    def __init__(self, runtime: "Runtime") -> None:
+        config = runtime.load_config()
+        knowledge = config.get("knowledge") if isinstance(config.get("knowledge"), dict) else {}
+        prefix = str(knowledge.get("uri_prefix") or DEFAULT_URI_PREFIX).rstrip("/")
+        self.uri_prefix = prefix + "/"
+        configured = str(knowledge.get("index_path") or "").strip()
+        self.candidates = ([Path(configured)] if configured
+                           else [runtime.root / item for item in KB_INDEX_CANDIDATES])
+        self.path = next((item for item in self.candidates if item.is_file()), self.candidates[0])
+
+    def documents(self) -> List[Dict[str, Any]]:
+        """读索引里的文档列表；缺失或坏 JSON 一律当"没有"，不抛异常也不编内容。"""
+        if not self.path.is_file():
+            return []
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+        docs = data.get("documents") if isinstance(data, dict) else None
+        return [item for item in (docs or []) if isinstance(item, dict)]
+
+    def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """按域、表名或摘要模糊查。空查询返回空列表——不做"没给条件就全给你"。"""
+        needle = (query or "").strip().lower()
+        if not needle:
+            return []
+        hits: List[Dict[str, Any]] = []
+        for doc in self.documents():
+            haystack = " ".join(str(doc.get(key) or "") for key in KB_DOCUMENT_FIELDS)
+            haystack += " " + " ".join(str(item) for item in doc.get("tables") or [])
+            if needle in haystack.lower():
+                hits.append(doc)
+        return hits[:limit]
+
+    def read(self, uri: str) -> str:
+        """读一条知识源的摘要；uri 不在受管前缀下 → 拒绝。"""
+        text = str(uri or "").strip()
+        if not text.startswith(self.uri_prefix):
+            raise RtError(
+                "knowledge_uri_rejected",
+                f"知识源不在受管前缀下：{text or '(空)'}（只认 {self.uri_prefix} 开头的 uri）",
+                "用 knowledge search 返回的 uri；本插件不读受管前缀之外的任何知识源",
+            )
+        for doc in self.documents():
+            if str(doc.get("uri")) == text:
+                return str(doc.get("abstract") or "")
+        return ""
+
+    def status(self) -> Dict[str, Any]:
+        return {
+            "uri_prefix": self.uri_prefix,
+            "index": str(self.path),
+            "index_exists": self.path.is_file(),
+            "document_count": len(self.documents()),
+            "candidates": [str(item) for item in self.candidates],
+        }

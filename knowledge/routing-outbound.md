@@ -9,6 +9,7 @@
 | 补数据 / 回刷离线基线 / 同步任务 / 离线数据质量 | `data-development-plugin:ddp-submit` | 涉及调度基线与离线表 |
 | 口径与规则的沉淀、知识库查阅 | `knowledge-base-plugin:kbp-status` | 用户要查/维护知识库与质量规则 |
 | 知识库生成与发布 | `knowledge-base-plugin:kbp-generate` | 用户要从元数据生成域知识 |
+| 把实时域的表文档与口径沉淀进知识库 | `knowledge-base-plugin:kbp-publish` | 实时任务上线后要把口径写回知识库 |
 
 ## 规则
 
