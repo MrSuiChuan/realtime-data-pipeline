@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 我不知道该读哪份文档
+    url: https://github.com/MrSuiChuan/realtime-data-plugin/blob/main/docs/README.md
+    about: docs/README.md 是文档地图：每个问题对应一份文档。
+  - name: 报安全问题（不要开公开 issue）
+    url: https://github.com/MrSuiChuan/realtime-data-plugin/security/advisories/new
+    about: 走 GitHub 私密漏洞报告；仓库公开后该入口才存在，详见 SECURITY.md。
