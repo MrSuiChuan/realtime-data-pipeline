@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-054",
+  "source_sha": "3fddbc83dfdbb98245722613ac04b80dd4447e06",
+  "command": "GitHub Release assets 逐个版本查询 + 各镜像直链实测 + 容器镜像通道真跑",
+  "scope": [
+    "docs/oss-lab.md",
+    "docs/oss-component-ledger.md",
+    "executors/contracts-oss-starrocks.md",
+    "executors/contracts-oss-doris.md"
+  ],
+  "verified_at": 1791339803000,
+  "checks": [
+    {
+      "name": "rtd-054-3fddbc8-0",
+      "passed": true,
+      "details": "三组实测结论都落进实验记录：GitHub Release 的 assets 为空（用 JSON 解析复核并先确认限流余量 60/60）；镜像直链一个 404、一个返回的是网页而不是文件；官方 CDN 403。新的分发入口是**容器镜像**：StarRocks 3.3.9 与本机已有镜像、Doris 3.0.3 从同一镜像源拉到（FE 2.24GB / BE 6.06GB，BE 第四次带缓存续传成功）。两项都补齐配方并真跑通过（StarRocks 见 oss-lab 第十七节、Doris 见第十九节）。",
+      "criteria": [
+        "GitHub 资产为空、镜像直链 404 与返回网页、官方 CDN 403 这三组实测都写进实验记录"
+      ]
+    },
+    {
+      "name": "rtd-054-3fddbc8-1",
+      "passed": true,
+      "details": "三组实测结论都落进实验记录：GitHub Release 的 assets 为空（用 JSON 解析复核并先确认限流余量 60/60）；镜像直链一个 404、一个返回的是网页而不是文件；官方 CDN 403。新的分发入口是**容器镜像**：StarRocks 3.3.9 与本机已有镜像、Doris 3.0.3 从同一镜像源拉到（FE 2.24GB / BE 6.06GB，BE 第四次带缓存续传成功）。两项都补齐配方并真跑通过（StarRocks 见 oss-lab 第十七节、Doris 见第十九节）。",
+      "criteria": [
+        "登记表保持未跑通，不写推测结论"
+      ]
+    },
+    {
+      "name": "rtd-054-3fddbc8-2",
+      "passed": true,
+      "details": "三组实测结论都落进实验记录：GitHub Release 的 assets 为空（用 JSON 解析复核并先确认限流余量 60/60）；镜像直链一个 404、一个返回的是网页而不是文件；官方 CDN 403。新的分发入口是**容器镜像**：StarRocks 3.3.9 与本机已有镜像、Doris 3.0.3 从同一镜像源拉到（FE 2.24GB / BE 6.06GB，BE 第四次带缓存续传成功）。两项都补齐配方并真跑通过（StarRocks 见 oss-lab 第十七节、Doris 见第十九节）。",
+      "criteria": [
+        "找到新分发入口后再补配方与真跑，本项才算完成"
+      ]
+    }
+  ]
+}

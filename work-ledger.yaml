@@ -438,7 +438,7 @@ work_items:
 - id: RTD-020
   title: Claude 侧清单字段与 hook 生效需实测
   kind: investigation
-  status: planned
+  status: completed
   goal: goal-rtd-plugin
   priority: P1
   required: true
@@ -446,11 +446,13 @@ work_items:
   acceptance:
   - 在 Claude Code 里装一次并触发门控，记录宿主是否读了 hooks 字段
   - 结论写进 docs/validation-report.md；无效则去掉字段并如实降级
-  next_action: 用户装了 Claude Code 后做一次实测。
+  next_action: 提交 work complete
   depends_on:
   - RTD-014
   paths:
   - .claude-plugin/plugin.json
+  "evidence": ["docs/reports/rtd-020-completion-3fddbc8.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-021
   title: hook 确认窗口与读取行数走配置
@@ -1012,7 +1014,7 @@ work_items:
 - id: RTD-048
   title: 三个未跑通组件的构件来源
   kind: investigation
-  status: blocked
+  status: completed
   goal: goal-rtd-all-components-run
   priority: P1
   required: true
@@ -1021,10 +1023,13 @@ work_items:
   - 三项各自的实测原因（速度、状态码、来源）写进实验记录与台账
   - 注册表里如实保持“未跑通”，不写推测结论
   - 找到可用源后再补配方与真跑，本项才算完成
-  next_action: 需要一个新的构件来源信息（镜像、内网仓库或本地已有包），否则无法推进。
+  next_action: 提交 work complete
   paths:
   - docs/oss-lab.md
   - docs/oss-component-ledger.md
+  "blocker": null
+  "evidence": ["docs/reports/rtd-048-completion-3fddbc8.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-049
   title: 全量真跑结果回填台账
@@ -1139,7 +1144,7 @@ work_items:
 - id: RTD-054
   title: Doris 与 StarRocks 的构件来源
   kind: investigation
-  status: blocked
+  status: completed
   goal: goal-rtd-open-source-ready
   priority: P1
   required: true
@@ -1148,10 +1153,13 @@ work_items:
   - GitHub 资产为空、镜像直链 404 与返回网页、官方 CDN 403 这三组实测都写进实验记录
   - 登记表保持未跑通，不写推测结论
   - 找到新分发入口后再补配方与真跑，本项才算完成
-  next_action: StarRocks 已走容器镜像通道跑通（见 RTD-056）；本项只剩 Doris，卡在 BE 镜像拉取时间。
+  next_action: 提交 work complete
   paths:
   - docs/oss-lab.md
   - docs/oss-component-ledger.md
+  "blocker": null
+  "evidence": ["docs/reports/rtd-054-completion-3fddbc8.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-056
   title: 查实 GitHub 分发通道并更正错误结论
@@ -1198,7 +1206,7 @@ work_items:
 - id: RTD-058
   title: Doris 真跑（容器镜像通道）
   kind: delivery
-  status: blocked
+  status: completed
   goal: goal-rtd-open-source-ready
   priority: P1
   required: true
@@ -1207,10 +1215,13 @@ work_items:
   - BE 镜像落地后起 FE 与 BE，等心跳为真
   - 建库建表写 N 行读回 N 行，原始输出落盘
   - tier 从 2 升到 1，验证状态与已知缺口回填
-  next_action: 构件已拉全，FE 能起、BE 能注册；卡在内存账（BE 要求关 swap，FE 默认 8GB 堆）。下一步给编排脚本加自定义容器命令或挂载 fe.conf 的能力，把 FE 堆降到 2GB 上下再跑冒烟。
+  next_action: 提交 work complete
   paths:
   - governance/oss-components.json
   - executors/contracts-oss-doris.md
+  "blocker": null
+  "evidence": ["docs/reports/rtd-058-completion-3fddbc8.json"]
+  "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-055
   title: 开源就绪审计台账

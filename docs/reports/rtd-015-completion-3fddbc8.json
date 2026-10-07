@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "work_item": "RTD-015",
+  "source_sha": "3fddbc83dfdbb98245722613ac04b80dd4447e06",
+  "command": "git ls-files 逐项核对打包排除项；py -3 tools/validate_plugin.py .",
+  "scope": [
+    "README.md",
+    "CHANGELOG.md",
+    ".gitignore",
+    "tools/validate_plugin.py"
+  ],
+  "verified_at": 1791339803000,
+  "checks": [
+    {
+      "name": "rtd-015-3fddbc8-0",
+      "passed": true,
+      "details": "打包产物核了两条。其一：跟踪文件里不含 plan.raw.md、不含 .rtd/ 下任何文件、不含脱敏词表本体（git ls-files 逐项核对；唯一命中 desensitize 的是格式示例文件，那是校验器第 1 项要求存在的）。真实平台名由校验器第 7 项脱敏扫描把关，零命中。其二：版本单源校验通过（校验器第 5 项），版本只在 .claude-plugin/plugin.json 一处。",
+      "criteria": [
+        "打包产物里不含 plan.raw.md、.rtd/、任何真实平台名"
+      ]
+    },
+    {
+      "name": "rtd-015-3fddbc8-1",
+      "passed": true,
+      "details": "打包产物核了两条。其一：跟踪文件里不含 plan.raw.md、不含 .rtd/ 下任何文件、不含脱敏词表本体（git ls-files 逐项核对；唯一命中 desensitize 的是格式示例文件，那是校验器第 1 项要求存在的）。真实平台名由校验器第 7 项脱敏扫描把关，零命中。其二：版本单源校验通过（校验器第 5 项），版本只在 .claude-plugin/plugin.json 一处。",
+      "criteria": [
+        "版本单源校验通过"
+      ]
+    }
+  ]
+}

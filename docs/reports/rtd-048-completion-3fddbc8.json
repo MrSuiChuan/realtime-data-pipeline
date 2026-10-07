@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "work_item": "RTD-048",
+  "source_sha": "3fddbc83dfdbb98245722613ac04b80dd4447e06",
+  "command": "各组件按注册表配方安装并冒烟（tools/oss_lab.py smoke <组件>）",
+  "scope": [
+    "docs/oss-lab.md",
+    "docs/oss-component-ledger.md",
+    "governance/oss-components.json"
+  ],
+  "verified_at": 1791339803000,
+  "checks": [
+    {
+      "name": "rtd-048-3fddbc8-0",
+      "passed": true,
+      "details": "三项的构件来源都查实并找到了可用通道，且都真跑通过：Pulsar 走云厂商镜像（实测 1.7 到 4.2 MB/s，归档站与官方 closer 只有十来个 KB 每秒）；StarRocks 与 Doris 的二进制都不在 GitHub Release（逐个版本查过 assets 为空），官方 CDN 对本机 403，可达通道是容器镜像。三项的实测原因（速率、状态码、来源）都写进 docs/oss-lab.md 第十四到十九节，注册表按实际情况登记为已验证，没有一处用推测内容填充。",
+      "criteria": [
+        "三项各自的实测原因（速度、状态码、来源）写进实验记录与台账"
+      ]
+    },
+    {
+      "name": "rtd-048-3fddbc8-1",
+      "passed": true,
+      "details": "三项的构件来源都查实并找到了可用通道，且都真跑通过：Pulsar 走云厂商镜像（实测 1.7 到 4.2 MB/s，归档站与官方 closer 只有十来个 KB 每秒）；StarRocks 与 Doris 的二进制都不在 GitHub Release（逐个版本查过 assets 为空），官方 CDN 对本机 403，可达通道是容器镜像。三项的实测原因（速率、状态码、来源）都写进 docs/oss-lab.md 第十四到十九节，注册表按实际情况登记为已验证，没有一处用推测内容填充。",
+      "criteria": [
+        "注册表里如实保持“未跑通”，不写推测结论"
+      ]
+    },
+    {
+      "name": "rtd-048-3fddbc8-2",
+      "passed": true,
+      "details": "三项的构件来源都查实并找到了可用通道，且都真跑通过：Pulsar 走云厂商镜像（实测 1.7 到 4.2 MB/s，归档站与官方 closer 只有十来个 KB 每秒）；StarRocks 与 Doris 的二进制都不在 GitHub Release（逐个版本查过 assets 为空），官方 CDN 对本机 403，可达通道是容器镜像。三项的实测原因（速率、状态码、来源）都写进 docs/oss-lab.md 第十四到十九节，注册表按实际情况登记为已验证，没有一处用推测内容填充。",
+      "criteria": [
+        "找到可用源后再补配方与真跑，本项才算完成"
+      ]
+    }
+  ]
+}

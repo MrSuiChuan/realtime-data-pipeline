@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "work_item": "RTD-020",
+  "source_sha": "3fddbc83dfdbb98245722613ac04b80dd4447e06",
+  "command": "claude plugin list（改清单前后各一次）",
+  "scope": [
+    ".claude-plugin/plugin.json",
+    "docs/validation-report.md"
+  ],
+  "verified_at": 1791339803000,
+  "checks": [
+    {
+      "name": "rtd-020-3fddbc8-0",
+      "passed": true,
+      "details": "实测抓到真 bug：Claude Code 2.1.231 里插件 Status 是「× failed to load」，报错 Duplicate hooks file detected——宿主**自动加载** hooks/hooks.json，而清单里 \"hooks\": \"./hooks/hooks.json\" 又指了同一个文件，被判重复，整个插件加载失败（不是 hooks 不生效，是插件都用不了）。删掉该字段后重新查询，Status 变成「√ enabled」。commands 字段保留（未被报重复）。结论与处置写进 docs/validation-report.md 末节。边界说明：本项验的是清单字段是否被宿主接受；门控是否真的拦住写入已在 RTD-014 实测过。",
+      "criteria": [
+        "在 Claude Code 里装一次并触发门控，记录宿主是否读了 hooks 字段"
+      ]
+    },
+    {
+      "name": "rtd-020-3fddbc8-1",
+      "passed": true,
+      "details": "实测抓到真 bug：Claude Code 2.1.231 里插件 Status 是「× failed to load」，报错 Duplicate hooks file detected——宿主**自动加载** hooks/hooks.json，而清单里 \"hooks\": \"./hooks/hooks.json\" 又指了同一个文件，被判重复，整个插件加载失败（不是 hooks 不生效，是插件都用不了）。删掉该字段后重新查询，Status 变成「√ enabled」。commands 字段保留（未被报重复）。结论与处置写进 docs/validation-report.md 末节。边界说明：本项验的是清单字段是否被宿主接受；门控是否真的拦住写入已在 RTD-014 实测过。",
+      "criteria": [
+        "结论写进 docs/validation-report.md；无效则去掉字段并如实降级"
+      ]
+    }
+  ]
+}

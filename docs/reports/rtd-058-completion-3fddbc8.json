@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "work_item": "RTD-058",
+  "source_sha": "3fddbc83dfdbb98245722613ac04b80dd4447e06",
+  "command": "tools/lab/serving_cluster_up.sh up ... && tools/lab/serving_smoke.sh --rows 5",
+  "scope": [
+    "governance/oss-components.json",
+    "executors/contracts-oss-doris.md",
+    "docs/oss-lab.md",
+    "tools/lab/serving_cluster_up.sh"
+  ],
+  "verified_at": 1791339803000,
+  "checks": [
+    {
+      "name": "rtd-058-3fddbc8-0",
+      "passed": true,
+      "details": "Doris 3.0.3 真跑通过：FE 与 BE 各一个容器（host 网络），BE 注册后心跳为 true，建库建表（DUPLICATE KEY）写 5 行读回 5 行，连跑两次结果一致（两次都是 rtd_rows=5 / rc=0），原始输出落在 .tmp/lab/doris/。四个前置缺一不可：镜像入口要环境变量（FE 给 FE_SERVERS+FE_ID，BE 给 FE_SERVERS+BE_ADDR，且 BE_ADDR 必须是 IP:心跳端口）；vm.max_map_count 必须严格大于 2000000（设成等于也拦）；必须关 swap；FE 默认 8GB 堆要降到 2GB。实测还发现跨 wsl.exe 调用时同一内核参数会读到不同值，所以前置与启动必须在同一个会话里做完。为此给编排脚本加了通用的 --fe-cmd/--be-cmd，并修掉'端口重叠时用端口判归属'的守卫误判。",
+      "criteria": [
+        "BE 镜像落地后起 FE 与 BE，等心跳为真"
+      ]
+    },
+    {
+      "name": "rtd-058-3fddbc8-1",
+      "passed": true,
+      "details": "Doris 3.0.3 真跑通过：FE 与 BE 各一个容器（host 网络），BE 注册后心跳为 true，建库建表（DUPLICATE KEY）写 5 行读回 5 行，连跑两次结果一致（两次都是 rtd_rows=5 / rc=0），原始输出落在 .tmp/lab/doris/。四个前置缺一不可：镜像入口要环境变量（FE 给 FE_SERVERS+FE_ID，BE 给 FE_SERVERS+BE_ADDR，且 BE_ADDR 必须是 IP:心跳端口）；vm.max_map_count 必须严格大于 2000000（设成等于也拦）；必须关 swap；FE 默认 8GB 堆要降到 2GB。实测还发现跨 wsl.exe 调用时同一内核参数会读到不同值，所以前置与启动必须在同一个会话里做完。为此给编排脚本加了通用的 --fe-cmd/--be-cmd，并修掉'端口重叠时用端口判归属'的守卫误判。",
+      "criteria": [
+        "建库建表写 N 行读回 N 行，原始输出落盘"
+      ]
+    },
+    {
+      "name": "rtd-058-3fddbc8-2",
+      "passed": true,
+      "details": "Doris 3.0.3 真跑通过：FE 与 BE 各一个容器（host 网络），BE 注册后心跳为 true，建库建表（DUPLICATE KEY）写 5 行读回 5 行，连跑两次结果一致（两次都是 rtd_rows=5 / rc=0），原始输出落在 .tmp/lab/doris/。四个前置缺一不可：镜像入口要环境变量（FE 给 FE_SERVERS+FE_ID，BE 给 FE_SERVERS+BE_ADDR，且 BE_ADDR 必须是 IP:心跳端口）；vm.max_map_count 必须严格大于 2000000（设成等于也拦）；必须关 swap；FE 默认 8GB 堆要降到 2GB。实测还发现跨 wsl.exe 调用时同一内核参数会读到不同值，所以前置与启动必须在同一个会话里做完。为此给编排脚本加了通用的 --fe-cmd/--be-cmd，并修掉'端口重叠时用端口判归属'的守卫误判。",
+      "criteria": [
+        "tier 从 2 升到 1，验证状态与已知缺口回填"
+      ]
+    }
+  ]
+}
