@@ -222,7 +222,7 @@ work_items:
 - id: RTD-009
   title: 回填工具 schema 快照与真实字段契约
   kind: delivery
-  status: planned
+  status: cancelled
   goal: goal-rtd-plugin
   priority: P1
   required: true
@@ -231,16 +231,17 @@ work_items:
   - 每份契约的字段映射不再有"待回填"占位
   - schemas/ 至少覆盖运维域与引擎域的工具
   - 回填动作记入 docs/validation-report.md（谁/何时/用什么方法）
-  next_action: 先完成 RTD-011 的联调，用真实回执回填；不得凭记忆填写。
+  next_action: 有平台环境后重开 RTD-011 与 RTD-009，用真实回执回填。
   depends_on:
   - RTD-011
   paths:
   - executors/
+  "blocker": null
 
 - id: RTD-010
   title: 回填九类数据源的字段契约
   kind: delivery
-  status: planned
+  status: cancelled
   goal: goal-rtd-plugin
   priority: P2
   required: true
@@ -248,16 +249,17 @@ work_items:
   acceptance:
   - 每个已支持类型都有可核实的字段契约与核实时间
   - 拿不到的类型保持"待回填"，不用推测内容填充
-  next_action: 联调时从平台界面或 CLI 帮助正文逐类核对。
+  next_action: 有平台环境后重开，逐类核对后再回填。
   depends_on:
   - RTD-011
   paths:
   - datasources/metatable-types.md
+  "blocker": null
 
 - id: RTD-011
   title: 真实执行器联调
   kind: delivery
-  status: ready
+  status: cancelled
   goal: goal-rtd-plugin
   priority: P0
   required: true
@@ -266,10 +268,11 @@ work_items:
   - env check 报出每个执行器的三态（配置存在/认证完成/当前会话可调用）
   - 至少一条真实编译回执能通过 evidence add 与 gate set
   - 失败与阻塞如实记录，不用"网络问题"这类转述替代错误原文
-  next_action: 准备一个可访问平台的机器与账号，填配置后跑 rtd-setup → rtd-env → rtd-dev。
+  next_action: 拿到平台环境后用 awr work reopen RTD-011 重开，按 runbook 走 rtd-setup → rtd-env → rtd-dev。
   paths:
   - templates/config.example.json
   - executors/
+  "blocker": null
 
 - id: RTD-012
   title: 巡检评分脚本与阈值校准
@@ -337,7 +340,7 @@ work_items:
 - id: RTD-015
   title: 定版与发布准备
   kind: delivery
-  status: planned
+  status: cancelled
   goal: goal-rtd-plugin
   priority: P2
   required: true
@@ -345,13 +348,14 @@ work_items:
   acceptance:
   - 打包产物里不含 plan.raw.md、.rtd/、任何真实平台名
   - 版本单源校验通过
-  next_action: 等 RTD-011 与 RTD-014 有结论后再定版。
+  next_action: 平台联调有结论后可重开复核一次发布说明。
   depends_on:
   - RTD-011
   - RTD-014
   paths:
   - README.md
   - CHANGELOG.md
+  "blocker": null
 
 # ── 2026-09-21 AWR 接管后，对插件自身做的优化排查（第二轮）────────────────
 
@@ -494,7 +498,7 @@ work_items:
 - id: RTD-023
   title: 用真实窗口校准巡检评分阈值
   kind: delivery
-  status: planned
+  status: cancelled
   goal: goal-rtd-plugin
   priority: P2
   required: false
@@ -503,13 +507,14 @@ work_items:
   - 各取一个真实正常窗口与一个真实故障窗口做对照，记录分数分布
   - 校准结论写进 docs/validation-report.md（谁、何时、用什么数据）
   - 校准后仍保留"非官方模型"声明
-  next_action: 等 RTD-011 联调拿到真实快照后开始。
+  next_action: 有平台环境后重开，取一个正常窗口与一个故障窗口做对照。
   depends_on:
   - RTD-011
   - RTD-012
   paths:
   - tools/score_inspection.py
   - docs/validation-report.md
+  "blocker": null
 
 - id: RTD-024
   title: 文档与引擎接口对账
