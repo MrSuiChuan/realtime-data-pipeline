@@ -232,6 +232,42 @@ def test_component_without_a_local_recipe_is_refused_not_faked(tmp_path):
     assert "没有本地冒烟配方" in out
 
 
+def test_install_verifies_checksum_only_when_registry_declares_one(monkeypatch, tmp_path):
+    """注册表声明了官方校验和就必须验；没声明的不能凭空造（镜像常常不提供）。
+
+    取不到校验和或对不上都算失败——这是"不静默降级"在下载环节的落地。
+    """
+    registry = {
+        "lab": {"root_default": "~/oss"},
+        "components": [
+            {"id": "oss_signed", "display": "signed", "role": "log", "launch_mode": "service",
+             "tier": 2, "config_ref": "executors.oss_signed", "required_keys": ["home"],
+             "artifact": {"kind": "tgz", "url": "https://example.invalid/a.tgz",
+                          "sha512_url": "https://example.invalid/a.tgz.sha512",
+                          "unpack_to": "${root}/a"}},
+            {"id": "oss_plain", "display": "plain", "role": "log", "launch_mode": "service",
+             "tier": 2, "config_ref": "executors.oss_plain", "required_keys": ["home"],
+             "artifact": {"kind": "tgz", "url": "https://example.invalid/b.tgz",
+                          "unpack_to": "${root}/b"}},
+        ],
+    }
+    reg = tmp_path / "registry.json"
+    reg.write_text(json.dumps(registry, ensure_ascii=False), encoding="utf-8")
+    root = _project({"executors": {"oss_signed": {"home": "/x"}, "oss_plain": {"home": "/x"}}})
+    monkeypatch.setattr(oss_lab, "run_script", lambda ctx, script, timeout=300: (0, "ok"))
+
+    def script_of(component: str) -> str:
+        code, out = _run(["--project", str(root), "--registry", str(reg),
+                          "install", component, "--json"])
+        assert code == 0, out
+        return json.loads(out)["script"]
+
+    signed = script_of("oss_signed")
+    assert "sha512sum" in signed and "sha512 与官方校验和不符" in signed, signed
+    assert "a.tgz.sha512" in signed, signed
+    assert "sha512sum" not in script_of("oss_plain"), "没声明校验和就不该编造校验"
+
+
 def test_install_script_has_no_windows_separators(monkeypatch):
     """包内路径是 POSIX 的：用 Path 拼父目录会在 Windows 上得到 `~\\oss` 这种名字。
 

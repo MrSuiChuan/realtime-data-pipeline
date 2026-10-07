@@ -178,6 +178,36 @@ py -3 .rtd/engine/rtd.py status
 
 门控键只有两种来源：**平台回读证据**（挂证据文件，验字段与哈希）和**当次确认原话**（`--user-confirm`）。两者不可互相顶替。
 
+### 跑一遍应该看到什么（不依赖任何平台）
+
+下面是在一个空项目里真跑的三步，输出是原样抓的（只把临时目录路径缩成 `<项目>`）：
+
+```
+$ py -3 <插件>/engine/rtd.py setup --project .
+运行时：<项目>/.rtd
+引擎版本：8a601d7262837eb5（已自拷贝到 .rtd/engine/）
+新建：.rtd/_evidence、.rtd/_records、.rtd/_runs、.rtd/_snapshots、.rtd/_state.json、.rtd/config.json
+已生成 config.json 模板——**接下来要你填执行器**（权限 0600，别提交）
+已把 .rtd/ 追加进项目 .gitignore
+缺口：
+  - 两条路都没配置 —— 平台路径：至少把 executors.cli.cmd（或某个 mcp_* 服务名）填上；或 开源路径：按 governance/oss-components.json 里 tier 1/2 组件的 required_keys 配（动过哪个就必须配全哪个，没动过的不算缺口）
+
+$ py -3 .rtd/engine/rtd.py evidence add --kind compile_receipt --from compile.json \
+    --tool local-demo --command "echo compile ok"
+证据已登记：compile_receipt-20261007111012-359ffb
+  校验：通过 — 终态成功（SUCCESS）
+  来源：local-demo / echo compile ok
+
+$ py -3 .rtd/engine/rtd.py status
+对象：{}
+阶段：discover
+本阶段门控已齐；可以 advance 到下一阶段
+证据条数：1；状态版本：2
+```
+
+三处值得注意：`setup` 遇到没配执行器时**报缺口并停**，不猜；`evidence add` 会当场校验这条回执
+（状态字段必须是终态成功）并给出证据 ID；`status` 把"当前阶段 + 本阶段门控齐没齐"一次说清。
+
 设计来源是 [plan.md](./plan.md)（脱敏版）。未脱敏原稿 `plan.raw.md` 带真实名称与替换对照表，**只在本地**，已在 `.gitignore` 里排除，别外发。
 
 ## License

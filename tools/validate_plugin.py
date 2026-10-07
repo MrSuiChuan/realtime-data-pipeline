@@ -150,6 +150,8 @@ REQUIRED_PATHS = [
     "docs/host-hooks.md",
     "docs/oss-component-ledger.md",
     "docs/apache-readiness-audit.md",
+    "docs/decisions/README.md",
+    "README.en.md",
     "docs/release-process.md",
     "docs/glossary.md",
     "docs/README.md",

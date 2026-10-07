@@ -768,10 +768,21 @@ def cmd_install(args) -> int:
         attempts = " || ".join(
             f"curl -fL --retry 3 -o {_q(tarball)} {_q(item)}" for item in candidates
         )
+        # 注册表声明了官方校验和就必须验：取不到或对不上都算失败，不静默降级。
+        sha_url = ctx.resolve(str(artifact.get("sha512_url") or ""))
+        verify = ""
+        if sha_url:
+            verify = (
+                f"curl -fsSL {_q(sha_url)} -o {_q(tarball + '.sha512')}\n"
+                f"expected=$(cut -d' ' -f1 {_q(tarball + '.sha512')})\n"
+                f"actual=$(sha512sum {_q(tarball)} | cut -d' ' -f1)\n"
+                f"test \"$expected\" = \"$actual\" || {{ echo '[失败] sha512 与官方校验和不符' >&2; exit 4; }}\n"
+            )
         script = (
             "set -e\n"
             f"mkdir -p {parent}\n"
             f"test -s {_q(tarball)} || {{ {attempts}; }}\n"
+            f"{verify}"
             # 先清目标目录再解包：留下上一版的文件会让插件扫描到两个版本
             # （实测 Debezium 混装 3.0.8 与 3.6.3 后，Connect 直接起不来）。
             f"rm -rf {_q(dest)}\n"
