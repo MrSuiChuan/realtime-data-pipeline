@@ -55,7 +55,7 @@ gaps: completion_unverified ×10, dependency_not_completed ×4
 
 | 项 | 值 |
 | --- | --- |
-| remote | `ssh://git@ssh.github.com:443/MrSuiChuan/realtime-data-plugin.git` |
+| remote | `ssh://git@ssh.github.com:443/MrSuiChuan/realtime-data-pipeline.git`（2026-10-07 起；旧库改名不变、保留为私有归档，见 `docs/apache-readiness-audit.md` 第八节） |
 | 首次提交 | `51f48bbaad35beb0c08281ca34377a7d49388f65`（main，已推送，远端与本地一致） |
 | 入场文件 | 93 个；`plan.raw.md`、`.rtd/`、`.awr/state.db*`、`.awr/intake/inventory.json`、`.tmp/` 全部排除（`git check-ignore` 逐项验过） |
 | 证据 | `evidence/rtd-013-evals-runner-verified`：level=`locally_verified`，source_sha=首次提交，scope=跑分器那 4 个路径 |
