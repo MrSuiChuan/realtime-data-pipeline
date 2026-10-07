@@ -176,6 +176,29 @@ def test_start_stop_others_first_stops_the_running_one(monkeypatch):
     assert state["up"] == "oss_kafka"
 
 
+def test_shared_probe_port_is_not_used_to_guess_what_is_running(monkeypatch):
+    """端口重叠时不能靠端口判归属。
+
+    Doris 与 StarRocks 默认都用 9030：探到端口开着也说不清是谁在跑。
+    实测踩过——把正在跑的 Doris 误判成 StarRocks，于是 start 被自己的守卫拒掉。
+    """
+    endpoint = "127.0.0.1:9030"
+    shared = {"fe_image": "img-a", "be_image": "img-b", "mysql_endpoint": endpoint,
+              "container_prefix": "p", "network": "n", "mysql_port": "9030"}
+    root = _project({"executors": {"oss_starrocks": dict(shared, container_prefix="rtd-sr"),
+                                   "oss_doris": dict(shared, container_prefix="rtd-doris")}})
+    (root / ".rtd" / "lab-state.json").write_text(json.dumps({"up": "oss_starrocks"}),
+                                                  encoding="utf-8")
+    # 端口探针说"通"，状态文件也指着另一个组件——但两边端口重叠，两个信号都不该采信。
+    monkeypatch.setattr(oss_lab, "probe_tcp", lambda target, timeout=2.0: (True, "stub 通"))
+    monkeypatch.setattr(oss_lab, "run_script", lambda ctx, script, timeout=300: (0, "ok"))
+    monkeypatch.setattr(oss_lab, "probe",
+                        lambda ctx, spec, extra=None, wait=False: (True, ["stub 就绪"]))
+    code, out = _run(["--project", str(root), "start", "oss_doris"])
+    assert "[拒绝]" not in out, out
+    assert code == 0, out
+
+
 def test_start_reports_gap_when_required_keys_missing(monkeypatch):
     root = _project({"executors": {"oss_kafka": {"home": "/home/lab/oss/kafka"}}})
     monkeypatch.setattr(oss_lab, "run_script", lambda ctx, script, timeout=300: (0, "nope"))

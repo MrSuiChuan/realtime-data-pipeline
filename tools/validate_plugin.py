@@ -229,8 +229,31 @@ def check_structure() -> list[str]:
         if script not in ci:
             errors.append(f"CI 没有跑 {script}")
     errors.extend(check_hooks_files())
+    errors.extend(check_claude_manifest_hooks())
     errors.extend(check_license_headers())
     return errors
+
+
+def check_claude_manifest_hooks() -> list[str]:
+    """Claude 清单不要再声明标准的 hooks 文件。
+
+    宿主**自动加载** `hooks/hooks.json`；清单里再指同一个文件会被判重复，
+    结果是**整个插件加载失败**（RTD-020 实测：`Duplicate hooks file detected`，
+    `claude plugin list` 显示 `× failed to load`）。该字段只用于引用**额外的** hook 文件。
+    """
+    path = ROOT / ".claude-plugin" / "plugin.json"
+    if not path.is_file():
+        return ["缺 .claude-plugin/plugin.json"]
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as err:
+        return [f".claude-plugin/plugin.json 不是合法 JSON：{err}"]
+    declared = str(manifest.get("hooks") or "").strip().lstrip("./")
+    if declared == "hooks/hooks.json":
+        return [".claude-plugin/plugin.json 声明了 hooks: ./hooks/hooks.json —— "
+                "宿主会自动加载这个标准文件，再声明一次会被判重复、整个插件加载失败（RTD-020 实测）；"
+                "该字段只用于引用额外的 hook 文件"]
+    return []
 
 
 LICENSE_HEADER_MARK = "Apache License, Version 2.0"

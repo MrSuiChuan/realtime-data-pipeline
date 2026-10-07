@@ -181,6 +181,36 @@ def test_hooks_files_are_recognizable_by_hosts():
         validate_plugin.ROOT = original
 
 
+def test_claude_manifest_must_not_redeclare_the_standard_hooks_file():
+    """宿主自动加载 hooks/hooks.json；清单里再指一次会让整个插件加载失败。
+
+    RTD-020 实测：Claude Code 报 `Duplicate hooks file detected`，插件状态 `× failed to load`。
+    这条检查把那个坑钉死——改清单时写明同一路径就会被拦下。
+    """
+    sys.path.insert(0, str(ROOT / "tools"))
+    import validate_plugin
+
+    assert validate_plugin.check_claude_manifest_hooks() == []
+
+    import json as _json
+    import tempfile
+    from pathlib import Path as _Path
+
+    original = validate_plugin.ROOT
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = _Path(tmp)
+            (fake / ".claude-plugin").mkdir()
+            (fake / ".claude-plugin" / "plugin.json").write_text(
+                _json.dumps({"name": "x", "version": "0.1.0", "hooks": "./hooks/hooks.json"}),
+                encoding="utf-8")
+            validate_plugin.ROOT = fake
+            problems = validate_plugin.check_claude_manifest_hooks()
+        assert any("重复" in p or "加载失败" in p for p in problems), problems
+    finally:
+        validate_plugin.ROOT = original
+
+
 def test_desensitize_check_skips_when_term_list_is_absent():
     """没有词表时第 7 项要明确 SKIP，而不是报"空词表"失败、也不许静默通过。"""
     import os
