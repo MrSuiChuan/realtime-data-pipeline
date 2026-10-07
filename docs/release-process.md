@@ -30,6 +30,22 @@ py -3 -m pytest tests -q
 
 **本地跑一遍再发**：校验器第 7、8 项在 CI 上会 SKIP（没有词表、没有本机技能包），只有本机才能真验。
 
+### 发布前额外一步：扫历史（CI 覆盖不到）
+
+第 7 项脱敏扫描只看当前文件树；**一条旧提交里的文档正文同样能把内部代号带出去**。
+所以发布前在完整克隆里再扫一遍历史（CI 默认浅克隆，拿不到完整历史，这条只能人工做）：
+
+```bash
+git log -p main > /tmp/history.patch
+grep -i -c -f tools/desensitize_terms.txt /tmp/history.patch
+```
+
+输出应为 `0`（`grep -c` 返回 0 表示没有任何一行命中）。非 0 就停下来查是哪个提交——
+**在把仓库设为公开之前**处理，公开之后再撤就来不及了。
+
+如果输出是 `grep: tools/desensitize_terms.txt: No such file`，说明本机没有词表，
+这一步就没法做——去有词表的机器上跑，别跳过。
+
 ## 四、打包内容
 
 进包的是插件的可用面：双宿主清单、`commands/` 与生成物 `skills/`、`hooks/`、`engine/`、
