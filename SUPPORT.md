@@ -11,7 +11,7 @@
 | 装不上、装完 hook 不生效 | 先看 [README.md](README.md) 的「安装」，再开 issue（附 `python tools/adapt_hooks.py --check` 的输出） |
 | 流程 / 门控行为与文档不符 | 开 issue（用「Bug 报告」模板），附最小复现：阶段、命令、完整输出、gate 键 |
 | 执行器（平台 CLI / 各域 MCP）连不上 | 先跑 `rtd.py env check` 看缺口报告，再开 issue 附配置形状（**去掉口令**） |
-| 想在本机起开源组件做实验 | 读 [docs/oss-lab.md](docs/oss-lab.md) 与 [docs/realtime-sources.md](docs/realtime-sources.md) 的起停配方 |
+| 想在本机起开源组件做实验 | 读 [docs/oss-lab.md](docs/oss-lab.md) 的起停配方，组件状态见 [docs/oss-component-ledger.md](docs/oss-component-ledger.md) |
 | 不知道读哪份文档 | 从 [docs/README.md](docs/README.md)（文档地图）进 |
 | 弄清某个概念 | [docs/glossary.md](docs/glossary.md) |
 | 想贡献 | [CONTRIBUTING.md](CONTRIBUTING.md)、[GOVERNANCE.md](GOVERNANCE.md) |

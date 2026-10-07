@@ -5,6 +5,13 @@
 面向**主流实时处理组件**的扩展，以及排查出来的四处真问题。版本号不升：按本仓库的惯例，
 定版在 RTD-015，未定版前不给可用版本号承诺。
 
+### 真实仓库回跑修掉的一处文档断链（2026-10-07）
+
+在 `data-warehouse-learning` 上按台账复跑时，本仓库自己的第 2 项静态校验报红：
+`SUPPORT.md` 的「想在本机起开源组件做实验」指向 `docs/realtime-sources.md`——那份文档在
+**记忆插件**仓库里，本仓库没有，用户点进去是 404，CI 也会红。改指本仓库真实存在的
+`docs/oss-lab.md` 与 `docs/oss-component-ledger.md`。
+
 新增：
 
 - **组件注册表** `governance/oss-components.json`：13 个实时组件（计算引擎 / 消息日志 / 湖表目录 /
