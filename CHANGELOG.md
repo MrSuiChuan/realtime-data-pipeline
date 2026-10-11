@@ -5,6 +5,27 @@
 面向**主流实时处理组件**的扩展，以及排查出来的四处真问题。版本号不升：按本仓库的惯例，
 定版在 RTD-015，未定版前不给可用版本号承诺。
 
+### 按真实案例复盘出来的四处优化（2026-10-11）
+
+案例：在 `data-warehouse-learning` 上真做一条「Kafka → Flink → Paimon → 销售额 Top3」，
+八阶段全流程真跑。台账见 `docs/optimization-real-case-2026-10.md`，落地改动：
+
+- **`oss_cli.py flink cancel [jobId]`（新增能力）**：实测 Flink 2.2 下 CLI `flink cancel`
+  抛异常、`DELETE /jobs/<id>` 404，只有 `PATCH /jobs/<id>?mode=cancel` 可用——按这个顺序实现，
+  失败回退 DELETE；`flink jobs` 现在会把占着 slot 的 RUNNING 作业标出来；
+- **中文高风险动词进表**：`engine/core.py` 的 `HIGH_RISK_RUN_TOKENS` 与 `hooks/gates.py` 的
+  `HIGH_RISK_WORDS` 补上「启动/停止/重启/热更新/下线/取消/发布/上线/回刷/回滚/部署」。
+  案例现场：`--kind publish` 被拦、`--kind 启动` 放行，同一条门只挡了一半；
+- **`rtd status` 直接给下一步**：新增 `next_action`（JSON 字段 + 人类可读一行），
+  说明"还差哪个门控、是回读类还是确认类、该跑哪条命令"，不用再去读源码对阶段表；
+- **本地环境守卫**：`oss_lab.py start` 遇到配置里落在 `/tmp` 的路径（如 Paimon warehouse）
+  会告警——本次真丢过一次数据（WSL 重启 + systemd-tmpfiles）；SQL 客户端报
+  `Pending slot request timed out` 时给出可操作提示（先 cancel 流作业/加 slot），
+  连接失败时提示 WSL 场景要用 WSL 的 IP；另加全流程 runbook `workflows/runbook-full-flow.md`。
+
+回归用例：`tests/test_real_case_fixes.py`（中文高风险 kind、`status.next_action`、
+`flink cancel` 的 PATCH→DELETE 顺序、slot 超时提示）。
+
 ### 真实仓库回跑修掉的一处文档断链（2026-10-07）
 
 在 `data-warehouse-learning` 上按台账复跑时，本仓库自己的第 2 项静态校验报红：

@@ -157,11 +157,32 @@ def cmd_status(args) -> int:
     phase = state.get("phase")
     gaps = runtime.phase_gaps(state)
     limits, limit_gaps = runtime.limits()
+    # 下一步建议：数据来自引擎自己的阶段表与门控表，不另写一份规则。
+    # 动机是真实案例里"哪个阶段配哪个门控、先置门控还是先 advance"要读源码才能确定（2026-10-11）。
+    if gaps:
+        gap = gaps[0]
+        spec = core.GATES.get(gap["gate"], {})
+        if spec.get("kind") == "readback":
+            step = (f"{gap['gate']} 是回读类：先用 rtd.py evidence add 登记 "
+                    f"{spec.get('evidence', '对应证据')}，再 "
+                    f"rtd.py gate set --name {gap['gate']} --evidence <id>")
+        else:
+            step = (f"{gap['gate']} 是确认类：需要用户当次原话，"
+                    f"rtd.py gate set --name {gap['gate']} --user-confirm \"<原话>\"")
+        next_action = f"{phase} 阶段还差门控：{step}"
+    else:
+        index = core.PHASES.index(phase) if phase in core.PHASES else -1
+        if index == len(core.PHASES) - 1:
+            next_action = f"{phase} 是最后阶段：跑 rtd.py verify 收口"
+        else:
+            next_action = (f"本阶段门控已齐：rtd.py advance --phase "
+                           f"{core.PHASES[index + 1]}")
     payload = {
         "object": state.get("object", {}),
         "phase": phase,
         "gates_satisfied": sorted(state.get("gates", {}).keys()),
         "next_gap": gaps,
+        "next_action": next_action,
         "evidence_count": len(runtime.load_evidence_index()["items"]),
         "revision": state.get("revision"),
         "updated_at": state.get("updated_at"),
@@ -174,6 +195,7 @@ def cmd_status(args) -> int:
         human.extend(f"  - {g['gate']}（{g['desc']}）" for g in gaps)
     else:
         human.append("本阶段门控已齐；可以 advance 到下一阶段")
+    human.append(f"下一步：{next_action}")
     human.append(f"证据条数：{payload['evidence_count']}；状态版本：{payload['revision']}")
     if limit_gaps:
         human.append("限额提示：" + "；".join(limit_gaps))

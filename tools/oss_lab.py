@@ -485,6 +485,41 @@ def _heavy_running(ctx: Context, skip: str, own_ports: set[str] | None = None) -
     return found
 
 
+def _warn_volatile_paths(ctx, spec) -> None:
+    """把配置里落在 /tmp 的路径喊出来。
+
+    2026-10-11 真实案例：Paimon warehouse 配成 `file:///tmp/...`，
+    `wsl --terminate` 之后 /tmp 被 systemd-tmpfiles 清掉，湖表数据整体消失，
+    现场看起来像"作业没落数据"。这里只告警不拦——临时试验用 /tmp 是合理的，
+    但要知道它会丢。
+    """
+    try:
+        config = _read_json(ctx.root / ".rtd" / "config.json")
+    except Exception:  # noqa: BLE001
+        return
+    hits: list[str] = []
+
+    def walk(node, prefix=""):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                walk(value, f"{prefix}.{key}" if prefix else str(key))
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                walk(value, f"{prefix}[{index}]")
+        elif isinstance(node, str) and node.strip():
+            text = node.strip()
+            if text.startswith(("/tmp/", "file:///tmp/", "~/tmp/")):
+                hits.append(f"{prefix}={text}")
+
+    walk((config.get("executors") or {}).get(spec.get("config_ref", "").split(".")[-1])
+         or {}, spec.get("config_ref", "executors"))
+    if hits:
+        print("[警告] 这些路径落在 /tmp：重启（WSL 重启 / 机器重启）会被清空，数据会丢——")
+        for item in hits:
+            print(f"        {item}")
+        print("        要留数据就换到持久目录（例如 ~/oss/paimon_top3_wh）")
+
+
 def cmd_start(args) -> int:
     """启动一个组件（重型组件一次只起一个）。"""
     ctx = build_context(args)
@@ -494,6 +529,7 @@ def cmd_start(args) -> int:
     if gaps and not args.force:
         raise LabError("构件路径还没配全：" + "、".join(gaps),
                        "先填 .rtd/config.json；确认这条组件的 required_keys 是否写对再起")
+    _warn_volatile_paths(ctx, spec)
 
     running = _heavy_running(ctx, str(spec.get("id")), _target_ports(ctx, spec))
     if spec.get("heavy") and running:

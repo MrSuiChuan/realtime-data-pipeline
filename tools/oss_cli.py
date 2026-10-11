@@ -158,8 +158,49 @@ def cmd_flink_jobs(args) -> int:
     else:
         print(f"共 {len(jobs)} 个作业")
         for job in jobs:
-            print(f"  {job.get('jid')}  {job.get('state'):<10} {job.get('name')}")
+            mark = "  ← 正在占 slot" if job.get("state") == "RUNNING" else ""
+            print(f"  {job.get('jid')}  {job.get('state'):<10} {job.get('name')}{mark}")
     return 0
+
+
+def cmd_flink_cancel(args) -> int:
+    """取消作业：PATCH ?mode=cancel 优先，失败回退 DELETE。
+
+    实测（Flink 2.2）：CLI `flink cancel` 抛异常、`DELETE /jobs/<id>` 返回 404，
+    只有 `PATCH /jobs/<id>?mode=cancel` 稳定可用——所以按实测顺序来。
+    """
+    config = load_config(args.config, args.project)
+    base = flink_rest(config)
+    job_id = str(getattr(args, "job_id", "") or "").strip()
+    if not job_id:
+        running = [job for job in (http_json(f"{base}/jobs/overview").get("jobs") or [])
+                   if job.get("state") == "RUNNING"]
+        if not running:
+            print("[拒绝] 没有 RUNNING 的作业可取消")
+            return 2
+        job_id = running[0]["jid"]
+        print(f"未指定 jobId，取消当前在跑的作业：{job_id}")
+    last_error = ""
+    for method, url in (("PATCH", f"{base}/jobs/{job_id}?mode=cancel"),
+                        ("DELETE", f"{base}/jobs/{job_id}")):
+        try:
+            payload = http_json(url, method=method)
+        except urllib.error.HTTPError as err:
+            last_error = f"{method} → HTTP {err.code}"
+            continue
+        except urllib.error.URLError as err:
+            last_error = f"{method} → {err}"
+            continue
+        if args.json:
+            print(json.dumps({"cancelled": job_id, "via": method, "response": payload},
+                             ensure_ascii=False, indent=2))
+        else:
+            print(f"已提交取消：{job_id}（{method}，平台返回 {payload or '{}'}）")
+        return 0
+    print(f"[缺口] 取消作业失败：{last_error}")
+    print("       确认 jobId 与 rest_endpoint；WSL 里的 Flink 要用 WSL 的 IP，"
+          "不是 127.0.0.1（`wsl hostname -I`）")
+    return 2
 
 
 def cmd_flink_status(args) -> int:
@@ -301,17 +342,36 @@ def _statement_error(raw: str) -> str:
     return " ".join(block.split())[:300]
 
 
+def _error_hint(reason: str) -> str:
+    """把"看起来像业务失败、其实是环境"的错误翻成可操作的下一步。
+
+    来自 2026-10-11 的真实案例：TM 只有 1 个 slot 时，流式作业占着它，
+    批查询会报 `Pending slot request timed out in slot pool`——
+    看着像"湖表坏了/数据没落"，其实是没资源。
+    """
+    lowered = (reason or "").lower()
+    if "slot" in lowered and ("timed out" in lowered or "timeout" in lowered):
+        return ("TM 的 slot 不够：流式作业正占着唯一的 slot。"
+                "先 `oss_cli.py flink cancel <jobId>` 腾出 slot 再取数，"
+                "或把 taskmanager.numberOfTaskSlots 调大（见 docs/oss-lab.md）")
+    return ""
+
+
 def _run_client(config: dict, statements: list[str], source: str, as_json: bool) -> int:
     sql_text = ";\n".join(statements) + ";\n"
     code, raw = run_sql_client(config, sql_text)
     reason = _statement_error(raw) or (f"SQL 客户端退出码 {code}" if code else "")
+    hint = _error_hint(reason)
     if as_json:
         print(json.dumps({"source": source, "exit_code": code, "statements": statements,
-                          "error": reason or None, "raw": raw}, ensure_ascii=False, indent=2))
+                          "error": reason or None, "hint": hint or None,
+                          "raw": raw}, ensure_ascii=False, indent=2))
     else:
         print(raw.strip() or "(SQL 客户端没有输出)")
     if reason:
         print(f"[缺口] SQL 客户端报告错误：{reason}", file=sys.stderr)
+        if hint:
+            print(f"       {hint}", file=sys.stderr)
         return 2
     return 0
 
@@ -545,6 +605,9 @@ def build_parser() -> argparse.ArgumentParser:
     exceptions = flink_sub.add_parser("exceptions", help="作业异常")
     exceptions.add_argument("job_id")
     exceptions.set_defaults(func=cmd_flink_exceptions)
+    cancel = flink_sub.add_parser("cancel", help="取消作业（不填 jobId 就取消当前在跑的那个）")
+    cancel.add_argument("job_id", nargs="?")
+    cancel.set_defaults(func=cmd_flink_cancel)
     submit = flink_sub.add_parser("submit", help="提交 SQL 文件")
     submit.add_argument("-f", "--file", required=True)
     submit.add_argument("--via", choices=("client", "gateway"), default="client", help=CHANNEL_HELP)
@@ -589,6 +652,8 @@ def main(argv: list[str] | None = None) -> int:
     except urllib.error.URLError as err:
         print(f"[连接失败] {err}", file=sys.stderr)
         print("       确认集群与 SQL Gateway 在跑（见 docs/oss-lab.md）", file=sys.stderr)
+        print("       本机是 WSL 的话：rest_endpoint 要用 WSL 的 IP，127.0.0.1 转发不到"
+              "（`wsl hostname -I` 取地址）", file=sys.stderr)
         return 3
 
 
