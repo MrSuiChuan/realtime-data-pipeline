@@ -164,16 +164,21 @@ Windows 上的 runner 一般填 `wsl -d <发行版> -- bash -lc`。
 
 | 结果 | 组件 |
 | --- | --- |
-| **真跑通过（12）** | Flink、Paimon、Fluss、Kafka、Spark（Structured Streaming）、Iceberg、Hudi、Delta、ClickHouse、Debezium、Pulsar、StarRocks |
-| **未跑通（1）** | Doris（镜像已就位，BE 镜像拉取未完成，见 `docs/oss-lab.md` 十八节） |
+| **真跑通过（13）** | Flink、Paimon、Fluss、Kafka、Spark（Structured Streaming）、Iceberg、Hudi、Delta、ClickHouse、Debezium、Pulsar、StarRocks、Doris |
+| **未跑通（0）** | 无 |
 
-十二项通过的具体读数：Spark 流式 3 写 3 读；Iceberg / Hudi / Delta 各 5 写 5 读；
+十三项通过的具体读数：Spark 流式 3 写 3 读；Iceberg / Hudi / Delta 各 5 写 5 读；
 ClickHouse 7 写 7 读；Debezium 源库 3 行 → CDC 3 条事件；Flink / Paimon / Fluss 见前几轮的记录
 （行级读写与作业终态）；Kafka 5 写 5 读；Pulsar 灌 9 条、按最早位点读回 3 条；
 StarRocks 写 5 读 5（BE 心跳为真）。
 
-Doris 未跑通的原因是**镜像体积与拉取时间**，不是配方：它与 StarRocks 复用同一份编排脚本，
-FE 镜像已就位，BE 镜像仍在拉取。注册表里保持如实状态，不预填结论。
+### 补记：Doris 补齐（2026-10-07）
+
+2026-09-29 那次 Doris 卡在 BE 镜像拉取（体积与网络，见 `docs/oss-lab.md` 十八节），当时如实记成未跑通。
+之后换用容器镜像通道补齐：FE 与 BE 各一个容器（host 网络），BE 注册后心跳为 true，
+建库建表写 5 行读回 5 行、连跑两次结果一致。注册表 `oss_doris.verified` 已回填为 2026-10-07，
+本表按注册表同步；四个内核级前置（`BE_ADDR`、`vm.max_map_count`、关 swap、FE 堆降到 2GB）与
+「容器随会话结束被回收」这两条已写进注册表的已知缺口，换机器时先读它们。
 
 ### 补记：GitHub 通道的复测（2026-09-30）
 
