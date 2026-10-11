@@ -41,10 +41,13 @@
 | 集群会话依赖 | `start-cluster.sh` 在 WSL 里会随会话结束收到 SIGHUP 被杀 | 在长驻会话或容器里起集群；报告里写清这一点 |
 | 任务槽就绪有延迟 | 集群脚本返回后 TaskManager 尚未注册完 | 查 `/overview` 前先等几秒，别急着判"起不来" |
 | 时区 | SQL 会话默认 UTC，与机器本地时区不一致 | 验证时间语义前先确认会话时区 |
+| 单槽位争抢（2026-10-11 实测） | TM 默认只给 1 个 slot：流式作业占着它时，批取证会报 `java.util.concurrent.TimeoutException: Pending slot request timed out in slot pool`——看着像"表坏了/数据没落" | 先取消流作业腾 slot，或把 `taskmanager.numberOfTaskSlots` 调大；`oss_cli.py` 遇到该错误会直接给出这条提示 |
+| 取消作业的三条路只有一条通（2026-10-11 实测，Flink 2.2） | CLI `flink cancel <jobId>` 抛异常；`DELETE /jobs/<jobId>` 返回 404；**`PATCH /jobs/<jobId>?mode=cancel` 返回 202** | 用 `oss_cli.py flink cancel [jobId]`（按 PATCH→DELETE 顺序，实测顺序写进实现） |
+| 跨 WSL 边界连通 | Windows 侧连 `127.0.0.1:8081` 被拒（10061）；同一集群从 WSL 内部访问正常 | `rest_endpoint` 填 **WSL 的 IP**（`wsl hostname -I`），不是 `127.0.0.1`；`oss_cli.py` 连接失败时会提示这一条 |
 
 ## 巡检与诊断怎么用它
 
-只读来源：REST 的 `/jobs/overview`、`/jobs/<id>`、`/jobs/<id>/exceptions`，加上 TaskManager 的 `.out`/`.log`。**不启动、不停止、不取消作业**——要变更走 `runbook-lifecycle.md` 的门。
+只读来源：REST 的 `/jobs/overview`、`/jobs/<id>`、`/jobs/<id>/exceptions`，加上 TaskManager 的 `.out`/`.log`。**巡检本身不启动、不停止、不取消作业**——要变更走 `runbook-lifecycle.md` 的门；本地实验台里的取消动作由 `oss_cli.py flink cancel` 这一条命令承担，属于生命周期动作，不归巡检。
 
 ## 结构化取证：SQL Gateway REST（本地实测）
 
@@ -66,6 +69,7 @@
 | --- | --- | --- |
 | `flink jobs` | 列作业与状态（`/jobs/overview`） | REST |
 | `flink status <jobId>` / `flink exceptions <jobId>` | 单作业状态与异常 | REST |
+| `flink cancel [jobId]` | 取消作业（不填 jobId 就取消当前在跑的）；PATCH `?mode=cancel` 优先，失败回退 DELETE | REST |
 | `flink submit -f <sql 文件>` | 提交 DDL/DML | `--via`（默认 `client`） |
 | `flink query -s "<SQL>"` | 跑一条语句并取回结果 | `--via`（默认 `client`） |
 | `evidence refs --table <catalog.db.table>` | 每张表跑一条真实 `COUNT`，产出 `refs_readback` 契约 JSON | `--via`（默认 `client`，`--raw-dir` 留档原始输出） |
@@ -73,7 +77,7 @@
 三处必须知道的行为：
 
 1. **`--via client`（默认）会等语句真正结束**：提交一个不结束的流作业就会一直等。要异步提交就显式用 `--via gateway`，并接受它的取结果限制。
-2. **CLI 必须跑在能连到集群的那台机器上**：`rest_endpoint` 是集群侧地址，跨机器/跨 WSL 边界能不能连通由使用者自己核实（本地实测是"在 WSL 里跑"）。
+2. **CLI 必须跑在能连到集群的那台机器上**：`rest_endpoint` 是集群侧地址。跨 WSL 边界时**用 WSL 的 IP**（`wsl hostname -I`），`127.0.0.1` 在 Windows 侧转发不到（实测 10061）；`flink jobs` 会把占着 slot 的 RUNNING 作业标出来，方便判断批取证会不会被挤。
 3. **catalog 现建**：`evidence refs` 按表名前缀（`paimon.` / `fluss.`）在每条脚本里 `CREATE CATALOG IF NOT EXISTS`——SQL 客户端每次 `-f` 都是新会话，catalog 不落盘。
 
 实测记录（命令、原始输出、失败案例）在 `docs/oss-lab.md` 第十二节。

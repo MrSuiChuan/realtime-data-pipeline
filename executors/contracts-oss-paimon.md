@@ -21,6 +21,7 @@ Paimon 在插件里扮演**湖表目录**：Flink SQL 里以 catalog 形态出�
 | 动作 | 约定 |
 | --- | --- |
 | 建 catalog | 由 Flink SQL 客户端执行；`warehouse` 必须来自配置，不写死在脚本里 |
+| warehouse 选址 | **必须放持久盘**（例如 `~/oss/paimon_top3_wh`）。`/tmp` 在 WSL/机器重启时会被 systemd-tmpfiles 清空，湖表数据整体消失——2026-10-11 实测真丢过一次；`oss_lab.py start` 遇到 `/tmp` 路径会告警 |
 | 建表 | 主键表必须显式声明 `PRIMARY KEY ... NOT ENFORCED`；分区表用 `PARTITIONED BY` |
 | 流式写入 | 必须开检查点（否则数据不落盘、读不回来）；间隔走项目配置 `limits` |
 | 读回验证 | 用批模式查询，**不要**用流模式读同一张表来"证明写成功" |

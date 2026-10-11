@@ -77,3 +77,17 @@
 改完必须过：`py -3 -m pytest tests -q`、`py -3 tools/validate_plugin.py .`、
 `build_codex_surface.py --check`、`adapt_hooks.py --check`、`run_evals.py --check`；
 新增行为的回归用例落在 `tests/`（中文高风险 kind、`flink cancel`、`status.next_action`、/tmp 告警）。
+
+## 六、落地清单（改了哪些文件）
+
+| 文件 | 改了什么 |
+| --- | --- |
+| `engine/core.py` | 高风险动词表补中文；`rtd status` 的 `next_action` 依赖的阶段/门控表未变 |
+| `engine/rtd.py` | `status` 输出 `next_action`（JSON + 人类可读） |
+| `hooks/gates.py` | 高风险词表与引擎侧对齐（仍要求命令里出现配置的执行器名） |
+| `tools/oss_cli.py` | 新增 `flink cancel`（PATCH→DELETE）；`flink jobs` 标出占 slot 的作业；slot 超时/连接失败给可操作提示 |
+| `tools/oss_lab.py` | 启动前检查配置里落在 `/tmp` 的路径并告警 |
+| `executors/contracts-oss-flink.md` | 契约补：取消作业三条路只有 PATCH 通、单槽位争抢、跨 WSL 用 WSL 的 IP、`flink cancel` 子命令 |
+| `executors/contracts-oss-paimon.md` | 契约补：warehouse 必须放持久盘（`/tmp` 重启即丢，实测丢过一次） |
+| `workflows/runbook-full-flow.md` | 新增：八阶段 → 门控 → 命令 → 常见拒绝 + 四条本地开源栈硬约束 |
+| `tests/test_real_case_fixes.py` | 新增 4 条回归 |
