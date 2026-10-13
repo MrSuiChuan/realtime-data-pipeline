@@ -1268,3 +1268,42 @@ work_items:
   "blocker": null
   "evidence": ["docs/reports/rtd-059-completion-7fed5e5.json"]
   "verification": {"evidence_level":"locally_verified"}
+
+# ── 2026-10-13 三插件全量审核（审核台账在 data-development-plugin 的 goal#plugin-cross-audit）──
+
+- id: RTD-060
+  title: 宿主加载的是旧副本，而本插件没有"改完怎么生效"这条路
+  kind: fix
+  status: completed
+  goal: goal-rtd-open-source-ready
+  priority: P0
+  required: true
+  summary: "三插件审核发现：宿主真正加载的是 ~/.codex/plugins/cache/personal/<插件>/<版本>/，而三个插件的缓存全部落后各自源码仓库。本插件最严重——缓存里 LICENSE 是 1074 字节的 MIT、连 NOTICE 都没有，源码早已是 Apache-2.0（11358 字节）+ NOTICE，且缓存 HEAD（29e4f4b）在源码仓库里根本不存在。根因是本插件压根没有刷新路径：ddp 与 kbp 都有 tools/reinstall.py，本插件没有，于是源码一路往前、缓存停在原地，且这件事完全静默。"
+  acceptance:
+  - 补一条可执行的重新安装路径（重生成 Codex 面 → 换 cachebuster → 重装），并有回归用例。
+  - 重装后逐项核对宿主机上的实文件（LICENSE 字节数、NOTICE 是否存在、清单里的 license 值），不采信安装输出。
+  next_action: 已完成：tools/reinstall.py 入库并列入必需文件；重装后宿主机实文件逐项复核通过。
+  paths:
+  - tools/reinstall.py
+  - tools/validate_plugin.py
+  - tests/test_reinstall_tool.py
+  "evidence": ["tools/reinstall.py：从 ddp/kbp 既有实现移植（含 newline 与 marketplace 路径解析两处踩坑注释），新增 drop_migrated_skills 清理宿主生成的 source-command-* 副本", "tests/test_reinstall_tool.py 3 条用例（版本后缀、路径解析、清理迁移副本不误删自带技能）；py -3 -m pytest tests -q → 110 passed", "重装实测：0.1.0+codex.20260921220000 → 0.1.0+codex.20261013133449", "复核宿主机实文件：新缓存 LICENSE=11358 字节、首行 Apache License、NOTICE 存在、清单 license=Apache-2.0；旧缓存目录已被安装器清掉", "py -3 tools/validate_plugin.py . → 八项全过"]
+  "verification": {"evidence_level":"locally_verified"}
+
+- id: RTD-061
+  title: 知识库插件的发布流程现在真的能写给实时项目
+  kind: fix
+  status: completed
+  goal: goal-rtd-plugin
+  priority: P1
+  required: true
+  summary: "本插件侧的融合早就齐了（knowledge 配置段、KnowledgeIndex 的 .rtd → .data-dev 两级探测、uri_prefix 铁律、跨插件契约断言），但生产端 knowledge-base-plugin 的 consumer 同步把路径写死成 .data-dev/mock/kb/index.json——对着已初始化的实时项目只回 consumer_sync.ok=false，索引明明在 .rtd/ 里也一行同步不进去。docs/kb-integration.md 把这条列在『还差什么』，注明等对方排期。本轮对方补齐（KBP-058）。"
+  acceptance:
+  - 生产端按"哪个运行时目录已存在"判定；消费侧本插件无需改动（本就不写死一家）。
+  - 本仓库两处说明文档的状态跟着改，不留"未做"的过期陈述。
+  next_action: 已完成：默认路径改为双候选（对方侧），本仓库两份文档状态同步。
+  paths:
+  - docs/kb-integration.md
+  - knowledge/kb-index-contract.md
+  "evidence": ["对方侧改动：engine/core/sync.py 的 CONSUMER_INDEX_CANDIDATES（.data-dev / .rtd）+ consumer_index_path()，回归用例 test_syncs_into_a_realtime_plugin_project / test_prefers_the_consumer_that_is_initialized，全量 160 通过", "本仓库：docs/kb-integration.md 的『生产端支持 .rtd/』由『未做（它只写 .data-dev/）』改为已做并写明判定口径；knowledge/kb-index-contract.md 的『为什么是两个』同步", "回归：py -3 -m pytest tests -q → 110 passed；py -3 tools/validate_plugin.py . → 八项全过（含文档链接与出站路由检查）"]
+  "verification": {"evidence_level":"locally_verified"}

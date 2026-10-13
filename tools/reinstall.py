@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+# Copyright 2026 AI实战技能圈
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""让宿主加载本仓库的当前代码：重生成 Codex 面 -> 换 cachebuster -> 重装。
+
+Codex 把插件按版本号缓存到
+``<codex-home>/plugins/cache/<marketplace>/<plugin>/<version>/``：**版本不变就不会
+重新拷贝**。所以改完插件代码必须换一次 ``+codex.<token>`` 后缀，宿主才会用新副本。
+
+本插件原来没有这条路，代价是实测过的：源码里的 LICENSE 已经是 Apache-2.0、
+NOTICE 也在仓库里，而宿主缓存里还是 MIT 且缺 NOTICE——**加载的和改的不是一份代码**。
+
+    py -3 tools/reinstall.py            # 只体检 + 打印将要执行的动作（默认不动手）
+    py -3 tools/reinstall.py --apply    # 真换版本并重装
+
+依赖：``codex`` CLI 在 PATH 上；个人 marketplace 条目指向本仓库（见输出的核对行）。
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+# Windows 上 stdout 被重定向时是 cp1252/cp936，中文进度行会直接 UnicodeEncodeError。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
+ROOT = Path(__file__).resolve().parent.parent
+MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
+MARKETPLACE = Path.home() / ".agents" / "plugins" / "marketplace.json"
+CACHE_ROOT = Path.home() / ".codex" / "plugins" / "cache"
+# 宿主会把 commands/ 迁移成一份 source-command-<name> 技能放在这里。本插件已自带
+# 同功能的 rtd-* 技能，两份同时在场只会让技能选择变模糊（实测会话里两份都在列）。
+MIGRATED_SKILLS_DIR = ".codex-plugin/migrated-command-skills"
+
+
+def new_version(current: str, token: str) -> str:
+    """保留 `+` 之前的基础版本，替换掉旧的 codex cachebuster。"""
+    base = str(current).split("+", 1)[0]
+    return f"{base}+codex.{token}"
+
+
+def resolve_source(entry_path: str) -> Path:
+    """Codex 把 marketplace 的 source.path 解析成相对**用户主目录**的路径。
+
+    注意：不是相对 marketplace.json 所在目录——按后者解析会得到一个不存在的路径，
+    这是同一个作者的另一个插件踩过的坑（``.agents/plugins/plugins/...`` 并不存在）。
+    """
+    cleaned = entry_path.strip()
+    if cleaned.startswith("./"):
+        cleaned = cleaned[2:]
+    return Path.home() / cleaned
+
+
+def drop_migrated_skills(version: str, plugin_name: str) -> list:
+    """重装后清掉宿主生成的迁移副本，避免同一功能两份技能同时被加载。"""
+    removed: list = []
+    for cache_dir in CACHE_ROOT.glob(f"*/{plugin_name}/{version}"):
+        stale = cache_dir / MIGRATED_SKILLS_DIR
+        if not stale.is_dir():
+            continue
+        shutil.rmtree(stale)
+        removed.append(str(stale))
+    return removed
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="reinstall this plugin for Codex")
+    parser.add_argument("--apply", action="store_true", help="真的改版本并重装")
+    parser.add_argument("--token", default=None, help="自定义 cachebuster（默认 UTC 时间戳）")
+    args = parser.parse_args()
+
+    if not MANIFEST.is_file():
+        print(f"找不到清单：{MANIFEST}", file=sys.stderr)
+        return 2
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    plugin_name = str(manifest.get("name") or "")
+    current = str(manifest.get("version") or "")
+    if not plugin_name or not current:
+        print("清单缺 name/version", file=sys.stderr)
+        return 2
+
+    # 1) 生成物与手写源保持一致（否则装了也是旧面）
+    surface = subprocess.run(
+        [sys.executable, str(ROOT / "tools" / "build_codex_surface.py")],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if surface.returncode != 0:
+        print(surface.stdout + surface.stderr, file=sys.stderr)
+        return surface.returncode
+    print(f"Codex 面已按 commands/ 重生成（{len(surface.stdout.splitlines()) - 1} 个文件）")
+
+    # 2) 前置条件：marketplace 条目必须指向本仓库
+    marketplace_name = "personal"
+    if not MARKETPLACE.is_file():
+        print(f"没找到个人 marketplace：{MARKETPLACE}", file=sys.stderr)
+        return 2
+    data = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
+    marketplace_name = str(data.get("name") or marketplace_name)
+    entry = next(
+        (p for p in (data.get("plugins") or []) if isinstance(p, dict) and p.get("name") == plugin_name),
+        None,
+    )
+    if entry is None:
+        print(f"marketplace 里没有 {plugin_name} 条目，先建条目再重装。", file=sys.stderr)
+        return 2
+    source = resolve_source(str((entry.get("source") or {}).get("path") or ""))
+    if not source.is_dir():
+        print(f"marketplace 条目指向的源不存在：{source}", file=sys.stderr)
+        print("把它指向本仓库（Windows 可用目录联接）：", file=sys.stderr)
+        print(f'  New-Item -ItemType Junction -Path "{source}" -Target "{ROOT}"', file=sys.stderr)
+        return 2
+    same = source.resolve() == ROOT.resolve()
+    print(f"marketplace 源：{source}  {'(就是本仓库)' if same else '(注意：不是本仓库，重装不会带上本次改动)'}")
+    if not same:
+        return 2
+
+    # 3) 换 cachebuster
+    token = args.token or datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    token = re.sub(r"[^a-z0-9-]+", "-", token.strip().lower()).strip("-")
+    target = new_version(current, token)
+    print(f"版本：{current}  ->  {target}")
+
+    if not args.apply:
+        print()
+        print("（当前是预演。加 --apply 才会真的改清单并重装）")
+        return 0
+
+    manifest["version"] = target
+    MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"已写清单：{MANIFEST.relative_to(ROOT).as_posix()}")
+
+    # 4) 重装
+    codex = shutil.which("codex")
+    if not codex:
+        print("PATH 上没有 codex CLI；清单已更新，请手动执行：", file=sys.stderr)
+        print(f"  codex plugin add {plugin_name}@{marketplace_name}", file=sys.stderr)
+        return 2
+    proc = subprocess.run(
+        [codex, "plugin", "add", f"{plugin_name}@{marketplace_name}"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    print((proc.stdout or "").strip())
+    if proc.returncode != 0:
+        print((proc.stderr or "").strip(), file=sys.stderr)
+        return proc.returncode
+
+    removed = drop_migrated_skills(target, plugin_name)
+    if removed:
+        print("已清掉宿主生成的迁移技能副本（与自带 rtd-* 技能重复）：")
+        for item in removed:
+            print(f"  - {item}")
+
+    print()
+    print("装好了。**新开一个线程**再用，宿主只在新会话里加载新版本。")
+    print("重装不影响 hook 信任；只有改动 hooks/*.json 的内容才需要重新授权。")
+    print("macOS/Linux 上如果 hook 启动器还是 py -3，跑一次 tools/adapt_hooks.py。")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

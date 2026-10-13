@@ -245,6 +245,7 @@ py -3 -m pytest tests -q                     # 全量用例
 py -3 tools/validate_plugin.py .             # 八项静态校验，含脱敏扫描
 py -3 tools/build_codex_surface.py --check   # 生成物与命令源一致
 py -3 tools/adapt_hooks.py --check           # hook 启动器与平台一致
+py -3 tools/reinstall.py                     # 宿主缓存里装的是哪一版（改完代码怎么生效）
 py -3 tools/run_evals.py --check             # 评测集结构
 py -3 tools/awr_reports.py                   # 台账验收报告，每个工作项最新一轮是哪个提交
 ```
