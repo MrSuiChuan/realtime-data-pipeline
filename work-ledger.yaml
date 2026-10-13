@@ -1287,7 +1287,7 @@ work_items:
   - tools/reinstall.py
   - tools/validate_plugin.py
   - tests/test_reinstall_tool.py
-  "evidence": ["tools/reinstall.py：从 ddp/kbp 既有实现移植（含 newline 与 marketplace 路径解析两处踩坑注释），新增 drop_migrated_skills 清理宿主生成的 source-command-* 副本", "tests/test_reinstall_tool.py 3 条用例（版本后缀、路径解析、清理迁移副本不误删自带技能）；py -3 -m pytest tests -q → 110 passed", "重装实测：0.1.0+codex.20260921220000 → 0.1.0+codex.20261013133449", "复核宿主机实文件：新缓存 LICENSE=11358 字节、首行 Apache License、NOTICE 存在、清单 license=Apache-2.0；旧缓存目录已被安装器清掉", "py -3 tools/validate_plugin.py . → 八项全过"]
+  "evidence": ["tools/reinstall.py：从 ddp/kbp 既有实现移植（含 newline 与 marketplace 路径解析两处踩坑注释），新增 drop_migrated_skills 清理宿主生成的 source-command-* 副本", "tests/test_reinstall_tool.py 4 条用例（版本后缀、路径解析、清理迁移副本不误删自带技能、只读文件也能清）；py -3 -m pytest tests -q → 110 passed", "重装实测：0.1.0+codex.20260921220000 → 0.1.0+codex.20261013133449", "复核宿主机实文件：新缓存 LICENSE=11358 字节、首行 Apache License、NOTICE 存在、清单 license=Apache-2.0；旧缓存目录已被安装器清掉", "py -3 tools/validate_plugin.py . → 八项全过", "追加（AUDIT-005）：prune_cache_artifacts 把本机产物从缓存副本清掉——本插件缓存 286.6 MB → 2.6 MB（释放 .tmp 266 MB + .awr 18 MB）；仓库里的 .tmp/ 留档不动"]
   "verification": {"evidence_level":"locally_verified"}
 
 - id: RTD-061

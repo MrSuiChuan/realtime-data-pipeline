@@ -58,3 +58,26 @@ def test_drop_migrated_skills_keeps_the_native_skills(monkeypatch) -> None:
         assert len(removed) == 1, removed
         assert not (root / reinstall.MIGRATED_SKILLS_DIR).exists()
         assert (root / "skills" / "rtd-dev").is_dir()
+
+
+def test_prune_cache_artifacts_keeps_the_publish_surface(monkeypatch) -> None:
+    """宿主安装拷的是整棵工作树：缓存里 286 MB 里 266 MB 是 .tmp，发布面本身不到 1 MB。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        cache = Path(tmp)
+        monkeypatch.setattr(reinstall, "CACHE_ROOT", cache)
+        version = "0.1.0+codex.tok"
+        root = cache / "personal" / "realtime-data-plugin" / version
+        (root / ".tmp" / "lab").mkdir(parents=True)
+        (root / ".tmp" / "lab" / "flink.jar").write_bytes(b"j" * 4096)
+        (root / ".awr").mkdir(parents=True)
+        (root / ".pytest_cache").mkdir(parents=True)
+        (root / "engine").mkdir(parents=True)
+        (root / "engine" / "rtd.py").write_text("# publish surface", encoding="utf-8")
+
+        pruned, freed = reinstall.prune_cache_artifacts(version, "realtime-data-plugin")
+
+        assert len(pruned) == 3, pruned
+        assert freed > 4000
+        assert not (root / ".tmp").exists()
+        assert not (root / ".awr").exists()
+        assert (root / "engine" / "rtd.py").is_file()
