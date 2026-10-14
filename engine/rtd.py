@@ -123,9 +123,12 @@ def cmd_setup(args) -> int:
     result = runtime.setup(template)
 
     state = runtime.load_state()
+    # 项目内引擎（.rtd/engine/）读不到插件清单，plugin_version() 返回空串。
+    # 旧实现把它直接写进状态：第二次 setup 会把"这份状态是哪版引擎产生的"这条留痕抹掉。
+    previous_version = str((state.get("engine") or {}).get("plugin_version") or "")
     state["engine"] = {
         "hash": engine_hash,
-        "plugin_version": plugin_version(),
+        "plugin_version": plugin_version() or previous_version,
         "installed_at": core.now_iso(),
     }
     runtime.save_state(state)

@@ -21,6 +21,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -441,6 +442,64 @@ def test_setup_records_plugin_version():
     state = core.Runtime(project).load_state()
     assert state["engine"]["hash"]
     assert state["engine"]["plugin_version"]
+
+
+def test_second_setup_from_project_engine_keeps_plugin_version():
+    """RTD-062：项目内引擎读不到插件清单，第二次 setup 不能把版本留痕写空。
+
+    现场：`setup` 会自拷贝引擎到 .rtd/engine/，之后用户按技能文档用项目内引擎再跑一次
+    setup（补目录/换机器），旧实现把 plugin_version 写成空串——"这份状态是哪版产生的"
+    这条留痕就消失了。
+    """
+    project = _project()
+    _run("setup", "--project", str(project))
+    first = core.Runtime(project).load_state()["engine"]["plugin_version"]
+    assert first, "首次 setup 就该记下插件版本"
+
+    project_engine = project / ".rtd" / "engine" / "rtd.py"
+    proc = subprocess.run(
+        [sys.executable, str(project_engine), "setup", "--project", str(project), "--json"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert core.Runtime(project).load_state()["engine"]["plugin_version"] == first
+
+
+def test_stale_readback_gate_returns_to_next_gap():
+    """RTD-063：对象变了旧证据自动失效，next_gap 要重新列出该门（status/advance 同判）。
+
+    技能文档 rtd-status 写着「对象变了（新版本、新提交）旧证据自动失效，next_gap 会把它
+    重新列出来」。旧实现只在 gate set 时判过期，status/advance 仍按「键在不在」判，
+    于是换了对象版本还能一路推进。
+    """
+    project = _project()
+    _run("setup", "--project", str(project))
+    _run("advance", "--project", str(project), "--phase", "design", "--reason", "进入设计")
+    _run("object", "set", "--project", str(project), "--file-id", "F-1", "--version", "v1")
+    raw = _evidence_file(
+        project,
+        {"tables": [{"name": "dwd_user_di", "published": True}], "observed_at": "2026-09-21T22:00:00+08:00"},
+        "refs.json",
+    )
+    code, out = _run(
+        "evidence", "add", "--project", str(project),
+        "--kind", "refs_readback", "--from", str(raw), "--tool", "cli", "--command", "meta tables", "--json",
+    )
+    assert code == 0, out
+    evidence_id = json.loads(out)["id"]
+    code, out = _run("gate", "set", "--project", str(project), "--name", "refs_published", "--evidence", evidence_id)
+    assert code == 0, out
+
+    runtime = core.Runtime(project)
+    assert runtime.phase_gaps(runtime.load_state()) == []
+
+    _run("object", "set", "--project", str(project), "--version", "v2")
+    gaps = runtime.phase_gaps(runtime.load_state())
+    assert [gap["gate"] for gap in gaps] == ["refs_published"], gaps
+    assert gaps[0].get("stale") is True
+
+    code, out = _run("advance", "--project", str(project), "--phase", "build", "--reason", "试图推进", "--json")
+    assert code == 2 and "refs_published" in out, out
 
 
 if __name__ == "__main__":

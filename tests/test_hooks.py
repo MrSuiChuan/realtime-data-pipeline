@@ -27,7 +27,9 @@ from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "hooks"))
+sys.path.insert(0, str(PLUGIN_ROOT / "engine"))
 
+import core  # noqa: E402
 import gates  # noqa: E402
 
 def _configure_stdio() -> None:
@@ -200,6 +202,57 @@ def test_extract_strings_handles_both_host_shapes():
     patch_shape = {"tool_name": "apply_patch", "tool_input": {"file_path": "a/b.py", "content": "print(1)"}}
     command, file_path, content = gates.extract_strings(patch_shape)
     assert command == "" and file_path == "a/b.py" and content == "print(1)"
+
+
+def test_readonly_mentions_of_machine_assets_are_allowed():
+    """RTD-061：门控守的是「写」。读状态/证据文件不该被拦——拦读等于让人看不到排查证据。
+
+    现场（2026-10-14 测试用例 R-46）：`Get-Content .rtd/<状态文件>` 这类只读命令
+    与 `py -3 -c "...read_text(...)"` 都被旧实现按「命令串里出现标记」拦下。
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        runtime = core.Runtime(root)
+        # 相对路径从 Runtime 自己的 root 出发：Windows 上 mkdtemp 给的是 8.3 短名，
+        # 而 Runtime 会把 root resolve 成长名，两次 str 不相同。
+        runtime_dir = runtime.dir.relative_to(runtime.root).as_posix()
+        state_rel = f"{runtime_dir}/{runtime.state_path.name}"
+        evidence_rel = f"{runtime_dir}/{runtime.evidence_dir.name}"
+
+        assert gates.decide("bash", f"Get-Content {state_rel} -Raw", "", "", root) is None
+        assert gates.decide("bash", f"py -3 -c \"print(open('{state_rel}').read())\"", "", "", root) is None
+        assert gates.decide("bash", f"rg -n published {evidence_rel}/index.json", "", "", root) is None
+
+        blocked = gates.decide("bash", f"Set-Content -Path {state_rel} -Value '{{}}'", "", "", root)
+        assert blocked is not None and blocked.gate == "evidence_write"
+        blocked = gates.decide("bash", f"rm {evidence_rel}/index.json", "", "", root)
+        assert blocked is not None and blocked.gate == "evidence_write"
+        blocked = gates.decide("bash", f"echo '{{}}' > {state_rel}", "", "", root)
+        assert blocked is not None and blocked.gate == "evidence_write"
+
+
+def test_patch_guard_judges_targets_not_prose():
+    """RTD-061：补丁要按「改的是哪个文件」判，不能因为正文里提到文件名就拦。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        runtime = core.Runtime(root)
+        state_rel = f"{runtime.dir.relative_to(runtime.root).as_posix()}/{runtime.state_path.name}"
+
+        prose = (
+            "*** Begin Patch\n"
+            "*** Add File: skills/note.md\n"
+            f"+说明：{state_rel} 由引擎写，人不要直接改\n"
+            "*** End Patch\n"
+        )
+        assert gates.decide("apply_patch", "", "", prose, root) is None
+
+        targeted = f"*** Begin Patch\n*** Update File: {state_rel}\n@@\n@@\n-x\n+y\n*** End Patch\n"
+        blocked = gates.decide("apply_patch", "", "", targeted, root)
+        assert blocked is not None and blocked.gate == "evidence_write"
+
+        # Codex 宿主形状：补丁文本放在 command 里（extract_strings 把 input 当命令串）
+        blocked = gates.decide("apply_patch", targeted, "", "", root)
+        assert blocked is not None and blocked.gate == "evidence_write"
 
 
 if __name__ == "__main__":

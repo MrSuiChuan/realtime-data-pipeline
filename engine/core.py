@@ -514,11 +514,39 @@ class Runtime:
         phase = phase or state.get("phase", PHASES[0])
         gaps: List[Dict[str, str]] = []
         for name in self.gates_for_phase(phase):
-            if name in state.get("gates", {}):
-                continue
             spec = GATES[name]
-            gaps.append({"gate": name, "kind": spec["kind"], "desc": spec["desc"]})
+            record = (state.get("gates") or {}).get(name)
+            if record is None:
+                gaps.append({"gate": name, "kind": spec["kind"], "desc": spec["desc"]})
+                continue
+            if self._gate_stale(state, name, record):
+                gaps.append(
+                    {
+                        "gate": name,
+                        "kind": spec["kind"],
+                        "desc": spec["desc"] + "（原证据已失效：对象身份或版本变了，需重新采集后置门）",
+                        "stale": True,
+                    }
+                )
         return gaps
+
+    def _gate_stale(self, state: Dict[str, Any], name: str, record: Dict[str, Any]) -> bool:
+        """已置位的门控是否因证据过期而失效。
+
+        rtd-status 技能写明「对象变了（新版本、新提交）旧证据自动失效，next_gap 会把它
+        重新列出来」。这条以前只在 gate set 时生效，status / advance 仍按「键在不在」判，
+        于是换了对象版本还能一路推进——2026-10-14 测试实测（用例 R-25）。
+        """
+        spec = GATES.get(name) or {}
+        if spec.get("kind") != "readback":
+            return False
+        evidence_id = str(record.get("evidence_id") or "")
+        if not evidence_id:
+            return False
+        item = self.find_evidence(evidence_id)
+        if item is None:
+            return True
+        return self._evidence_stale(state, name, item)
 
     def set_gate_readback(self, state: Dict[str, Any], name: str, evidence_id: str) -> Dict[str, Any]:
         spec = GATES.get(name)

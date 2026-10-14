@@ -5,6 +5,28 @@
 面向**主流实时处理组件**的扩展，以及排查出来的四处真问题。版本号不升：按本仓库的惯例，
 定版在 RTD-015，未定版前不给可用版本号承诺。
 
+### 插件测试跑出来的三处真问题（2026-10-14）
+
+用一份 119 条用例的测试实验台逐条跑本插件的运行时、门控、hook 与端到端流程，三处不通过：
+
+- **证据门不再拦只读访问**（`hooks/gates.py`）：原来按「命令串里出现 `.rtd/_evidence/` 或
+  状态文件名」判定，实测把 `Get-Content <状态文件>`、`py -3 -c "...read_text(...)"` 这类
+  只读命令也拦了——门守的是「证据只能由引擎写」，拦读等于让人看不到排查证据。
+  改成只看**写入目标**（Write/Edit 的 file_path、补丁里的 `*** Update File:`/`*** Move to:`
+  目标，两种宿主的落点都认）与**同段里的写动词**（shell 重定向、Set-Content、rm…）；
+- **`status` / `advance` 认证据过期**（`engine/core.py`）：`rtd-status` 技能写着「对象变了，
+  旧证据自动失效，next_gap 会把它重新列出来」，但实现只在 `gate set` 时判过期，
+  `status` 与 `advance` 仍按「门控键在不在」判，于是换了对象版本还能一路推进。
+  `phase_gaps` 现在把过期证据重新算成缺口（带 `stale: true`），`advance` 一并收口；
+- **第二次 setup 不再把插件版本写空**（`engine/rtd.py`）：项目内引擎（`.rtd/engine/`）读不到
+  插件清单，`plugin_version()` 返回空串，旧实现直接覆盖状态——「这份状态是哪版产生的」
+  这条留痕就没了。现在读不到时保留上一次记下的版本。
+
+回归用例：`tests/test_hooks.py::test_readonly_mentions_of_machine_assets_are_allowed`、
+`test_patch_guard_judges_targets_not_prose`、
+`tests/test_engine.py::test_second_setup_from_project_engine_keeps_plugin_version`、
+`test_stale_readback_gate_returns_to_next_gap`。
+
 ### 按真实案例复盘出来的四处优化（2026-10-11）
 
 案例：在 `data-warehouse-learning` 上真做一条「Kafka → Flink → Paimon → 销售额 Top3」，

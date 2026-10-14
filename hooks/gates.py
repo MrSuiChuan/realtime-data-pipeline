@@ -26,6 +26,7 @@ hook 看不到。这条边界写在 SECURITY.md，不要在别处暗示它能兜
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -122,7 +123,7 @@ def decide(
     # 下面这几条靠命令串判断；没有命令串（例如 MCP 调用）就跳过，别提前 return——
     # MCP 规则只看工具名（这个分支漏掉过一次，见 RTD-018）。
     if blob.strip():
-        decision = _evidence_guard(blob)
+        decision = _evidence_guard(command, file_path, content)
         if decision:
             return decision
 
@@ -202,15 +203,69 @@ def _load_config(root: Path) -> Dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _evidence_guard(blob: str) -> Optional[Decision]:
-    lowered = blob.lower()
-    for marker in EVIDENCE_MARKERS:
-        if marker.lower() in lowered:
-            return Decision(
-                "evidence_write",
-                "证据与状态文件（.rtd/_evidence/、_state.json）只能由引擎写。"
-                "要用 rtd.py evidence add / gate set / advance 提交，不要直接改文件。",
-            )
+# 写动词表：只有当"同段里出现写动词"时，提到证据/状态文件才算违规。
+# 旧实现按"命令串里出现标记"判定，实测把只读命令也拦了（2026-10-14 测试用例 R-46）：
+#   `Get-Content .rtd/_state.json -Raw`              —— 只是排查状态
+#   `py -3 -c "... read_text('.rtd/_state.json')"`   —— 只读核对
+# 这条门要守的是"证据只能由引擎写"，不是"谁也不许提这两个文件名"。
+_MUTATOR_RE = re.compile(
+    r"\b(rm|del|delete|unlink|remove|mv|move|rename|touch|truncate|write_text|write_bytes"
+    r"|remove-item|removeitem|set-content|add-content|out-file|new-item|clear-content"
+    r"|copy-item|copy|cp|tee|tee-object|dd)\b"
+    r"|sed\s+-i|open\([^)]*['\"]w"
+    r"|(?<![-\d&])>>?(?!&)",
+    re.IGNORECASE,
+)
+# 补丁式写入的目标路径：`*** Add File: <path>` / `*** Update File: <path>` / `*** Move to: <path>`
+_PATCH_TARGET_RE = re.compile(
+    r"^\*\*\*\s+(?:Add|Update|Delete)\s+File:\s*(.+?)\s*$"
+    r"|^\*\*\*\s+Move to:\s*(.+?)\s*$",
+    re.MULTILINE,
+)
+
+
+def _normalize_path_text(value: str) -> str:
+    return str(value or "").replace("\\", "/").lower()
+
+
+def _is_evidence_path(value: str) -> bool:
+    text = _normalize_path_text(value)
+    return any(_normalize_path_text(marker) in text for marker in EVIDENCE_MARKERS)
+
+
+def _patch_targets(text: str) -> List[str]:
+    """抽出补丁里涉及的每个文件路径（含 `*** Move to:` 目标）。"""
+    if not text:
+        return []
+    found = [(match.group(1) or match.group(2) or "").strip() for match in _PATCH_TARGET_RE.finditer(text)]
+    for line in text.splitlines():
+        if line.startswith("+++ b/"):
+            found.append(line[6:].strip())
+    seen: List[str] = []
+    for item in found:
+        if item and item not in seen:
+            seen.append(item)
+    return seen
+
+
+def _evidence_guard(command: str, file_path: str, content: str) -> Optional[Decision]:
+    """拦"真的在写"证据/状态文件的调用，两种命中形态：
+
+    * 写入目标本身就是证据/状态文件（Write/Edit 的 file_path，或补丁里的目标路径）；
+    * 同一命令段里既有写动词、又提到证据/状态文件（shell 重定向、Set-Content、rm…）。
+    """
+    message = (
+        "证据与状态文件（.rtd/_evidence/、_state.json）只能由引擎写。"
+        "要用 rtd.py evidence add / gate set / advance 提交，不要直接改文件。"
+    )
+    # 补丁文本的两个落点都要看：Claude Code 侧在 content，Codex 侧实测放在 command 里
+    # （extract_strings 把 payload 的 input 当命令串）。漏一边就等于换个宿主就能绕过门。
+    for target in [file_path, *_patch_targets(content), *_patch_targets(command)]:
+        if target and _is_evidence_path(target):
+            return Decision("evidence_write", message)
+    for segment in re.split(r";|&&|\|\||\n", command or ""):
+        if _is_evidence_path(segment) and _MUTATOR_RE.search(segment):
+            return Decision("evidence_write", message)
     return None
 
 
